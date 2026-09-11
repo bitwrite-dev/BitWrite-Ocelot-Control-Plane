@@ -39,6 +39,7 @@ public record SnapshotValidated(SnapshotVersion Version, bool IsValid) : DomainE
 public record SnapshotPublished(SnapshotVersion Version) : DomainEvent;
 public record SnapshotArchived(SnapshotVersion Version) : DomainEvent;
 public record SnapshotRolledBack(SnapshotVersion FromVersion, SnapshotVersion ToVersion) : DomainEvent;
+public record SnapshotValidationFailed(SnapshotVersion Version, string Reason) : DomainEvent;
 
 // Publication events
 public record PublicationStarted(PublicationId PublicationId, SnapshotVersion SnapshotVersion) : DomainEvent;

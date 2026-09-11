@@ -1,0 +1,16 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/BitWrite.OcelotControl.Api/BitWrite.OcelotControl.Api.csproj" />
+    <Project Path="src/BitWrite.OcelotControl.Application/BitWrite.OcelotControl.Application.csproj" />
+    <Project Path="src/BitWrite.OcelotControl.Domain/BitWrite.OcelotControl.Domain.csproj" />
+    <Project Path="src/BitWrite.OcelotControl.Infrastructure/BitWrite.OcelotControl.Infrastructure.csproj" />
+    <Project Path="src/BitWrite.OcelotControl.Runtime/BitWrite.OcelotControl.Runtime.csproj" />
+    <Project Path="src/BitWrite.OcelotControl.SDK/BitWrite.OcelotControl.SDK.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/BitWrite.OcelotControl.Application.Tests/BitWrite.OcelotControl.Application.Tests.csproj" />
+    <Project Path="tests/BitWrite.OcelotControl.ArchitectureTests/BitWrite.OcelotControl.ArchitectureTests.csproj" />
+    <Project Path="tests/BitWrite.OcelotControl.Domain.Tests/BitWrite.OcelotControl.Domain.Tests.csproj" />
+    <Project Path="tests/BitWrite.OcelotControl.IntegrationTests/BitWrite.OcelotControl.IntegrationTests.csproj" />
+  </Folder>
+</Solution>

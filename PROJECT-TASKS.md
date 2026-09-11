@@ -31,6 +31,7 @@ This document provides a prioritized list of tasks and subtasks based on DDD arc
 | #279 | [Subtask] CreateSnapshot UseCase - Detailed Implementation | #290 | ✅ Done |
 | #236 | [UseCase] Snapshot Creation Flow | #290 | ✅ Done |
 | #280 | [Subtask] PublishSnapshot & RollbackSnapshot UseCases | #291 | ✅ Done |
+| #238 | [UseCase] Snapshot Publication Flow | #292 | ✅ Done |
 
 ---
 
@@ -60,7 +61,7 @@ This document provides a prioritized list of tasks and subtasks based on DDD arc
 | # | Issue | Subtask | Title | Branch | Status |
 |---|-------|---------|-------|--------|--------|
 | 1 | #236 | #279 | [UseCase] Snapshot Creation Flow | - | ✅ Done |
-| 2 | #238 | - | [UseCase] Snapshot Publication Flow | - | ⏳ **Next** |
+| 2 | #238 | - | [UseCase] Snapshot Publication Flow | - | ✅ Done |
 | 3 | #240 | #280 | [UseCase] Rollback | - | ✅ Done (via #280) |
 
 ---
@@ -70,7 +71,7 @@ This document provides a prioritized list of tasks and subtasks based on DDD arc
 
 | # | Issue | Subtask | Title | Branch | Status |
 |---|-------|---------|-------|--------|--------|
-| 1 | #243 | #282 | [Infrastructure] Redis Repository Implementations | - | ⏳ Ready |
+| 1 | #243 | #282 | [Infrastructure] Redis Repository Implementations | - | ⏳ **Next** |
 | 2 | #281 | - | [Subtask] RuntimeAdapter - Gateway Config Synchronization | - | ⏳ Ready |
 
 ---
@@ -115,10 +116,11 @@ Value Objects → Domain Services → Aggregates → Domain Events → Use Cases
 - PR to `develop` branch
 
 ### Next Steps (Current Priority)
-1. **Phase 2**: Implement **#238 Snapshot Publication Flow**
-2. **Phase 3**: Implement Infrastructure (#243, #282, #281)
-3. **Phase 4**: Implement API & UI (#283, #284, #285)
-4. **Phase 5**: Implement Runtime Operations (#239, #281)
+1. **Phase 3**: Implement **#243 Redis Repository Implementations** (parent #243)
+2. **Phase 3**: Implement #282 Redis Repository Implementations - All Aggregates
+3. **Phase 3**: Implement #281 RuntimeAdapter - Gateway Config Synchronization
+4. **Phase 4**: Implement API & UI (#283, #284, #285)
+5. **Phase 5**: Implement Runtime Operations (#239, #281)
 
 ---
 

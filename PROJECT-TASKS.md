@@ -30,6 +30,7 @@ This document provides a prioritized list of tasks and subtasks based on DDD arc
 | #241 | [Domain] Domain Events & Integration Events | #289 | ✅ Done |
 | #279 | [Subtask] CreateSnapshot UseCase - Detailed Implementation | #290 | ✅ Done |
 | #236 | [UseCase] Snapshot Creation Flow | #290 | ✅ Done |
+| #280 | [Subtask] PublishSnapshot & RollbackSnapshot UseCases | #291 | ✅ Done |
 
 ---
 
@@ -46,10 +47,10 @@ This document provides a prioritized list of tasks and subtasks based on DDD arc
 | 4 | Application Service event dispatcher | ✅ Done |
 | 5 | Outbox table/entity in Infrastructure | ✅ Done (InMemory) |
 | 6 | Outbox publisher (background job) | ✅ Done |
-| 6 | Redis Pub/Sub publisher for notifications | ✅ Done (structure) |
-| 7 | Event serialization with versioning | ✅ Done |
-| 8 | Idempotency handling in consumers | ⏳ Pending |
-| 9 | Unit tests for event dispatching | ✅ Done |
+| 7 | Redis Pub/Sub publisher for notifications | ✅ Done (structure) |
+| 8 | Event serialization with versioning | ✅ Done |
+| 9 | Idempotency handling in consumers | ⏳ Pending |
+| 10 | Unit tests for event dispatching | ✅ Done |
 
 ---
 
@@ -59,8 +60,8 @@ This document provides a prioritized list of tasks and subtasks based on DDD arc
 | # | Issue | Subtask | Title | Branch | Status |
 |---|-------|---------|-------|--------|--------|
 | 1 | #236 | #279 | [UseCase] Snapshot Creation Flow | - | ✅ Done |
-| 2 | #238 | #280 | [UseCase] Snapshot Publication Flow | - | ⏳ Ready |
-| 3 | #240 | #280 | [UseCase] Rollback | - | ⏳ Ready |
+| 2 | #238 | - | [UseCase] Snapshot Publication Flow | - | ⏳ **Next** |
+| 3 | #240 | #280 | [UseCase] Rollback | - | ✅ Done (via #280) |
 
 ---
 
@@ -114,12 +115,10 @@ Value Objects → Domain Services → Aggregates → Domain Events → Use Cases
 - PR to `develop` branch
 
 ### Next Steps (Current Priority)
-1. **Phase 2**: Implement **#280 PublishSnapshot & RollbackSnapshot UseCases** (parent #257)
-2. **Phase 2**: Implement #238 Snapshot Publication Flow
-3. **Phase 2**: Implement #240 Rollback
-4. **Phase 3**: Implement Infrastructure (#243, #282, #281)
-5. **Phase 4**: Implement API & UI (#283, #284, #285)
-6. **Phase 5**: Implement Runtime Operations (#239, #281)
+1. **Phase 2**: Implement **#238 Snapshot Publication Flow**
+2. **Phase 3**: Implement Infrastructure (#243, #282, #281)
+3. **Phase 4**: Implement API & UI (#283, #284, #285)
+4. **Phase 5**: Implement Runtime Operations (#239, #281)
 
 ---
 

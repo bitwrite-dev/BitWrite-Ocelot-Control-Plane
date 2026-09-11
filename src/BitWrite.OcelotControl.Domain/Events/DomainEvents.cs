@@ -67,3 +67,10 @@ public record LicenseRevoked(string LicenseId, string Reason) : DomainEvent;
 
 // Audit event
 public record AuditRecorded(string Actor, string Action, string ResourceType, string ResourceId, string Result) : DomainEvent;
+
+// Integration Events (§25.2)
+public record SnapshotPublishedIntegrationEvent(SnapshotVersion Version, DateTimeOffset Timestamp) : DomainEvent;
+public record SnapshotRolledBackIntegrationEvent(SnapshotVersion FromVersion, SnapshotVersion ToVersion, DateTimeOffset Timestamp) : DomainEvent;
+public record RouteChangedIntegrationEvent(RouteId RouteId, string Action, DateTimeOffset Timestamp) : DomainEvent;
+public record PluginLifecycleIntegrationEvent(PluginId PluginId, string State, DateTimeOffset Timestamp) : DomainEvent;
+public record AuditIntegrationEvent(string AuditEntry) : DomainEvent;

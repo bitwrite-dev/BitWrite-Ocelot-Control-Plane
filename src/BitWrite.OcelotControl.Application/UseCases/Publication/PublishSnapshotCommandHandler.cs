@@ -128,6 +128,10 @@ public class PublishSnapshotCommandHandler
             );
             await _eventDispatcher.DispatchAsync(auditEvent, cancellationToken);
 
+            // 12. Raise integration event
+            var integrationEvent = new SnapshotPublishedIntegrationEvent(snapshotVersion, DateTimeOffset.UtcNow);
+            await _eventDispatcher.DispatchAsync(integrationEvent, cancellationToken);
+
             return publication.Id;
         }
         catch

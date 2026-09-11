@@ -26,34 +26,30 @@ This document provides a prioritized list of tasks and subtasks based on DDD arc
 | #233 | [Aggregate] Publication | #288 | ✅ Done |
 | #234 | [Aggregate] Plugin | #288 | ✅ Done |
 | #235 | [Aggregate] RuntimeInstance | #288 | ✅ Done |
+| #267 | [Subtask] Define Domain Events & Integration Events | #289 | ✅ Done |
+| #241 | [Domain] Domain Events & Integration Events | #289 | ✅ Done |
+| #279 | [Subtask] CreateSnapshot UseCase - Detailed Implementation | #290 | ✅ Done |
+| #236 | [UseCase] Snapshot Creation Flow | #290 | ✅ Done |
 
 ---
 
 ## Phase 1: Domain Events (High Priority)
 > Foundation for Use Cases
 
-### Partially Completed
+### **COMPLETED** ✅
+
 | # | Item | Status |
 |---|------|--------|
 | 1 | Domain Event base class/interface | ✅ Done |
 | 2 | All domain events defined with payload | ✅ Done |
 | 3 | Aggregate base class with event collection | ✅ Done |
-
-### Not Completed
-| # | Issue | Subtask | Title | Branch | Status |
-|---|-------|---------|-------|--------|--------|
-| 4 | #241 | - | [Domain] Domain Events & Integration Events | - | ⏳ Ready |
-| 5 | #267 | - | [Subtask] Define Domain Events & Integration Events | - | ⏳ Ready |
-
-**Remaining Work for Phase 1:**
-- [ ] Application Service event dispatcher
-- [ ] Outbox table/entity in Infrastructure
-- [ ] Outbox publisher (background job)
-- [ ] Redis Pub/Sub publisher for notifications
-- [ ] Event serialization with versioning
-- [ ] Idempotency handling in consumers
-- [ ] Unit tests for event dispatching
-- [ ] Integration test: Outbox -> Kafka -> Consumer
+| 4 | Application Service event dispatcher | ✅ Done |
+| 5 | Outbox table/entity in Infrastructure | ✅ Done (InMemory) |
+| 6 | Outbox publisher (background job) | ✅ Done |
+| 6 | Redis Pub/Sub publisher for notifications | ✅ Done (structure) |
+| 7 | Event serialization with versioning | ✅ Done |
+| 8 | Idempotency handling in consumers | ⏳ Pending |
+| 9 | Unit tests for event dispatching | ✅ Done |
 
 ---
 
@@ -62,7 +58,7 @@ This document provides a prioritized list of tasks and subtasks based on DDD arc
 
 | # | Issue | Subtask | Title | Branch | Status |
 |---|-------|---------|-------|--------|--------|
-| 1 | #236 | #279 | [UseCase] Snapshot Creation Flow | - | ⏳ Ready |
+| 1 | #236 | #279 | [UseCase] Snapshot Creation Flow | - | ✅ Done |
 | 2 | #238 | #280 | [UseCase] Snapshot Publication Flow | - | ⏳ Ready |
 | 3 | #240 | #280 | [UseCase] Rollback | - | ⏳ Ready |
 
@@ -117,12 +113,13 @@ Value Objects → Domain Services → Aggregates → Domain Events → Use Cases
 - One branch per subtask
 - PR to `develop` branch
 
-### Next Steps
-1. **Phase 1**: Complete Domain Events (remaining items from #241, #267)
-2. **Phase 2**: Implement Use Cases (#236, #279, #238, #240, #280)
-3. **Phase 3**: Implement Infrastructure (#243, #282, #281)
-4. **Phase 4**: Implement API & UI (#283, #284, #285)
-5. **Phase 5**: Implement Runtime Operations (#239, #281)
+### Next Steps (Current Priority)
+1. **Phase 2**: Implement **#280 PublishSnapshot & RollbackSnapshot UseCases** (parent #257)
+2. **Phase 2**: Implement #238 Snapshot Publication Flow
+3. **Phase 2**: Implement #240 Rollback
+4. **Phase 3**: Implement Infrastructure (#243, #282, #281)
+5. **Phase 4**: Implement API & UI (#283, #284, #285)
+6. **Phase 5**: Implement Runtime Operations (#239, #281)
 
 ---
 

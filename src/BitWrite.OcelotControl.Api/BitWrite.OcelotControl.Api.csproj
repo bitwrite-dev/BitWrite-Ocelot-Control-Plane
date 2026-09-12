@@ -15,6 +15,7 @@
   <ItemGroup>
     <ProjectReference Include="..\BitWrite.OcelotControl.Application\BitWrite.OcelotControl.Application.csproj" />
     <ProjectReference Include="..\BitWrite.OcelotControl.Infrastructure\BitWrite.OcelotControl.Infrastructure.csproj" />
+    <ProjectReference Include="..\BitWrite.OcelotControl.Runtime\BitWrite.OcelotControl.Runtime.csproj" />
   </ItemGroup>
 
 </Project>

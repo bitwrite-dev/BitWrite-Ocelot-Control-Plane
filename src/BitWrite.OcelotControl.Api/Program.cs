@@ -1,87 +1,179 @@
 using BitWrite.OcelotControl.Api.Middleware;
 using BitWrite.OcelotControl.Api.Validators;
+using AppInterfaces = BitWrite.OcelotControl.Application.Interfaces;
+using BitWrite.OcelotControl.Application.UseCases.Snapshot;
+using BitWrite.OcelotControl.Application.UseCases.Publication;
+using BitWrite.OcelotControl.Application.Events;
+using DomainServices = BitWrite.OcelotControl.Domain.Services;
+using BitWrite.OcelotControl.Infrastructure.Adapters;
+using BitWrite.OcelotControl.Infrastructure.Outbox;
+using BitWrite.OcelotControl.Infrastructure.Redis;
+using BitWrite.OcelotControl.Infrastructure.Repositories;
+using BitWrite.OcelotControl.Runtime.Adapters;
 using FluentValidation.AspNetCore;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Extensions.Configuration;
+using StackExchange.Redis;
 
-var builder = WebApplication.CreateBuilder(args);
-
-// Add services to the container.
-builder.Services.AddControllers();
-builder.Services.AddFluentValidationAutoValidation();
-builder.Services.AddFluentValidationClientsideAdapters();
-
-// Register validators
-builder.Services.AddValidatorsFromAssemblyContaining<Program>();
-
-// Add Swagger/OpenAPI
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(c =>
+namespace BitWrite.OcelotControl.Api
 {
-    c.SwaggerDoc("v1", new() 
-    { 
-        Title = "BitWrite Ocelot Control Plane API", 
-        Version = "v1",
-        Description = "Management API for Ocelot Gateway Configuration"
-    });
-    
-    c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    internal sealed class OcelotConfigApplierAdapter : AppInterfaces.IOcelotConfigApplier
     {
-        Description = "JWT Authorization header using the Bearer scheme",
-        Name = "Authorization",
-        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
-        Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
-        Scheme = "Bearer"
-    });
-    
-    c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
-    {
+        private readonly OcelotConfigApplier _runtimeApplier;
+
+        public OcelotConfigApplierAdapter(OcelotConfigApplier runtimeApplier)
         {
-            new Microsoft.OpenApi.Models.OpenApiSecurityScheme
-            {
-                Reference = new Microsoft.OpenApi.Models.OpenApiReference
-                {
-                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                }
-            },
-            Array.Empty<string>()
+            _runtimeApplier = runtimeApplier;
         }
-    });
-});
 
-// Add JWT Authentication
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
+        public Task ApplyAsync(string configuration, CancellationToken cancellationToken = default)
+        {
+            return _runtimeApplier.ApplyAsync(configuration, cancellationToken);
+        }
+    }
+
+    public class Program
     {
-        options.Authority = builder.Configuration["Authentication:Authority"];
-        options.Audience = builder.Configuration["Authentication:Audience"];
-        options.RequireHttpsMetadata = false; // For development
-    });
+        public static void Main(string[] args)
+        {
+            var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddAuthorization(options =>
-{
-    options.AddPolicy("Admin", policy => policy.RequireRole("Admin"));
-    options.AddPolicy("GatewayManager", policy => policy.RequireRole("Admin", "GatewayManager"));
-    options.AddPolicy("RouteManager", policy => policy.RequireRole("Admin", "RouteManager"));
-    options.AddPolicy("SnapshotManager", policy => policy.RequireRole("Admin", "SnapshotManager"));
-});
+            // Add services to the container.
+            builder.Services.AddControllers();
+            builder.Services.AddFluentValidationAutoValidation();
+            builder.Services.AddFluentValidationClientsideAdapters();
 
-var app = builder.Build();
+            // Register validators
+            builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
-// Configure the HTTP request pipeline.
-app.UseMiddleware<GlobalExceptionMiddleware>();
-app.UseMiddleware<CorrelationIdMiddleware>();
+            // Redis Connection
+            builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
+                ConnectionMultiplexer.Connect(builder.Configuration.GetConnectionString("Redis") ?? "localhost:6379"));
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
+            // Domain Services (registered as concrete for internal use)
+            builder.Services.AddScoped<DomainServices.ConfigurationBuilder>();
+            builder.Services.AddScoped<DomainServices.ConfigurationCanonicalizer>();
+            builder.Services.AddScoped<DomainServices.RouteConflictDetector>();
+            builder.Services.AddScoped<DomainServices.ConfigurationConsistencyValidator>();
+            builder.Services.AddScoped<DomainServices.OcelotCapabilityResolver>();
+            builder.Services.AddScoped<DomainServices.SnapshotIntegrityVerifier>();
+            builder.Services.AddScoped<DomainServices.SnapshotVersionAllocator>();
+
+            // Infrastructure Adapters (implement Application.Interfaces for DI)
+builder.Services.AddScoped<AppInterfaces.IConfigurationBuilder, ConfigurationBuilderAdapter>();
+            builder.Services.AddScoped<AppInterfaces.IConfigurationCanonicalizer, ConfigurationCanonicalizerAdapter>();
+            builder.Services.AddScoped<AppInterfaces.IRouteConflictDetector, RouteConflictDetectorAdapter>();
+            builder.Services.AddScoped<AppInterfaces.IConfigurationConsistencyValidator, ConfigurationConsistencyValidatorAdapter>();
+            builder.Services.AddScoped<AppInterfaces.IOcelotCapabilityResolver, OcelotCapabilityResolverAdapter>();
+            builder.Services.AddScoped<AppInterfaces.ISnapshotIntegrityVerifier, SnapshotIntegrityVerifierAdapter>();
+            builder.Services.AddScoped<AppInterfaces.ISnapshotVersionAllocator, SnapshotVersionAllocatorAdapter>();
+
+            // Repository Implementations
+            builder.Services.AddScoped<AppInterfaces.IGatewayRepository, RedisGatewayRepository>();
+            builder.Services.AddScoped<AppInterfaces.IRouteRepository, RedisRouteRepository>();
+            builder.Services.AddScoped<AppInterfaces.IServiceRepository, RedisServiceRepository>();
+            builder.Services.AddScoped<AppInterfaces.ISnapshotRepository, RedisSnapshotRepository>();
+            builder.Services.AddScoped<AppInterfaces.IPublicationRepository, RedisPublicationRepository>();
+            builder.Services.AddScoped<AppInterfaces.IGlobalConfigurationRepository, RedisGlobalConfigurationRepository>();
+
+            // Infrastructure Services
+            builder.Services.AddSingleton<AppInterfaces.IDistributedLock, RedisDistributedLock>();
+            builder.Services.AddSingleton<AppInterfaces.IRedisPublisher, RedisPublisher>();
+            builder.Services.AddSingleton<InMemoryOutboxRepository>();
+            builder.Services.AddScoped<AppInterfaces.IOutboxRepository, OutboxRepositoryAdapter>();
+
+            // OcelotConfigApplier Adapter (wraps Runtime.Adapters.OcelotConfigApplier)
+            builder.Services.AddSingleton<OcelotConfigApplier>();
+            builder.Services.AddSingleton<AppInterfaces.IOcelotConfigApplier>(sp => 
+                new OcelotConfigApplierAdapter(sp.GetRequiredService<OcelotConfigApplier>()));
+
+            builder.Services.AddSingleton<JsonEventSerializer>();
+            builder.Services.AddScoped<AppInterfaces.IEventSerializer, EventSerializerAdapter>();
+
+            // UseCase Handlers (Commands) - EXISTING
+            builder.Services.AddScoped<CreateSnapshotCommandHandler>();
+            builder.Services.AddScoped<PublishSnapshotCommandHandler>();
+            builder.Services.AddScoped<RollbackSnapshotCommandHandler>();
+
+            // Domain Event Dispatcher
+            builder.Services.AddScoped<AppInterfaces.IDomainEventDispatcher, DomainEventDispatcher>();
+
+            // Background Services
+            builder.Services.AddHostedService<OutboxPublisher>();
+            builder.Services.AddHostedService<RuntimeAdapter>();
+
+            // Add Swagger/OpenAPI
+            builder.Services.AddEndpointsApiExplorer();
+            builder.Services.AddSwaggerGen(c =>
+            {
+                c.SwaggerDoc("v1", new() 
+                { 
+                    Title = "BitWrite Ocelot Control Plane API", 
+                    Version = "v1",
+                    Description = "Management API for Ocelot Gateway Configuration"
+                });
+                
+                c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+                {
+                    Description = "JWT Authorization header using the Bearer scheme",
+                    Name = "Authorization",
+                    In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+                    Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
+                    Scheme = "Bearer"
+                });
+                
+                c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+                {
+                    {
+                        new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+                        {
+                            Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                            {
+                                Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                                Id = "Bearer"
+                            }
+                        },
+                        Array.Empty<string>()
+                    }
+                });
+            });
+
+            // Add JWT Authentication
+            builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+                .AddJwtBearer(options =>
+                {
+                    options.Authority = builder.Configuration["Authentication:Authority"];
+                    options.Audience = builder.Configuration["Authentication:Audience"];
+                    options.RequireHttpsMetadata = false; // For development
+                });
+
+            builder.Services.AddAuthorization(options =>
+            {
+                options.AddPolicy("Admin", policy => policy.RequireRole("Admin"));
+                options.AddPolicy("GatewayManager", policy => policy.RequireRole("Admin", "GatewayManager"));
+                options.AddPolicy("RouteManager", policy => policy.RequireRole("Admin", "RouteManager"));
+                options.AddPolicy("SnapshotManager", policy => policy.RequireRole("Admin", "SnapshotManager"));
+            });
+
+            var app = builder.Build();
+
+            // Configure the HTTP request pipeline.
+            app.UseMiddleware<GlobalExceptionMiddleware>();
+            app.UseMiddleware<CorrelationIdMiddleware>();
+
+            if (app.Environment.IsDevelopment())
+            {
+                app.UseSwagger();
+                app.UseSwaggerUI();
+            }
+
+            app.UseHttpsRedirection();
+            app.UseAuthentication();
+            app.UseAuthorization();
+            app.MapControllers();
+
+            app.Run();
+        }
+    }
 }
-
-app.UseHttpsRedirection();
-app.UseAuthentication();
-app.UseAuthorization();
-app.MapControllers();
-
-app.Run();

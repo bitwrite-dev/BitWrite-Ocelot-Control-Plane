@@ -32,6 +32,7 @@ This document provides a prioritized list of tasks and subtasks based on DDD arc
 | #236 | [UseCase] Snapshot Creation Flow | #290 | ✅ Done |
 | #280 | [Subtask] PublishSnapshot & RollbackSnapshot UseCases | #291 | ✅ Done |
 | #238 | [UseCase] Snapshot Publication Flow | #292 | ✅ Done |
+| #243 | [Infrastructure] Redis Repository Implementations | #293 | ✅ Done |
 
 ---
 
@@ -71,8 +72,8 @@ This document provides a prioritized list of tasks and subtasks based on DDD arc
 
 | # | Issue | Subtask | Title | Branch | Status |
 |---|-------|---------|-------|--------|--------|
-| 1 | #243 | #282 | [Infrastructure] Redis Repository Implementations | - | ⏳ **Next** |
-| 2 | #281 | - | [Subtask] RuntimeAdapter - Gateway Config Synchronization | - | ⏳ Ready |
+| 1 | #243 | #282 | [Infrastructure] Redis Repository Implementations | - | ✅ Done |
+| 2 | #281 | - | [Subtask] RuntimeAdapter - Gateway Config Synchronization | - | 🔄 **In Progress** |
 
 ---
 
@@ -116,11 +117,9 @@ Value Objects → Domain Services → Aggregates → Domain Events → Use Cases
 - PR to `develop` branch
 
 ### Next Steps (Current Priority)
-1. **Phase 3**: Implement **#243 Redis Repository Implementations** (parent #243)
-2. **Phase 3**: Implement #282 Redis Repository Implementations - All Aggregates
-3. **Phase 3**: Implement #281 RuntimeAdapter - Gateway Config Synchronization
-4. **Phase 4**: Implement API & UI (#283, #284, #285)
-5. **Phase 5**: Implement Runtime Operations (#239, #281)
+1. **Phase 3**: Implement **#281 RuntimeAdapter - Gateway Config Synchronization**
+2. **Phase 4**: Implement API & UI (#283, #284, #285)
+3. **Phase 5**: Implement Runtime Operations (#239, #281)
 
 ---
 

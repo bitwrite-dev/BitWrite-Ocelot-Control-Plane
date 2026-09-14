@@ -16,4 +16,5 @@ public interface IOutboxRepository
     Task<IReadOnlyList<OutboxMessage>> GetPendingAsync(int batchSize, CancellationToken cancellationToken = default);
     Task MarkProcessedAsync(Guid id, CancellationToken cancellationToken = default);
     Task MarkFailedAsync(Guid id, string error, CancellationToken cancellationToken = default);
+    Task AddToDeadLetterAsync(Guid id, string error, CancellationToken cancellationToken = default);
 }

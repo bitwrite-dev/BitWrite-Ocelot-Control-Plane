@@ -5,6 +5,7 @@ namespace BitWrite.OcelotControl.Infrastructure.Outbox;
 public class InMemoryOutboxRepository : IOutboxRepository
 {
     private readonly ConcurrentDictionary<Guid, OutboxMessage> _messages = new();
+    private readonly ConcurrentDictionary<Guid, OutboxMessage> _deadLetter = new();
 
     public Task AddAsync(OutboxMessage message, CancellationToken cancellationToken = default)
     {
@@ -43,5 +44,23 @@ public class InMemoryOutboxRepository : IOutboxRepository
         }
 
         return Task.CompletedTask;
+    }
+
+    public Task AddToDeadLetterAsync(Guid messageId, string error, CancellationToken cancellationToken = default)
+    {
+        if (_messages.TryRemove(messageId, out var message))
+        {
+            message.Error = error;
+            message.IsProcessed = true; // Mark as processed so it won't be picked up again
+            message.ProcessedAt = DateTime.UtcNow;
+            _deadLetter.TryAdd(messageId, message);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    public Task<List<OutboxMessage>> GetDeadLetterMessagesAsync(CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(_deadLetter.Values.ToList());
     }
 }

@@ -5,7 +5,7 @@ using BitWrite.OcelotControl.Domain.Services;
 using BitWrite.OcelotControl.Domain.ValueObjects.Configuration;
 using BitWrite.OcelotControl.Domain.ValueObjects.Identity;
 using BitWrite.OcelotControl.Domain.ValueObjects.Status;
-using BitWrite.OcelotControl.Infrastructure.Repositories;
+using BitWrite.OcelotControl.Infrastructure.Adapters;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
@@ -296,9 +296,4 @@ public class RuntimeAdapter : BackgroundService
 
     private record VersionNotification(string Version, string PublicationId);
     private record RollbackNotification(string Version, string PublicationId, string Reason);
-}
-
-public interface IOcelotConfigApplier
-{
-    Task ApplyAsync(string configuration, CancellationToken cancellationToken = default);
 }

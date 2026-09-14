@@ -6,10 +6,11 @@ using BitWrite.OcelotControl.Application.UseCases.Publication;
 using BitWrite.OcelotControl.Application.Events;
 using DomainServices = BitWrite.OcelotControl.Domain.Services;
 using BitWrite.OcelotControl.Infrastructure.Adapters;
+using InfraAdapters = BitWrite.OcelotControl.Infrastructure.Adapters;
 using BitWrite.OcelotControl.Infrastructure.Outbox;
 using BitWrite.OcelotControl.Infrastructure.Redis;
 using BitWrite.OcelotControl.Infrastructure.Repositories;
-using BitWrite.OcelotControl.Runtime.Adapters;
+using RuntimeAdapters = BitWrite.OcelotControl.Runtime.Adapters;
 using FluentValidation.AspNetCore;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -18,21 +19,6 @@ using StackExchange.Redis;
 
 namespace BitWrite.OcelotControl.Api
 {
-    internal sealed class OcelotConfigApplierAdapter : AppInterfaces.IOcelotConfigApplier
-    {
-        private readonly OcelotConfigApplier _runtimeApplier;
-
-        public OcelotConfigApplierAdapter(OcelotConfigApplier runtimeApplier)
-        {
-            _runtimeApplier = runtimeApplier;
-        }
-
-        public Task ApplyAsync(string configuration, CancellationToken cancellationToken = default)
-        {
-            return _runtimeApplier.ApplyAsync(configuration, cancellationToken);
-        }
-    }
-
     public class Program
     {
         public static void Main(string[] args)
@@ -76,6 +62,7 @@ builder.Services.AddScoped<AppInterfaces.IConfigurationBuilder, ConfigurationBui
             builder.Services.AddScoped<AppInterfaces.ISnapshotRepository, RedisSnapshotRepository>();
             builder.Services.AddScoped<AppInterfaces.IPublicationRepository, RedisPublicationRepository>();
             builder.Services.AddScoped<AppInterfaces.IGlobalConfigurationRepository, RedisGlobalConfigurationRepository>();
+            builder.Services.AddScoped<AppInterfaces.IRuntimeInstanceRepository, RuntimeInstanceRepositoryAdapter>();
 
             // Infrastructure Services
             builder.Services.AddSingleton<AppInterfaces.IDistributedLock, RedisDistributedLock>();
@@ -83,10 +70,9 @@ builder.Services.AddScoped<AppInterfaces.IConfigurationBuilder, ConfigurationBui
             builder.Services.AddSingleton<InMemoryOutboxRepository>();
             builder.Services.AddScoped<AppInterfaces.IOutboxRepository, OutboxRepositoryAdapter>();
 
-            // OcelotConfigApplier Adapter (wraps Runtime.Adapters.OcelotConfigApplier)
-            builder.Services.AddSingleton<OcelotConfigApplier>();
-            builder.Services.AddSingleton<AppInterfaces.IOcelotConfigApplier>(sp => 
-                new OcelotConfigApplierAdapter(sp.GetRequiredService<OcelotConfigApplier>()));
+            // IOcelotConfigApplier Implementation (Infrastructure.Adapters - real impl with Redis/File providers)
+            builder.Services.AddSingleton<InfraAdapters.IConfigurationProvider, InfraAdapters.RedisConfigurationProvider>();
+            builder.Services.AddSingleton<AppInterfaces.IOcelotConfigApplier, InfraAdapters.OcelotConfigApplier>();
 
             builder.Services.AddSingleton<JsonEventSerializer>();
             builder.Services.AddScoped<AppInterfaces.IEventSerializer, EventSerializerAdapter>();
@@ -101,7 +87,7 @@ builder.Services.AddScoped<AppInterfaces.IConfigurationBuilder, ConfigurationBui
 
             // Background Services
             builder.Services.AddHostedService<OutboxPublisher>();
-            builder.Services.AddHostedService<RuntimeAdapter>();
+            builder.Services.AddHostedService<RuntimeAdapters.RuntimeAdapter>();
 
             // Add Swagger/OpenAPI
             builder.Services.AddEndpointsApiExplorer();

@@ -88,7 +88,7 @@ This document provides a prioritized list of tasks and subtasks based on DDD arc
 | 2 | #281 | - | [Subtask] RuntimeAdapter - Gateway Config Synchronization | - | ✅ Done | — |
 | 3 | — | #316 | [Task] Fix PublicationRepository Stubs | — | ⏳ **Ready** | **High** |
 | 4 | — | #317 | [Task] Fix RuntimeInstanceRepository & PluginRepository Stubs | — | ⏳ **Ready** | **High** |
-| 5 | — | #318 | [Task] Implement OutboxPublisher - Real Redis Pub/Sub | — | ⏳ **Ready** | **Critical** |
+| 5 | — | #318 | [Task] Implement OutboxPublisher - Real Redis Pub/Sub | feature/318-outbox-publisher-redis | 🔄 **In Progress** | **Critical** |
 | 6 | — | #319 | [Task] Fix JsonEventSerializer.Deserialize | — | ⏳ **Ready** | **Critical** |
 | 7 | — | #320 | [Task] Implement RedisOutboxRepository | — | ⏳ **Ready** | **High** |
 | 8 | — | #321 | [Task] Implement IOcelotConfigApplier | — | ⏳ **Ready** | **Critical** |
@@ -104,7 +104,7 @@ This document provides a prioritized list of tasks and subtasks based on DDD arc
 | # | Issue | Subtask | Title | Branch | Status | Priority |
 |---|-------|---------|-------|--------|--------|----------|
 | 1 | #283 | - | [Subtask] Management API Controllers | - | ✅ Scaffolding Done | — |
-| 2 | — | #323 | [Task] DI Registration - Register All Handlers, Repositories, Domain Services | feature/323-di-registration | 🔄 **In Progress** | **Critical** |
+| 2 | — | #323 | [Task] DI Registration - Register All Handlers, Repositories, Domain Services | feature/323-di-registration | ✅ **Done** | **Critical** |
 | 3 | — | #324 | [Task] Wire GatewaysController to UseCases | — | ⏳ **Ready** (dep #308, #323) | **High** |
 | 4 | — | #325 | [Task] Wire RoutesController to UseCases | — | ⏳ **Ready** (dep #309, #323) | **High** |
 | 5 | — | #326 | [Task] Wire ServicesController to UseCases | — | ⏳ **Ready** (dep #310, #323) | **High** |

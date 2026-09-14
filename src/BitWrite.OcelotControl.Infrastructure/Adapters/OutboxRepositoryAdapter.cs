@@ -61,4 +61,9 @@ public class OutboxRepositoryAdapter : AppIOutboxRepository
     {
         return _infraRepository.MarkAsFailedAsync(id, error, cancellationToken);
     }
+
+    public Task AddToDeadLetterAsync(Guid id, string error, CancellationToken cancellationToken = default)
+    {
+        return _infraRepository.AddToDeadLetterAsync(id, error, cancellationToken);
+    }
 }

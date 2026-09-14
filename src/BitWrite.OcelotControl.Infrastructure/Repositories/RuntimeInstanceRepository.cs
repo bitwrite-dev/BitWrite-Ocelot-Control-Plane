@@ -62,6 +62,12 @@ public class RedisRuntimeInstanceRepository : RedisRepositoryBase
     {
         await AddAsync(instance, cancellationToken);
     }
+
+    public async Task DeleteAsync(GatewayId gatewayId, CancellationToken cancellationToken = default)
+    {
+        var key = RedisKeyHelper.RuntimeInstance(gatewayId);
+        await DeleteAsync(key);
+    }
 }
 
 public interface IRuntimeInstanceRepository
@@ -71,4 +77,5 @@ public interface IRuntimeInstanceRepository
     Task<List<RuntimeInstance>> GetAllAsync(CancellationToken cancellationToken = default);
     Task AddAsync(RuntimeInstance instance, CancellationToken cancellationToken = default);
     Task UpdateAsync(RuntimeInstance instance, CancellationToken cancellationToken = default);
+    Task DeleteAsync(GatewayId gatewayId, CancellationToken cancellationToken = default);
 }

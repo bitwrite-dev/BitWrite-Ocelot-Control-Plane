@@ -88,8 +88,8 @@ This document provides a prioritized list of tasks and subtasks based on DDD arc
 | 2 | #281 | - | [Subtask] RuntimeAdapter - Gateway Config Synchronization | - | ✅ Done | — |
 | 3 | — | #316 | [Task] Fix PublicationRepository Stubs | — | ⏳ **Ready** | **High** |
 | 4 | — | #317 | [Task] Fix RuntimeInstanceRepository & PluginRepository Stubs | — | ⏳ **Ready** | **High** |
-| 5 | — | #318 | [Task] Implement OutboxPublisher - Real Redis Pub/Sub | feature/318-outbox-publisher-redis | 🔄 **In Progress** | **Critical** |
-| 6 | — | #319 | [Task] Fix JsonEventSerializer.Deserialize | — | ⏳ **Ready** | **Critical** |
+| 5 | — | #318 | [Task] Implement OutboxPublisher - Real Redis Pub/Sub | feature/318-outbox-publisher-redis | ✅ **Done** | **Critical** |
+| 6 | — | #319 | [Task] Fix JsonEventSerializer.Deserialize | feature/319-fix-jsoneventserializer-deserialize | 🔄 **In Progress** | **Critical** |
 | 7 | — | #320 | [Task] Implement RedisOutboxRepository | — | ⏳ **Ready** | **High** |
 | 8 | — | #321 | [Task] Implement IOcelotConfigApplier | — | ⏳ **Ready** | **Critical** |
 | 9 | — | #322 | [Task] Add Missing Repository Interfaces to Application Layer | — | ⏳ **Ready** | **High** |

@@ -86,8 +86,8 @@ This document provides a prioritized list of tasks and subtasks based on DDD arc
 |---|-------|---------|-------|--------|--------|----------|
 | 1 | #243 | #282 | [Infrastructure] Redis Repository Implementations | - | ✅ Done | — |
 | 2 | #281 | - | [Subtask] RuntimeAdapter - Gateway Config Synchronization | - | ✅ Done | — |
-| 3 | — | #316 | [Task] Fix PublicationRepository Stubs | — | ⏳ **Ready** | **High** |
-| 4 | — | #317 | [Task] Fix RuntimeInstanceRepository & PluginRepository Stubs | — | ⏳ **Ready** | **High** |
+| 3 | — | #351 | [Task] Fix PublicationRepository Stubs | feature/316-fix-publicationrepository-stubs | ✅ **Done** | **High** |
+| 4 | — | #352 | [Task] Fix RuntimeInstanceRepository & PluginRepository Stubs | feature/317-fix-runtimeinstance-plugin-repository-stubs | ✅ **Done** | **High** |
 | 5 | — | #318 | [Task] Implement OutboxPublisher - Real Redis Pub/Sub | feature/318-outbox-publisher-redis | ✅ **Done** | **Critical** |
 | 6 | — | #319 | [Task] Fix JsonEventSerializer.Deserialize | feature/319-fix-jsoneventserializer-deserialize | ✅ **Done** | **Critical** |
 | 7 | — | #320 | [Task] Implement RedisOutboxRepository | feature/320-implement-redisoutboxrepository | ✅ **Done** | **High** |
@@ -236,10 +236,10 @@ Value Objects → Domain Services → Aggregates → Domain Events → Use Cases
 | 21 | **#307** | Audit Query UseCases |
 
 #### 🟢 Phase 4: Infrastructure Fixes (Week 3)
-| Order | Issue | Title |
-|---|---|---|
-| 22 | **#316** | Fix PublicationRepository Stubs |
-| 23 | **#317** | Fix RuntimeInstance/Plugin Repository Stubs |
+| Order | Issue | Title | Status |
+|---|---|---|---|
+| 22 | **#351** | Fix PublicationRepository Stubs | ✅ Done |
+| 23 | **#352** | Fix RuntimeInstance/Plugin Repository Stubs | ✅ Done |
 
 #### 🔵 Phase 5: Controller Wiring (Week 4-6, After Phase 1-2)
 | Order | Issue | Title | Endpoints |

@@ -1,6 +1,6 @@
 # BitWrite Ocelot Control Plane - Backend Audit Report
 
-> Date: 2026-09-13
+> Date: 2026-09-17
 > Branch: `develop`
 > Commit: latest on develop
 
@@ -39,7 +39,7 @@
 
 ### Application Layer (~15% Complete)
 
-**Interfaces (18 exist, 4 missing):**
+**Interfaces (20 exist, 2 missing):**
 
 | Interface | File | Status |
 |---|---|---|
@@ -61,8 +61,8 @@
 | IRedisPublisher | `Interfaces/IRedisPublisher.cs` | ✅ Complete |
 | IDomainEventDispatcher | `Interfaces/IDomainEventDispatcher.cs` | ✅ Complete |
 | IDomainEventHandler\<T\> | `Interfaces/IDomainEventHandler.cs` | ✅ Complete |
-| **IPluginRepository** | — | ❌ **Missing** (#322) |
-| **IRuntimeInstanceRepository** | — | ❌ **Missing** (#322) |
+| IPluginRepository | `Interfaces/IPluginRepository.cs` | ✅ Complete (#322) |
+| IRuntimeInstanceRepository | `Interfaces/IRuntimeInstanceRepository.cs` | ✅ Complete (#321) |
 | **ILicenseRepository** | — | ❌ **Missing** (#322) |
 | **IAuditLogRepository** | — | ❌ **Missing** (#322) |
 
@@ -113,14 +113,14 @@
 | RedisPublisher | `Redis/RedisPublisher.cs` | ✅ Complete | — |
 | RedisHealthCheck | `Redis/RedisHealthCheck.cs` | ✅ Complete | — |
 | RedisKeyHelper + Serializer | `Redis/RedisKeyHelper.cs` | ✅ Complete | — |
-| OutboxPublisher | `Outbox/OutboxPublisher.cs` | ❌ Stub (TODO: Publish to Redis/Kafka) | #318 |
-| InMemoryOutboxRepository | `Outbox/InMemoryOutboxRepository.cs` | ⚠️ In-memory only | #320 |
-| JsonEventSerializer | `Outbox/JsonEventSerializer.cs` | ❌ Deserialize() returns null (TODO) | #319 |
+| OutboxPublisher | `Outbox/OutboxPublisher.cs` | ✅ Complete (Redis Pub/Sub) | #318 |
+| InMemoryOutboxRepository | `Outbox/InMemoryOutboxRepository.cs` | ⚠️ Replaced by Redis | #320 |
+| JsonEventSerializer | `Outbox/JsonEventSerializer.cs` | ✅ Complete (Deserialize implemented) | #319 |
 | IOutboxRepository | `Outbox/IOutboxRepository.cs` | ✅ Complete | — |
 | **LicenseRepository** | — | ❌ **Missing** | #303 |
 | **AuditLogRepository** | — | ❌ **Missing** | #306 |
-| **Redis OutboxRepository** | — | ❌ **Missing** (only InMemory) | #320 |
-| **IOcelotConfigApplier impl** | — | ❌ **Missing** (interface only) | #321 |
+| RedisOutboxRepository | `Outbox/RedisOutboxRepository.cs` | ✅ Complete | #320 |
+| IOcelotConfigApplier impl | `Adapters/OcelotConfigApplier.cs` | ✅ Complete (Redis/File providers) | #321 |
 
 ### API Layer (~30% Scaffolding Only)
 
@@ -218,15 +218,15 @@
 | Layer | Completion | Remaining Work | Key Issues |
 |---|---|---|---|
 | Domain | ~90% | License + AuditLog aggregates, Missing Domain Events | #302, #305, #339 |
-| Application | ~15% | 50+ UseCases, 4 missing interfaces | #308-#315, #322 |
-| Infrastructure | ~60% | 4 partial repos, Outbox stubs, License/Audit repos, IOcelotConfigApplier | #316-#321 |
-| API | ~30% | 51 stub endpoints, DI wiring | #323-#333 |
+| Application | ~20% | 50+ UseCases, 2 missing interfaces (License, Audit) | #308-#315 |
+| Infrastructure | ~75% | 3 partial repos (Pub, Runtime, Plugin), License/Audit repos | #316, #317, #303, #306 |
+| API | ~30% | 51 stub endpoints | #324-#333 |
 | Tests | ~40% | 12+ test areas missing | #334-#338 |
 | Licensing | 0% | Full bounded context | #296, #302-304, #332 |
 | Audit | 5% | Persistence + queries | #297, #305-307, #333 |
 | SDK | 0% | Full project | #340 |
 
-**Total estimated remaining backend tasks: ~52**
+**Total estimated remaining backend tasks: ~42**
 
 ---
 
@@ -255,11 +255,11 @@
 | 315 | [Task] Runtime UseCases Implementation | Task | High | #300 |
 | 316 | [Task] Fix PublicationRepository Stubs | Task | High | #301 |
 | 317 | [Task] Fix RuntimeInstanceRepository & PluginRepository Stubs | Task | High | #301 |
-| 318 | [Task] Implement OutboxPublisher - Real Redis Pub/Sub | Task | **Critical** | #301 |
-| 319 | [Task] Fix JsonEventSerializer.Deserialize | Task | **Critical** | #301 |
-| 320 | [Task] Implement RedisOutboxRepository | Task | High | #301 |
-| 321 | [Task] Implement IOcelotConfigApplier | Task | **Critical** | #301 |
-| 322 | [Task] Add Missing Repository Interfaces to Application Layer | Task | High | #301 |
+| 318 | [Task] Implement OutboxPublisher - Real Redis Pub/Sub | Task | **Critical** | #301 | ✅ Done |
+| 319 | [Task] Fix JsonEventSerializer.Deserialize | Task | **Critical** | #301 | ✅ Done |
+| 320 | [Task] Implement RedisOutboxRepository | Task | High | #301 | ✅ Done |
+| 321 | [Task] Implement IOcelotConfigApplier | Task | **Critical** | #301 | ✅ Done |
+| 322 | [Task] Add Missing Repository Interfaces to Application Layer | Task | High | #301 | ✅ Done |
 | 323 | [Task] DI Registration - Register All Handlers, Repositories, Domain Services | Task | **Critical** | #300 |
 | 324 | [Task] Wire GatewaysController to UseCases | Task | High | #300 |
 | 325 | [Task] Wire RoutesController to UseCases | Task | High | #300 |
@@ -284,15 +284,15 @@
 ## 6. Prioritized Implementation Order
 
 ### 🔴 Phase 1: Critical Infrastructure (Unblocks Everything)
-| Order | Issue | Title | Why First |
-|---|---|---|---|
-| 1 | **#323** | DI Registration | Unblocks all controller wiring |
-| 2 | **#322** | Missing Repo Interfaces | Unblocks Plugin/Runtime/License/Audit UseCases |
-| 3 | **#318** | OutboxPublisher (Real Redis Pub/Sub) | Event-driven foundation |
-| 4 | **#319** | JsonEventSerializer.Deserialize | Required for OutboxPublisher |
-| 5 | **#320** | RedisOutboxRepository | Durable outbox (replaces InMemory) |
-| 6 | **#321** | IOcelotConfigApplier | Unblocks Runtime reconciliation |
-| 7 | **#339** | Missing Domain Events | Required for all new UseCases |
+| Order | Issue | Title | Why First | Status |
+|---|---|---|---|---|
+| 1 | **#323** | DI Registration | Unblocks all controller wiring | ✅ Done |
+| 2 | **#322** | Missing Repo Interfaces | Unblocks Plugin/Runtime/License/Audit UseCases | ✅ Done |
+| 3 | **#318** | OutboxPublisher (Real Redis Pub/Sub) | Event-driven foundation | ✅ Done |
+| 4 | **#319** | JsonEventSerializer.Deserialize | Required for OutboxPublisher | ✅ Done |
+| 5 | **#320** | RedisOutboxRepository | Durable outbox (replaces InMemory) | ✅ Done |
+| 6 | **#321** | IOcelotConfigApplier | Unblocks Runtime reconciliation | ✅ Done |
+| 7 | **#339** | Missing Domain Events | Required for all new UseCases | ⏳ Ready |
 
 ### 🟠 Phase 2: Core UseCases (Business Logic)
 | Order | Issue | Title | Controller |

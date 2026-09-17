@@ -49,10 +49,10 @@ This document provides a prioritized list of tasks and subtasks based on DDD arc
 | 2 | All domain events defined with payload | ⚠️ Partial (#339 - Missing License/Gateway/Route/Service/Plugin events) |
 | 3 | Aggregate base class with event collection | ✅ Done |
 | 4 | Application Service event dispatcher | ✅ Done |
-| 5 | Outbox table/entity in Infrastructure | ✅ Done (InMemory) |
-| 6 | Outbox publisher (background job) | ❌ Stub (#318) |
-| 7 | Redis Pub/Sub publisher for notifications | ❌ Not implemented (#318) |
-| 8 | Event serialization with versioning | ⚠️ Partial - Deserialize broken (#319) |
+| 5 | Outbox table/entity in Infrastructure | ✅ Done (Redis) |
+| 6 | Outbox publisher (background job) | ✅ Done (#318) |
+| 7 | Redis Pub/Sub publisher for notifications | ✅ Done (#318) |
+| 8 | Event serialization with versioning | ✅ Done (#319) |
 | 9 | Idempotency handling in consumers | ⏳ Pending |
 | 10 | Unit tests for event dispatching | ✅ Done |
 
@@ -89,10 +89,10 @@ This document provides a prioritized list of tasks and subtasks based on DDD arc
 | 3 | — | #316 | [Task] Fix PublicationRepository Stubs | — | ⏳ **Ready** | **High** |
 | 4 | — | #317 | [Task] Fix RuntimeInstanceRepository & PluginRepository Stubs | — | ⏳ **Ready** | **High** |
 | 5 | — | #318 | [Task] Implement OutboxPublisher - Real Redis Pub/Sub | feature/318-outbox-publisher-redis | ✅ **Done** | **Critical** |
-| 6 | — | #319 | [Task] Fix JsonEventSerializer.Deserialize | feature/319-fix-jsoneventserializer-deserialize | 🔄 **In Progress** | **Critical** |
-| 7 | — | #320 | [Task] Implement RedisOutboxRepository | — | ⏳ **Ready** | **High** |
-| 8 | — | #321 | [Task] Implement IOcelotConfigApplier | — | ⏳ **Ready** | **Critical** |
-| 9 | — | #322 | [Task] Add Missing Repository Interfaces to Application Layer | — | ⏳ **Ready** | **High** |
+| 6 | — | #319 | [Task] Fix JsonEventSerializer.Deserialize | feature/319-fix-jsoneventserializer-deserialize | ✅ **Done** | **Critical** |
+| 7 | — | #320 | [Task] Implement RedisOutboxRepository | feature/320-implement-redisoutboxrepository | ✅ **Done** | **High** |
+| 8 | — | #321 | [Task] Implement IOcelotConfigApplier | feature/321-implement-iocelotconfigapplier | ✅ **Done** | **Critical** |
+| 9 | — | #322 | [Task] Add Missing Repository Interfaces to Application Layer | feature/322-add-missing-repo-interfaces | ✅ **Done** | **High** |
 | 10 | — | #303 | [Task] License Repository Implementation | — | ⏳ **Ready** (dep #302) | **High** |
 | 11 | — | #306 | [Task] AuditLog Repository Implementation | — | ⏳ **Ready** (dep #305) | **High** |
 
@@ -203,15 +203,15 @@ Value Objects → Domain Services → Aggregates → Domain Events → Use Cases
 ### Prioritized Implementation Order (Critical Path)
 
 #### 🔴 Phase 1: Critical Infrastructure (Week 1-2)
-| Order | Issue | Title | Unlocks |
-|---|---|---|---|
-| 1 | **#323** | DI Registration | All controller wiring |
-| 2 | **#322** | Missing Repo Interfaces | Plugin/Runtime/License/Audit UseCases |
-| 3 | **#318** | OutboxPublisher (Real Redis Pub/Sub) | Event-driven foundation |
-| 4 | **#319** | JsonEventSerializer.Deserialize | OutboxPublisher |
-| 5 | **#320** | RedisOutboxRepository | Durable outbox |
-| 6 | **#321** | IOcelotConfigApplier | Runtime reconciliation |
-| 7 | **#339** | Missing Domain Events | All new UseCases |
+| Order | Issue | Title | Unlocks | Status |
+|---|---|---|---|---|
+| 1 | **#323** | DI Registration | All controller wiring | ✅ Done |
+| 2 | **#322** | Missing Repo Interfaces | Plugin/Runtime/License/Audit UseCases | ✅ Done |
+| 3 | **#318** | OutboxPublisher (Real Redis Pub/Sub) | Event-driven foundation | ✅ Done |
+| 4 | **#319** | JsonEventSerializer.Deserialize | OutboxPublisher | ✅ Done |
+| 5 | **#320** | RedisOutboxRepository | Durable outbox | ✅ Done |
+| 6 | **#321** | IOcelotConfigApplier | Runtime reconciliation | ✅ Done |
+| 7 | **#339** | Missing Domain Events | All new UseCases | ⏳ Ready |
 
 #### 🟠 Phase 2: Core UseCases (Week 2-4)
 | Order | Issue | Title | Endpoints |
@@ -281,4 +281,4 @@ Value Objects → Domain Services → Aggregates → Domain Events → Use Cases
 
 ---
 
-*Last Updated: 2026-09-13*
+*Last Updated: 2026-09-17*

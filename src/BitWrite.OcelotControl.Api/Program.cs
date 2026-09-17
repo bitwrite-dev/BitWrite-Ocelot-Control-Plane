@@ -68,7 +68,7 @@ builder.Services.AddScoped<AppInterfaces.IConfigurationBuilder, ConfigurationBui
             // Infrastructure Services
             builder.Services.AddSingleton<AppInterfaces.IDistributedLock, RedisDistributedLock>();
             builder.Services.AddSingleton<AppInterfaces.IRedisPublisher, RedisPublisher>();
-            builder.Services.AddSingleton<InMemoryOutboxRepository>();
+            builder.Services.AddSingleton<IOutboxRepository, RedisOutboxRepository>();
             builder.Services.AddScoped<AppInterfaces.IOutboxRepository, OutboxRepositoryAdapter>();
 
             // IOcelotConfigApplier Implementation (Infrastructure.Adapters - real impl with Redis/File providers)

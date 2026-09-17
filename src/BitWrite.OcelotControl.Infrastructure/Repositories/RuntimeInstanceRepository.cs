@@ -7,6 +7,8 @@ namespace BitWrite.OcelotControl.Infrastructure.Repositories;
 
 public class RedisRuntimeInstanceRepository : RedisRepositoryBase
 {
+    private const string RuntimeInstancesIndexKey = "ocelot:index:runtimeinstances";
+
     public RedisRuntimeInstanceRepository(IConnectionMultiplexer connectionMultiplexer) 
         : base(connectionMultiplexer)
     {
@@ -41,7 +43,31 @@ public class RedisRuntimeInstanceRepository : RedisRepositoryBase
 
     public async Task<List<RuntimeInstance>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        return new List<RuntimeInstance>();
+        var gatewayIds = await Database.SortedSetRangeByScoreAsync(
+            RuntimeInstancesIndexKey, 
+            double.NegativeInfinity, 
+            double.PositiveInfinity, 
+            Exclude.None, 
+            Order.Descending);
+
+        var instances = new List<RuntimeInstance>();
+
+        foreach (var id in gatewayIds)
+        {
+            try
+            {
+                var gatewayId = GatewayId.From(Guid.Parse(id.ToString()));
+                var instance = await GetAsync(gatewayId, cancellationToken);
+                if (instance != null)
+                    instances.Add(instance);
+            }
+            catch
+            {
+                // Skip invalid IDs
+            }
+        }
+
+        return instances;
     }
 
     public async Task AddAsync(RuntimeInstance instance, CancellationToken cancellationToken = default)
@@ -56,6 +82,7 @@ public class RedisRuntimeInstanceRepository : RedisRepositoryBase
         };
 
         await SetHashAsync(key, entries);
+        await Database.SortedSetAddAsync(RuntimeInstancesIndexKey, instance.GatewayId.Value.ToString(), ToUnixTimestamp(instance.LastHeartbeat));
     }
 
     public async Task UpdateAsync(RuntimeInstance instance, CancellationToken cancellationToken = default)
@@ -67,6 +94,12 @@ public class RedisRuntimeInstanceRepository : RedisRepositoryBase
     {
         var key = RedisKeyHelper.RuntimeInstance(gatewayId);
         await DeleteAsync(key);
+        await Database.SortedSetRemoveAsync(RuntimeInstancesIndexKey, gatewayId.Value.ToString());
+    }
+
+    private static double ToUnixTimestamp(DateTimeOffset dateTime)
+    {
+        return dateTime.ToUnixTimeSeconds();
     }
 }
 

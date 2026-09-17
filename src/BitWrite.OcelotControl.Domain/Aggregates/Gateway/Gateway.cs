@@ -86,6 +86,20 @@ public class Gateway
     }
 
     /// <summary>
+    /// Updates gateway name.
+    /// </summary>
+    public void UpdateName(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            throw new DomainException("Gateway name cannot be empty", "INVALID_GATEWAY_NAME");
+
+        Name = name.Trim();
+        UpdatedAt = DateTimeOffset.UtcNow;
+
+        AddDomainEvent(new GatewayUpdated(Id, Name, Description));
+    }
+
+    /// <summary>
     /// Updates gateway description.
     /// </summary>
     public void UpdateDescription(string? description)

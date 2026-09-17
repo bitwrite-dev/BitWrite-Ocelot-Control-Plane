@@ -66,7 +66,7 @@ This document provides a prioritized list of tasks and subtasks based on DDD arc
 | 1 | #236 | #279 | [UseCase] Snapshot Creation Flow | - | ✅ Done | — |
 | 2 | #238 | - | [UseCase] Snapshot Publication Flow | - | ✅ Done | — |
 | 3 | #240 | #280 | [UseCase] Rollback | - | ✅ Done (via #280) | — |
-| 4 | — | #308 | [Task] Gateway UseCases Implementation | — | ⏳ **Ready** | **High** |
+| 4 | — | #308 | [Task] Gateway UseCases Implementation | feature/308-gateway-usecases | 🔄 **In Progress** | **High** |
 | 5 | — | #309 | [Task] Route UseCases Implementation (11) | — | ⏳ **Ready** | **High** |
 | 6 | — | #310 | [Task] Service UseCases Implementation | — | ⏳ **Ready** | **High** |
 | 7 | — | #311 | [Task] GlobalConfiguration UseCases Implementation | — | ⏳ **Ready** | **High** |

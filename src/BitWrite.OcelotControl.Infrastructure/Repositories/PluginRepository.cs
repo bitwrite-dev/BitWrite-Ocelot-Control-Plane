@@ -9,6 +9,8 @@ namespace BitWrite.OcelotControl.Infrastructure.Repositories;
 
 public class RedisPluginRepository : RedisRepositoryBase
 {
+    private const string PluginsIndexKey = "ocelot:index:plugins";
+
     public RedisPluginRepository(IConnectionMultiplexer connectionMultiplexer) 
         : base(connectionMultiplexer)
     {
@@ -44,7 +46,31 @@ public class RedisPluginRepository : RedisRepositoryBase
 
     public async Task<List<Plugin>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        return new List<Plugin>();
+        var pluginIds = await Database.SortedSetRangeByScoreAsync(
+            PluginsIndexKey, 
+            double.NegativeInfinity, 
+            double.PositiveInfinity, 
+            Exclude.None, 
+            Order.Descending);
+
+        var plugins = new List<Plugin>();
+
+        foreach (var id in pluginIds)
+        {
+            try
+            {
+                var pluginId = PluginId.From(id.ToString());
+                var plugin = await GetAsync(pluginId, cancellationToken);
+                if (plugin != null)
+                    plugins.Add(plugin);
+            }
+            catch
+            {
+                // Skip invalid IDs
+            }
+        }
+
+        return plugins;
     }
 
     public async Task AddAsync(Plugin plugin, CancellationToken cancellationToken = default)
@@ -52,7 +78,7 @@ public class RedisPluginRepository : RedisRepositoryBase
         var key = RedisKeyHelper.Plugin(plugin.Id);
         var entries = new HashEntry[]
         {
-            new("Id", plugin.Id.Value.ToString()),
+            new("Id", plugin.Id.Value),
             new("Name", plugin.Name),
             new("Version", plugin.Version),
             new("Description", plugin.Description ?? ""),
@@ -65,6 +91,7 @@ public class RedisPluginRepository : RedisRepositoryBase
         };
 
         await SetHashAsync(key, entries);
+        await Database.SortedSetAddAsync(PluginsIndexKey, plugin.Id.Value, ToUnixTimestamp(plugin.InstalledAt));
     }
 
     public async Task UpdateAsync(Plugin plugin, CancellationToken cancellationToken = default)
@@ -76,6 +103,12 @@ public class RedisPluginRepository : RedisRepositoryBase
     {
         var key = RedisKeyHelper.Plugin(id);
         await DeleteAsync(key);
+        await Database.SortedSetRemoveAsync(PluginsIndexKey, id.Value);
+    }
+
+    private static double ToUnixTimestamp(DateTimeOffset dateTime)
+    {
+        return dateTime.ToUnixTimeSeconds();
     }
 }
 

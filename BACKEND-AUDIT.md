@@ -100,10 +100,10 @@
 | RedisRouteRepository | `Repositories/RouteRepository.cs` | ✅ Complete | — |
 | RedisServiceRepository | `Repositories/ServiceRepository.cs` | ✅ Complete | — |
 | RedisSnapshotRepository | `Repositories/SnapshotRepository.cs` | ✅ Complete | — |
-| RedisPublicationRepository | `Repositories/PublicationRepository.cs` | ⚠️ Partial (GetLatestAsync/GetAllAsync stubs) | #316 |
+| RedisPublicationRepository | `Repositories/PublicationRepository.cs` | ✅ Complete | #351 |
 | RedisGlobalConfigurationRepository | `Repositories/GlobalConfigurationRepository.cs` | ✅ Complete | — |
-| RedisRuntimeInstanceRepository | `Repositories/RuntimeInstanceRepository.cs` | ⚠️ Partial (GetAllAsync stub) | #317 |
-| RedisPluginRepository | `Repositories/PluginRepository.cs` | ⚠️ Partial (GetAllAsync stub) | #317 |
+| RedisRuntimeInstanceRepository | `Repositories/RuntimeInstanceRepository.cs` | ✅ Complete | #352 |
+| RedisPluginRepository | `Repositories/PluginRepository.cs` | ✅ Complete | #352 |
 
 **Other Infrastructure:**
 

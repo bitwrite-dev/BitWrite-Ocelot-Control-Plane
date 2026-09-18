@@ -68,6 +68,7 @@ This document provides a prioritized list of tasks and subtasks based on DDD arc
 | 3 | #240 | #280 | [UseCase] Rollback | - | ✅ Done (via #280) | — |
 | 4 | — | #308 | [Task] Gateway UseCases Implementation | feature/308-gateway-usecases | ✅ **Done** | **High** |
 | 5 | — | #309 | [Task] Route UseCases Implementation (11) | — | ⏳ **Ready** | **High** |
+|   |   | #354 | [Subtask] Route UseCases - Create/Update/Delete | feature/354-route-crud | ✅ **Done** | **High** |
 |   |   | #354 | [Subtask] Route UseCases - Create/Update/Delete | — | ⏳ **Ready** | **High** |
 |   |   | #355 | [Subtask] Route UseCases - Enable/Disable/Status | — | ⏳ **Ready** | **High** |
 |   |   | #356 | [Subtask] Route UseCases - Validate/Preview | — | ⏳ **Ready** | **High** |

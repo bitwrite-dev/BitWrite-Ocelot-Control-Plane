@@ -76,8 +76,7 @@ This document provides a prioritized list of tasks and subtasks based on DDD arc
 |   |   | #363 | [Subtask] Service UseCases - Create/Update/Delete | feature/363-service-crud | ✅ **Done** | **High** |
 |   |   | #364 | [Subtask] Service UseCases - Get/List | feature/364-service-get-list | ✅ **Done** | **High** |
 |   |   | #365 | [Subtask] Service UseCases - GetServiceRoutes | feature/365-service-routes | ✅ **Done** | **High** |
-| 7 | — | #311 | [Task] GlobalConfiguration UseCases Implementation (2) | — | ⏳ **Ready** | **High** |
-|   |   | #369 | [Subtask] GlobalConfiguration UseCases - Get/Update | feature/369-globalconfig-get-update | 🔄 **In Progress** | **High** |
+| 7 | — | #311 | [Task] GlobalConfiguration UseCases Implementation (2) | feature/369-globalconfig-get-update | ✅ **Done** | **High** |
 | 8 | — | #312 | [Task] Snapshot Query UseCases Implementation (7) | — | ⏳ **Ready** | **High** |
 | 9 | — | #313 | [Task] Publication Query UseCases Implementation (3) | — | ⏳ **Ready** | **High** |
 | 10 | — | #314 | [Task] Plugin UseCases Implementation | — | ⏳ **Ready** | **High** |
@@ -227,7 +226,7 @@ Value Objects → Domain Services → Aggregates → Domain Events → Use Cases
 | 8 | **#308** | Gateway UseCases | 5 | — | ✅ Done |
 | 9 | **#309** | Route UseCases | 11 | #354, #355, #356, #357 | ✅ Done |
 | 10 | **#310** | Service UseCases | 6 | #363, #364, #365 | ✅ Done |
-| 11 | **#311** | GlobalConfiguration UseCases | 2 | — | ⏳ Ready |
+| 11 | **#311** | GlobalConfiguration UseCases | 2 | #369 | ✅ Done |
 | 12 | **#312** | Snapshot Query UseCases | 7 | — | ⏳ Ready |
 | 13 | **#313** | Publication Query UseCases | 3 | — | ⏳ Ready |
 | 14 | **#314** | Plugin UseCases | 6 | — | ⏳ Ready |

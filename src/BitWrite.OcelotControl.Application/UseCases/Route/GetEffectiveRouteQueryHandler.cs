@@ -1,6 +1,7 @@
 using BitWrite.OcelotControl.Application.Interfaces;
 using BitWrite.OcelotControl.Application.UseCases.Route;
 using DomainRoute = BitWrite.OcelotControl.Domain.Aggregates.Route.Route;
+using DomainGlobalConfig = BitWrite.OcelotControl.Domain.Services.GlobalConfiguration;
 using BitWrite.OcelotControl.Domain.Services;
 using BitWrite.OcelotControl.Domain.ValueObjects.Configuration;
 using BitWrite.OcelotControl.Domain.ValueObjects.Identity;
@@ -43,7 +44,7 @@ public class GetEffectiveRouteQueryHandler
         var routeConfig = MapToRouteConfiguration(route);
         var ocelotConfig = _configurationBuilder.BuildConfiguration(
             new List<RouteConfiguration> { routeConfig },
-            new GlobalConfiguration { BaseUrl = "", RequestIdKey = "" },
+            new DomainGlobalConfig { BaseUrl = "", RequestIdKey = "" },
             OcelotVersion.V20_0);
 
         // Canonicalize and return JSON

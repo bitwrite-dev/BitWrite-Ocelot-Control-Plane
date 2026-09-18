@@ -78,7 +78,7 @@ This document provides a prioritized list of tasks and subtasks based on DDD arc
 |   |   | #365 | [Subtask] Service UseCases - GetServiceRoutes | feature/365-service-routes | ✅ **Done** | **High** |
 | 7 | — | #311 | [Task] GlobalConfiguration UseCases Implementation (2) | feature/369-globalconfig-get-update | ✅ **Done** | **High** |
 | 8 | — | #312 | [Task] Snapshot Query UseCases Implementation (7) | — | ⏳ **Ready** | **High** |
-|   |   | #371 | [Subtask] Snapshot Query UseCases - List/Get/Validate | feature/371-snapshot-list-get-validate | 🔄 **In Progress** | **High** |
+|   |   | #371 | [Subtask] Snapshot Query UseCases - List/Get/Validate | feature/371-snapshot-list-get-validate | ✅ **Done** | **High** |
 |   |   | #372 | [Subtask] Snapshot Query UseCases - Compare/Clone/Export | — | ⏳ **Ready** | **High** |
 |   |   | #373 | [Subtask] Snapshot Query UseCases - Deployment Status | — | ⏳ **Ready** | **High** |
 | 9 | — | #313 | [Task] Publication Query UseCases Implementation (3) | — | ⏳ **Ready** | **High** |

@@ -2,6 +2,7 @@ using BitWrite.OcelotControl.Application.Interfaces;
 using BitWrite.OcelotControl.Application.UseCases.Service;
 using DomainService = BitWrite.OcelotControl.Domain.Aggregates.Service.Service;
 using BitWrite.OcelotControl.Domain.Events;
+using BitWrite.OcelotControl.Domain.ValueObjects.Configuration;
 using BitWrite.OcelotControl.Domain.ValueObjects.Identity;
 
 namespace BitWrite.OcelotControl.Application.UseCases.Service;
@@ -23,6 +24,15 @@ public class CreateServiceCommandHandler
     {
         // Create Service aggregate
         var service = DomainService.Create(command.Name, command.Description);
+
+        // Add downstream targets if provided
+        if (command.DownstreamTargets != null && command.DownstreamTargets.Any())
+        {
+            foreach (var target in command.DownstreamTargets)
+            {
+                service.AddHost(target.Host, target.Port);
+            }
+        }
 
         // Persist
         await _serviceRepository.AddAsync(service, cancellationToken);
@@ -53,6 +63,7 @@ public class CreateServiceCommandHandler
             service.Id,
             service.Name,
             service.Description,
+            service.Endpoints.Select(e => new ServiceEndpoint(e.Host, e.Port, e.Weight, e.IsActive)).ToList(),
             service.CreatedAt,
             service.UpdatedAt
         );

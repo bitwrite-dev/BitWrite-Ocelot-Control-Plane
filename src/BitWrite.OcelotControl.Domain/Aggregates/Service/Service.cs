@@ -137,8 +137,11 @@ public class Service
         if (string.IsNullOrWhiteSpace(name))
             throw new DomainException("Service name cannot be empty", "INVALID_SERVICE_NAME");
 
+        var oldName = Name;
         Name = name.Trim();
         UpdatedAt = DateTimeOffset.UtcNow;
+
+        AddDomainEvent(new ServiceUpdated(Id));
     }
 
     /// <summary>
@@ -148,6 +151,8 @@ public class Service
     {
         Description = description?.Trim();
         UpdatedAt = DateTimeOffset.UtcNow;
+
+        AddDomainEvent(new ServiceUpdated(Id));
     }
 
     /// <summary>

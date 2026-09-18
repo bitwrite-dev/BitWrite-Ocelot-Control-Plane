@@ -2,6 +2,7 @@ using BitWrite.OcelotControl.Application.Interfaces;
 using BitWrite.OcelotControl.Application.UseCases.Service;
 using DomainService = BitWrite.OcelotControl.Domain.Aggregates.Service.Service;
 using BitWrite.OcelotControl.Domain.Events;
+using BitWrite.OcelotControl.Domain.ValueObjects.Configuration;
 using BitWrite.OcelotControl.Domain.ValueObjects.Identity;
 
 namespace BitWrite.OcelotControl.Application.UseCases.Service;
@@ -26,7 +27,7 @@ public class UpdateServiceCommandHandler
             return null;
 
         // Update name if provided
-        if (!string.IsNullOrWhiteSpace(command.Name) && command.Name != service.Name)
+        if (!string.IsNullOrWhiteSpace(command.Name))
         {
             service.UpdateName(command.Name);
         }
@@ -35,6 +36,43 @@ public class UpdateServiceCommandHandler
         if (command.Description != null)
         {
             service.UpdateDescription(command.Description);
+        }
+
+        // Update downstream targets if provided
+        if (command.DownstreamTargets != null)
+        {
+            // Clear existing endpoints and add new ones
+            // Note: The aggregate doesn't have a clear method, so we'll remove and re-add
+            var existingEndpoints = service.Endpoints.ToList();
+            
+            // Remove endpoints not in the new list
+            foreach (var existing in existingEndpoints)
+            {
+                var found = command.DownstreamTargets.Any(t => t.Host.Equals(existing.Host, StringComparison.OrdinalIgnoreCase) && t.Port == existing.Port);
+                if (!found)
+                {
+                    try
+                    {
+                        service.RemoveHost(existing.Host, existing.Port);
+                    }
+                    catch
+                    {
+                        // Ignore if can't remove (e.g., last endpoint)
+                    }
+                }
+            }
+
+            // Add new endpoints
+            foreach (var target in command.DownstreamTargets)
+            {
+                var existing = existingEndpoints.FirstOrDefault(e => 
+                    e.Host.Equals(target.Host, StringComparison.OrdinalIgnoreCase) && e.Port == target.Port);
+                
+                if (existing == null)
+                {
+                    service.AddHost(target.Host, target.Port);
+                }
+            }
         }
 
         // Persist
@@ -66,6 +104,7 @@ public class UpdateServiceCommandHandler
             service.Id,
             service.Name,
             service.Description,
+            service.Endpoints.Select(e => new ServiceEndpoint(e.Host, e.Port, e.Weight, e.IsActive)).ToList(),
             service.CreatedAt,
             service.UpdatedAt
         );

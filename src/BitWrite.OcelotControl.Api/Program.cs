@@ -3,6 +3,7 @@ using BitWrite.OcelotControl.Api.Validators;
 using AppInterfaces = BitWrite.OcelotControl.Application.Interfaces;
 using BitWrite.OcelotControl.Application.UseCases.Snapshot;
 using BitWrite.OcelotControl.Application.UseCases.Publication;
+using BitWrite.OcelotControl.Application.UseCases.Route;
 using BitWrite.OcelotControl.Application.Events;
 using DomainServices = BitWrite.OcelotControl.Domain.Services;
 using BitWrite.OcelotControl.Infrastructure.Adapters;
@@ -82,6 +83,11 @@ builder.Services.AddScoped<AppInterfaces.IConfigurationBuilder, ConfigurationBui
             builder.Services.AddScoped<CreateSnapshotCommandHandler>();
             builder.Services.AddScoped<PublishSnapshotCommandHandler>();
             builder.Services.AddScoped<RollbackSnapshotCommandHandler>();
+
+            // Route UseCase Handlers
+            builder.Services.AddScoped<CreateRouteCommandHandler>();
+            builder.Services.AddScoped<UpdateRouteCommandHandler>();
+            builder.Services.AddScoped<DeleteRouteCommandHandler>();
 
             // Domain Event Dispatcher
             builder.Services.AddScoped<AppInterfaces.IDomainEventDispatcher, DomainEventDispatcher>();

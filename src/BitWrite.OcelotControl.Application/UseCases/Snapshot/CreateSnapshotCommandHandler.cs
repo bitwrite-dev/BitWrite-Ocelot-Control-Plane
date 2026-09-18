@@ -1,6 +1,6 @@
 using BitWrite.OcelotControl.Application.Interfaces;
 using BitWrite.OcelotControl.Domain.Aggregates.GlobalConfiguration;
-using BitWrite.OcelotControl.Domain.Aggregates.Route;
+using DomainRoute = BitWrite.OcelotControl.Domain.Aggregates.Route.Route;
 using BitWrite.OcelotControl.Domain.Aggregates.Service;
 using DomainSnapshot = BitWrite.OcelotControl.Domain.Aggregates.Snapshot.Snapshot;
 using BitWrite.OcelotControl.Domain.Events;
@@ -175,7 +175,7 @@ public class CreateSnapshotCommandHandler
         return version;
     }
 
-    private DomainRouteConfig MapToRouteConfiguration(Route route)
+    private DomainRouteConfig MapToRouteConfiguration(DomainRoute route)
     {
         return new DomainRouteConfig
         {
@@ -202,7 +202,7 @@ public class CreateSnapshotCommandHandler
         };
     }
 
-    private IEnumerable<string> GetFeaturesFromRoute(Route route)
+    private IEnumerable<string> GetFeaturesFromRoute(DomainRoute route)
     {
         var features = new List<string>();
         

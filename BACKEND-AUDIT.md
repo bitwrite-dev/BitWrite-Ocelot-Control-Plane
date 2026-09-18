@@ -66,19 +66,25 @@
 | **ILicenseRepository** | — | ❌ **Missing** (#322) |
 | **IAuditLogRepository** | — | ❌ **Missing** (#322) |
 
-**Use Cases (3 exist, 45+ missing):**
+**Use Cases (8 exist, 40+ missing):**
 
 | UseCase | Files | Status | Issue |
 |---|---|---|---|
 | CreateSnapshot | `UseCases/Snapshot/CreateSnapshotCommand.cs`, `CreateSnapshotCommandHandler.cs` | ✅ Complete | — |
 | PublishSnapshot | `UseCases/Publication/PublishSnapshotCommand.cs`, `PublishSnapshotCommandHandler.cs` | ✅ Complete | — |
 | RollbackSnapshot | `UseCases/Publication/RollbackSnapshotCommand.cs`, `RollbackSnapshotCommandHandler.cs` | ✅ Complete | — |
+| RegisterGateway | `UseCases/Gateway/RegisterGatewayCommand.cs`, `RegisterGatewayCommandHandler.cs` | ✅ Complete | #308 |
+| GetGateway | `UseCases/Gateway/GetGatewayQuery.cs`, `GetGatewayQueryHandler.cs` | ✅ Complete | #308 |
+| ListGateways | `UseCases/Gateway/ListGatewaysQuery.cs`, `ListGatewaysQueryHandler.cs` | ✅ Complete | #308 |
+| UpdateGateway | `UseCases/Gateway/UpdateGatewayCommand.cs`, `UpdateGatewayCommandHandler.cs` | ✅ Complete | #308 |
+| UpdateGatewayStatus | `UseCases/Gateway/UpdateGatewayStatusCommand.cs`, `UpdateGatewayStatusCommandHandler.cs` | ✅ Complete | #308 |
 
 **Missing Use Cases by Controller:**
 
 | Controller | Missing UseCases | Count | Issue |
 |---|---|---|---|
-| GatewaysController | RegisterGateway, UpdateGateway, UpdateGatewayStatus, GetGateway, ListGateways | 5 | #308 |
+| GatewaysController | ~~RegisterGateway, UpdateGateway, UpdateGatewayStatus, GetGateway, ListGateways~~ | ~~5~~ 0 | #308 ✅ |
+| RoutesController | CreateRoute, UpdateRoute, EnableRoute, DisableRoute, DeleteRoute, ValidateRoute, PreviewRoute, GetEffectiveRoute, GetRouteHistory, ListRoutes, GetRoute | 11 | #309 |
 | RoutesController | CreateRoute, UpdateRoute, EnableRoute, DisableRoute, DeleteRoute, ValidateRoute, PreviewRoute, GetEffectiveRoute, GetRouteHistory, ListRoutes, GetRoute | 11 | #309 |
 | ServicesController | CreateService, UpdateService, DeleteService, GetService, ListServices, GetServiceRoutes | 6 | #310 |
 | GlobalConfigurationController | GetGlobalConfiguration, UpdateGlobalConfiguration | 2 | #311 |
@@ -218,9 +224,9 @@
 | Layer | Completion | Remaining Work | Key Issues |
 |---|---|---|---|
 | Domain | ~90% | License + AuditLog aggregates, Missing Domain Events | #302, #305, #339 |
-| Application | ~20% | 50+ UseCases, 2 missing interfaces (License, Audit) | #308-#315 |
+| Application | ~25% | 45+ UseCases, 2 missing interfaces (License, Audit) | #309-#315 |
 | Infrastructure | ~75% | 3 partial repos (Pub, Runtime, Plugin), License/Audit repos | #316, #317, #303, #306 |
-| API | ~30% | 51 stub endpoints | #324-#333 |
+| API | ~30% | 46 stub endpoints (5 Gateway done) | #324-#333 |
 | Tests | ~40% | 12+ test areas missing | #334-#338 |
 | Licensing | 0% | Full bounded context | #296, #302-304, #332 |
 | Audit | 5% | Persistence + queries | #297, #305-307, #333 |

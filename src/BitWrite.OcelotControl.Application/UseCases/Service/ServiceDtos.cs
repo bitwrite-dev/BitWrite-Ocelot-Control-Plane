@@ -25,3 +25,12 @@ public record ServiceListResponse(
     int Page,
     int PageSize
 );
+
+public record GetServiceQuery(
+    ServiceId Id
+);
+
+public record ListServicesQuery(
+    int Page = 1,
+    int PageSize = 20
+);

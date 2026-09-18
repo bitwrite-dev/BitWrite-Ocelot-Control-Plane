@@ -33,3 +33,37 @@ public record ValidateSnapshotResponse(
     bool IsValid,
     IReadOnlyList<string> Errors
 );
+
+public record CompareSnapshotsQuery(
+    SnapshotVersion VersionA,
+    SnapshotVersion VersionB
+);
+
+public record CompareSnapshotsResponse(
+    SnapshotVersion VersionA,
+    SnapshotVersion VersionB,
+    IReadOnlyList<string> Differences
+);
+
+public record CloneSnapshotCommand(
+    SnapshotVersion Version,
+    string NewName,
+    string InitiatedBy,
+    string CorrelationId = ""
+);
+
+public record CloneSnapshotResponse(
+    SnapshotVersion NewVersion,
+    SnapshotVersion ClonedFromVersion,
+    string Name
+);
+
+public record ExportSnapshotQuery(
+    SnapshotVersion Version
+);
+
+public record ExportSnapshotResponse(
+    SnapshotVersion Version,
+    string Content,
+    string Format
+);

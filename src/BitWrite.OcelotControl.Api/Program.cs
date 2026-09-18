@@ -115,6 +115,9 @@ builder.Services.AddScoped<AppInterfaces.IConfigurationBuilder, ConfigurationBui
             builder.Services.AddScoped<ListSnapshotsQueryHandler>();
             builder.Services.AddScoped<GetSnapshotQueryHandler>();
             builder.Services.AddScoped<ValidateSnapshotCommandHandler>();
+            builder.Services.AddScoped<CompareSnapshotsQueryHandler>();
+            builder.Services.AddScoped<CloneSnapshotCommandHandler>();
+            builder.Services.AddScoped<ExportSnapshotQueryHandler>();
             // Gateway UseCase Handlers
             builder.Services.AddScoped<RegisterGatewayCommandHandler>();
             builder.Services.AddScoped<GetGatewayQueryHandler>();

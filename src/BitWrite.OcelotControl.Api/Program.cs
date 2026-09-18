@@ -111,6 +111,10 @@ builder.Services.AddScoped<AppInterfaces.IConfigurationBuilder, ConfigurationBui
             // GlobalConfiguration UseCase Handlers
             builder.Services.AddScoped<GetGlobalConfigurationQueryHandler>();
             builder.Services.AddScoped<UpdateGlobalConfigurationCommandHandler>();
+            // Snapshot UseCase Handlers
+            builder.Services.AddScoped<ListSnapshotsQueryHandler>();
+            builder.Services.AddScoped<GetSnapshotQueryHandler>();
+            builder.Services.AddScoped<ValidateSnapshotCommandHandler>();
             // Gateway UseCase Handlers
             builder.Services.AddScoped<RegisterGatewayCommandHandler>();
             builder.Services.AddScoped<GetGatewayQueryHandler>();

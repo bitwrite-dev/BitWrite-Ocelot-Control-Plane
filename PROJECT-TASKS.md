@@ -72,10 +72,10 @@ This document provides a prioritized list of tasks and subtasks based on DDD arc
 |   |   | #355 | [Subtask] Route UseCases - Enable/Disable/Status | feature/355-route-enable-disable | ✅ **Done** | **High** |
 |   |   | #356 | [Subtask] Route UseCases - Validate/Preview | feature/356-route-validate-preview | ✅ **Done** | **High** |
 |   |   | #357 | [Subtask] Route UseCases - List/Get/History | feature/357-route-list-get-history | ✅ **Done** | **High** |
-| 6 | — | #310 | [Task] Service UseCases Implementation (6) | — | ⏳ **Ready** | **High** |
+| 6 | — | #310 | [Task] Service UseCases Implementation (6) | feature/310-service-usecases | ✅ **Done** | **High** |
 |   |   | #363 | [Subtask] Service UseCases - Create/Update/Delete | feature/363-service-crud | ✅ **Done** | **High** |
 |   |   | #364 | [Subtask] Service UseCases - Get/List | feature/364-service-get-list | ✅ **Done** | **High** |
-|   |   | #365 | [Subtask] Service UseCases - GetServiceRoutes | feature/365-service-routes | 🔄 **In Progress** | **High** |
+|   |   | #365 | [Subtask] Service UseCases - GetServiceRoutes | feature/365-service-routes | ✅ **Done** | **High** |
 | 7 | — | #311 | [Task] GlobalConfiguration UseCases Implementation | — | ⏳ **Ready** | **High** |
 | 8 | — | #312 | [Task] Snapshot Query UseCases Implementation (7) | — | ⏳ **Ready** | **High** |
 | 9 | — | #313 | [Task] Publication Query UseCases Implementation (3) | — | ⏳ **Ready** | **High** |
@@ -221,16 +221,16 @@ Value Objects → Domain Services → Aggregates → Domain Events → Use Cases
 | 7 | **#339** | Missing Domain Events | All new UseCases | ⏳ Ready |
 
 #### 🟠 Phase 2: Core UseCases (Week 2-4)
-| Order | Issue | Title | Endpoints | Subtasks |
-|---|---|---|---|---|
-| 8 | **#308** | Gateway UseCases | 5 | — |
-| 9 | **#309** | Route UseCases | 11 | #354, #355, #356, #357 |
-| 10 | **#310** | Service UseCases | 6 | #363, #364, #365 |
-| 11 | **#311** | GlobalConfiguration UseCases | 2 | — |
-| 12 | **#312** | Snapshot Query UseCases | 7 | — |
-| 13 | **#313** | Publication Query UseCases | 3 | — |
-| 14 | **#314** | Plugin UseCases | 6 | — |
-| 15 | **#315** | Runtime UseCases | 4 | — |
+| Order | Issue | Title | Endpoints | Subtasks | Status |
+|---|---|---|---|---|---|
+| 8 | **#308** | Gateway UseCases | 5 | — | ✅ Done |
+| 9 | **#309** | Route UseCases | 11 | #354, #355, #356, #357 | ✅ Done |
+| 10 | **#310** | Service UseCases | 6 | #363, #364, #365 | ✅ Done |
+| 11 | **#311** | GlobalConfiguration UseCases | 2 | — | ⏳ Ready |
+| 12 | **#312** | Snapshot Query UseCases | 7 | — | ⏳ Ready |
+| 13 | **#313** | Publication Query UseCases | 3 | — | ⏳ Ready |
+| 14 | **#314** | Plugin UseCases | 6 | — | ⏳ Ready |
+| 15 | **#315** | Runtime UseCases | 4 | — | ⏳ Ready |
 
 #### 🟡 Phase 3: Bounded Contexts (Week 3-4, Parallel)
 | Order | Issue | Title |

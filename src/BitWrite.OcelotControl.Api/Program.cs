@@ -104,6 +104,8 @@ builder.Services.AddScoped<AppInterfaces.IConfigurationBuilder, ConfigurationBui
             builder.Services.AddScoped<CreateServiceCommandHandler>();
             builder.Services.AddScoped<UpdateServiceCommandHandler>();
             builder.Services.AddScoped<DeleteServiceCommandHandler>();
+            builder.Services.AddScoped<GetServiceQueryHandler>();
+            builder.Services.AddScoped<ListServicesQueryHandler>();
             // Gateway UseCase Handlers
             builder.Services.AddScoped<RegisterGatewayCommandHandler>();
             builder.Services.AddScoped<GetGatewayQueryHandler>();

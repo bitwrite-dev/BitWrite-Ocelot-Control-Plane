@@ -3,6 +3,7 @@ using BitWrite.OcelotControl.Application.UseCases.Route;
 using DomainRoute = BitWrite.OcelotControl.Domain.Aggregates.Route.Route;
 using BitWrite.OcelotControl.Domain.Events;
 using BitWrite.OcelotControl.Domain.ValueObjects.Identity;
+using BitWrite.OcelotControl.Domain.Events;
 
 namespace BitWrite.OcelotControl.Application.UseCases.Route;
 
@@ -21,41 +22,32 @@ public class EnableRouteCommandHandler
 
     public async Task<RouteResponse?> HandleAsync(EnableRouteCommand command, CancellationToken cancellationToken = default)
     {
-        var route = await _routeRepository.GetAsync(command.Id, cancellationToken);
+        var route = await _routeRepository.GetAsync(command.RouteId, cancellationToken);
         if (route == null)
             return null;
 
-        // Enable the route
-        route.Enable();
+        if (route.IsEnabled)
+            return MapToResponse(route);
 
-        // Persist
+        route.Enable(command.CorrelationId);
+
         await _routeRepository.UpdateAsync(route, cancellationToken);
 
-        // Dispatch domain events
-        foreach (var domainEvent in route.DomainEvents)
-        {
-            await _eventDispatcher.DispatchAsync(domainEvent, cancellationToken);
-        }
-        route.ClearDomainEvents();
-
-        // Dispatch audit event
-        var auditEvent = new AuditRecorded(
+        await _eventDispatcher.DispatchAsync(new AuditRecorded(
             command.InitiatedBy,
-            "EnableRoute",
+            "Enable",
             "Route",
-            route.Id.Value.ToString(),
-            "Success"
-        );
-        await _eventDispatcher.DispatchAsync(auditEvent, cancellationToken);
+            command.RouteId.ToString(),
+            "Success"), cancellationToken);
 
         return MapToResponse(route);
     }
 
-    private static RouteResponse MapToResponse(DomainRoute route)
+    private static RouteResponse MapToResponse(Domain.Aggregates.Route.Route route)
     {
         return new RouteResponse(
             route.Id,
-            route.Key,
+            route.Key ?? "",
             route.Method,
             route.UpstreamPath,
             route.ServiceId,
@@ -67,7 +59,6 @@ public class EnableRouteCommandHandler
             route.CacheOptions,
             route.LoadBalancerOptions,
             route.CreatedAt,
-            route.UpdatedAt
-        );
+            route.UpdatedAt);
     }
 }

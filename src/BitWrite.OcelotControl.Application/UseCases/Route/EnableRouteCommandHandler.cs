@@ -1,0 +1,60 @@
+using BitWrite.OcelotControl.Application.Interfaces;
+using BitWrite.OcelotControl.Domain.Events;
+
+namespace BitWrite.OcelotControl.Application.UseCases.Route;
+
+public class EnableRouteCommandHandler
+{
+    private readonly IRouteRepository _routeRepository;
+    private readonly IDomainEventDispatcher _eventDispatcher;
+
+    public EnableRouteCommandHandler(
+        IRouteRepository routeRepository,
+        IDomainEventDispatcher eventDispatcher)
+    {
+        _routeRepository = routeRepository;
+        _eventDispatcher = eventDispatcher;
+    }
+
+    public async Task<RouteResponse?> HandleAsync(EnableRouteCommand command, CancellationToken cancellationToken = default)
+    {
+        var route = await _routeRepository.GetAsync(command.RouteId, cancellationToken);
+        if (route == null)
+            return null;
+
+        if (route.IsEnabled)
+            return MapToResponse(route);
+
+        route.Enable(command.CorrelationId);
+
+        await _routeRepository.UpdateAsync(route, cancellationToken);
+
+        await _eventDispatcher.DispatchAsync(new AuditRecorded(
+            command.InitiatedBy,
+            "Enable",
+            "Route",
+            command.RouteId.ToString(),
+            "Success"), cancellationToken);
+
+        return MapToResponse(route);
+    }
+
+    private static RouteResponse MapToResponse(Domain.Aggregates.Route.Route route)
+    {
+        return new RouteResponse(
+            route.Id,
+            route.Key ?? "",
+            route.Method,
+            route.UpstreamPath,
+            route.ServiceId,
+            route.IsEnabled,
+            route.DownstreamTargets,
+            route.AuthenticationOptions,
+            route.RateLimitOptions,
+            route.QoSOptions,
+            route.CacheOptions,
+            route.LoadBalancerOptions,
+            route.CreatedAt,
+            route.UpdatedAt);
+    }
+}

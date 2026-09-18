@@ -89,6 +89,9 @@ builder.Services.AddScoped<AppInterfaces.IConfigurationBuilder, ConfigurationBui
             builder.Services.AddScoped<CreateRouteCommandHandler>();
             builder.Services.AddScoped<UpdateRouteCommandHandler>();
             builder.Services.AddScoped<DeleteRouteCommandHandler>();
+            builder.Services.AddScoped<EnableRouteCommandHandler>();
+            builder.Services.AddScoped<DisableRouteCommandHandler>();
+            builder.Services.AddScoped<GetRouteStatusCommandHandler>();
             // Gateway UseCase Handlers
             builder.Services.AddScoped<RegisterGatewayCommandHandler>();
             builder.Services.AddScoped<GetGatewayQueryHandler>();

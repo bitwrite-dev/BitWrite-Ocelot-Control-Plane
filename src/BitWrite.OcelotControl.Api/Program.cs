@@ -5,6 +5,7 @@ using BitWrite.OcelotControl.Application.UseCases.Snapshot;
 using BitWrite.OcelotControl.Application.UseCases.Publication;
 using BitWrite.OcelotControl.Application.UseCases.Route;
 using BitWrite.OcelotControl.Application.UseCases.Service;
+using BitWrite.OcelotControl.Application.UseCases.GlobalConfiguration;
 using BitWrite.OcelotControl.Application.UseCases.Gateway;
 using BitWrite.OcelotControl.Application.Events;
 using DomainServices = BitWrite.OcelotControl.Domain.Services;
@@ -107,6 +108,9 @@ builder.Services.AddScoped<AppInterfaces.IConfigurationBuilder, ConfigurationBui
             builder.Services.AddScoped<GetServiceQueryHandler>();
             builder.Services.AddScoped<ListServicesQueryHandler>();
             builder.Services.AddScoped<GetServiceRoutesQueryHandler>();
+            // GlobalConfiguration UseCase Handlers
+            builder.Services.AddScoped<GetGlobalConfigurationQueryHandler>();
+            builder.Services.AddScoped<UpdateGlobalConfigurationCommandHandler>();
             // Gateway UseCase Handlers
             builder.Services.AddScoped<RegisterGatewayCommandHandler>();
             builder.Services.AddScoped<GetGatewayQueryHandler>();

@@ -1,6 +1,7 @@
 using BitWrite.OcelotControl.Application.Interfaces;
 using BitWrite.OcelotControl.Application.UseCases.Route;
 using DomainRoute = BitWrite.OcelotControl.Domain.Aggregates.Route.Route;
+using DomainGlobalConfig = BitWrite.OcelotControl.Domain.Services.GlobalConfiguration;
 using BitWrite.OcelotControl.Domain.Events;
 using BitWrite.OcelotControl.Domain.Services;
 using BitWrite.OcelotControl.Domain.ValueObjects.Configuration;
@@ -76,7 +77,7 @@ public class ValidateRouteCommandHandler
         // For single route validation, we need a minimal global config
         var ocelotConfig = _configurationBuilder.BuildConfiguration(
             new List<RouteConfiguration> { routeConfig },
-            new GlobalConfiguration { BaseUrl = "", RequestIdKey = "" },
+            new DomainGlobalConfig { BaseUrl = "", RequestIdKey = "" },
             OcelotVersion.V20_0);
 
         // 5. Ocelot capability validation

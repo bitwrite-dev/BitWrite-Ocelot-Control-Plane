@@ -29,6 +29,33 @@ public record RouteListResponse(
     int PageSize
 );
 
+public record ListRoutesQuery(
+    int Page = 1,
+    int PageSize = 20,
+    string? ServiceId = null,
+    bool? IsEnabled = null,
+    string? Search = null
+);
+
+public record GetRouteQuery(
+    RouteId Id
+);
+
+public record RouteHistoryQuery(
+    RouteId Id
+);
+
+public record RouteHistoryResponse(
+    IReadOnlyList<RouteHistoryItem> History
+);
+
+public record RouteHistoryItem(
+    DateTimeOffset Timestamp,
+    string Action,
+    string? ChangedBy,
+    string? Details
+);
+
 public record ValidateRouteCommand(
     RouteId Id,
     string InitiatedBy = "",

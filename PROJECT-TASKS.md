@@ -70,8 +70,7 @@ This document provides a prioritized list of tasks and subtasks based on DDD arc
 | 5 | — | #309 | [Task] Route UseCases Implementation (11) | — | ⏳ **Ready** | **High** |
 |   |   | #354 | [Subtask] Route UseCases - Create/Update/Delete | feature/354-route-crud | ✅ **Done** | **High** |
 |   |   | #355 | [Subtask] Route UseCases - Enable/Disable/Status | feature/355-route-enable-disable | ✅ **Done** | **High** |
-|   |   | #355 | [Subtask] Route UseCases - Enable/Disable/Status | feature/355-route-enable-disable-status | ✅ **Done** | **High** |
-|   |   | #356 | [Subtask] Route UseCases - Validate/Preview | — | ⏳ **Ready** | **High** |
+|   |   | #356 | [Subtask] Route UseCases - Validate/Preview | feature/356-route-validate-preview | 🔄 **In Progress** | **High** |
 |   |   | #357 | [Subtask] Route UseCases - List/Get/History | — | ⏳ **Ready** | **High** |
 | 6 | — | #310 | [Task] Service UseCases Implementation | — | ⏳ **Ready** | **High** |
 | 7 | — | #311 | [Task] GlobalConfiguration UseCases Implementation | — | ⏳ **Ready** | **High** |

@@ -28,3 +28,30 @@ public record RouteListResponse(
     int Page,
     int PageSize
 );
+
+public record ValidateRouteCommand(
+    RouteId Id,
+    string InitiatedBy = "",
+    string CorrelationId = ""
+);
+
+public record ValidateRouteResponse(
+    bool IsValid,
+    IReadOnlyList<string> Errors
+);
+
+public record PreviewRouteQuery(
+    RouteId Id
+);
+
+public record PreviewRouteResponse(
+    string OcelotJson
+);
+
+public record GetEffectiveRouteQuery(
+    RouteId Id
+);
+
+public record GetEffectiveRouteResponse(
+    string OcelotJson
+);

@@ -74,7 +74,7 @@ This document provides a prioritized list of tasks and subtasks based on DDD arc
 |   |   | #357 | [Subtask] Route UseCases - List/Get/History | feature/357-route-list-get-history | ✅ **Done** | **High** |
 | 6 | — | #310 | [Task] Service UseCases Implementation (6) | — | ⏳ **Ready** | **High** |
 |   |   | #363 | [Subtask] Service UseCases - Create/Update/Delete | feature/363-service-crud | ✅ **Done** | **High** |
-|   |   | #364 | [Subtask] Service UseCases - Get/List | feature/364-service-get-list | 🔄 **In Progress** | **High** |
+|   |   | #364 | [Subtask] Service UseCases - Get/List | feature/364-service-get-list | ✅ **Done** | **High** |
 |   |   | #365 | [Subtask] Service UseCases - GetServiceRoutes | — | ⏳ **Ready** | **High** |
 | 7 | — | #311 | [Task] GlobalConfiguration UseCases Implementation | — | ⏳ **Ready** | **High** |
 | 8 | — | #312 | [Task] Snapshot Query UseCases Implementation (7) | — | ⏳ **Ready** | **High** |

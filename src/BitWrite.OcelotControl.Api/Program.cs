@@ -4,6 +4,7 @@ using AppInterfaces = BitWrite.OcelotControl.Application.Interfaces;
 using BitWrite.OcelotControl.Application.UseCases.Snapshot;
 using BitWrite.OcelotControl.Application.UseCases.Publication;
 using BitWrite.OcelotControl.Application.UseCases.Route;
+using BitWrite.OcelotControl.Application.UseCases.Gateway;
 using BitWrite.OcelotControl.Application.Events;
 using DomainServices = BitWrite.OcelotControl.Domain.Services;
 using BitWrite.OcelotControl.Infrastructure.Adapters;
@@ -88,6 +89,12 @@ builder.Services.AddScoped<AppInterfaces.IConfigurationBuilder, ConfigurationBui
             builder.Services.AddScoped<CreateRouteCommandHandler>();
             builder.Services.AddScoped<UpdateRouteCommandHandler>();
             builder.Services.AddScoped<DeleteRouteCommandHandler>();
+            // Gateway UseCase Handlers
+            builder.Services.AddScoped<RegisterGatewayCommandHandler>();
+            builder.Services.AddScoped<GetGatewayQueryHandler>();
+            builder.Services.AddScoped<ListGatewaysQueryHandler>();
+            builder.Services.AddScoped<UpdateGatewayCommandHandler>();
+            builder.Services.AddScoped<UpdateGatewayStatusCommandHandler>();
 
             // Domain Event Dispatcher
             builder.Services.AddScoped<AppInterfaces.IDomainEventDispatcher, DomainEventDispatcher>();

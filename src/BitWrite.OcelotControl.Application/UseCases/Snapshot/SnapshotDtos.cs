@@ -67,3 +67,26 @@ public record ExportSnapshotResponse(
     string Content,
     string Format
 );
+
+public record GetSnapshotDeploymentQuery(
+    SnapshotVersion Version
+);
+
+public record SnapshotDeploymentResponse(
+    string PublicationId,
+    SnapshotVersion SnapshotVersion,
+    string Status,
+    DateTimeOffset StartedAt,
+    DateTimeOffset? CompletedAt,
+    string? FailureReason,
+    IReadOnlyList<GatewayDeploymentState> GatewayStates
+);
+
+public record GatewayDeploymentState(
+    GatewayId GatewayId,
+    string GatewayName,
+    string Status,
+    DateTimeOffset? StartedAt,
+    DateTimeOffset? CompletedAt,
+    string? FailureReason
+);

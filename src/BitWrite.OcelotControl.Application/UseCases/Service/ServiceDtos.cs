@@ -34,3 +34,19 @@ public record ListServicesQuery(
     int Page = 1,
     int PageSize = 20
 );
+
+public record GetServiceRoutesQuery(
+    ServiceId Id
+);
+
+public record ServiceRoutesResponse(
+    IReadOnlyList<RouteSummary> Routes
+);
+
+public record RouteSummary(
+    RouteId Id,
+    string Key,
+    string Method,
+    string UpstreamPath,
+    bool IsEnabled
+);

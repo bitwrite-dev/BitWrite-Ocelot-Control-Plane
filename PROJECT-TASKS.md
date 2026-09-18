@@ -72,7 +72,10 @@ This document provides a prioritized list of tasks and subtasks based on DDD arc
 |   |   | #355 | [Subtask] Route UseCases - Enable/Disable/Status | feature/355-route-enable-disable | ✅ **Done** | **High** |
 |   |   | #356 | [Subtask] Route UseCases - Validate/Preview | feature/356-route-validate-preview | ✅ **Done** | **High** |
 |   |   | #357 | [Subtask] Route UseCases - List/Get/History | feature/357-route-list-get-history | ✅ **Done** | **High** |
-| 6 | — | #310 | [Task] Service UseCases Implementation | — | ⏳ **Ready** | **High** |
+| 6 | — | #310 | [Task] Service UseCases Implementation (6) | — | ⏳ **Ready** | **High** |
+|   |   | #363 | [Subtask] Service UseCases - Create/Update/Delete | — | ⏳ **Ready** | **High** |
+|   |   | #364 | [Subtask] Service UseCases - Get/List | — | ⏳ **Ready** | **High** |
+|   |   | #365 | [Subtask] Service UseCases - GetServiceRoutes | — | ⏳ **Ready** | **High** |
 | 7 | — | #311 | [Task] GlobalConfiguration UseCases Implementation | — | ⏳ **Ready** | **High** |
 | 8 | — | #312 | [Task] Snapshot Query UseCases Implementation (7) | — | ⏳ **Ready** | **High** |
 | 9 | — | #313 | [Task] Publication Query UseCases Implementation (3) | — | ⏳ **Ready** | **High** |
@@ -222,7 +225,7 @@ Value Objects → Domain Services → Aggregates → Domain Events → Use Cases
 |---|---|---|---|---|
 | 8 | **#308** | Gateway UseCases | 5 | — |
 | 9 | **#309** | Route UseCases | 11 | #354, #355, #356, #357 |
-| 10 | **#310** | Service UseCases | 6 | — |
+| 10 | **#310** | Service UseCases | 6 | #363, #364, #365 |
 | 11 | **#311** | GlobalConfiguration UseCases | 2 | — |
 | 12 | **#312** | Snapshot Query UseCases | 7 | — |
 | 13 | **#313** | Publication Query UseCases | 3 | — |

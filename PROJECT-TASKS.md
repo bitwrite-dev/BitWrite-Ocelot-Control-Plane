@@ -66,8 +66,12 @@ This document provides a prioritized list of tasks and subtasks based on DDD arc
 | 1 | #236 | #279 | [UseCase] Snapshot Creation Flow | - | ✅ Done | — |
 | 2 | #238 | - | [UseCase] Snapshot Publication Flow | - | ✅ Done | — |
 | 3 | #240 | #280 | [UseCase] Rollback | - | ✅ Done (via #280) | — |
-| 4 | — | #308 | [Task] Gateway UseCases Implementation | — | ⏳ **Ready** | **High** |
+| 4 | — | #308 | [Task] Gateway UseCases Implementation | feature/308-gateway-usecases | ✅ **Done** | **High** |
 | 5 | — | #309 | [Task] Route UseCases Implementation (11) | — | ⏳ **Ready** | **High** |
+|   |   | #354 | [Subtask] Route UseCases - Create/Update/Delete | feature/354-route-crud | ✅ **Done** | **High** |
+|   |   | #355 | [Subtask] Route UseCases - Enable/Disable/Status | — | ⏳ **Ready** | **High** |
+|   |   | #356 | [Subtask] Route UseCases - Validate/Preview | — | ⏳ **Ready** | **High** |
+|   |   | #357 | [Subtask] Route UseCases - List/Get/History | — | ⏳ **Ready** | **High** |
 | 6 | — | #310 | [Task] Service UseCases Implementation | — | ⏳ **Ready** | **High** |
 | 7 | — | #311 | [Task] GlobalConfiguration UseCases Implementation | — | ⏳ **Ready** | **High** |
 | 8 | — | #312 | [Task] Snapshot Query UseCases Implementation (7) | — | ⏳ **Ready** | **High** |

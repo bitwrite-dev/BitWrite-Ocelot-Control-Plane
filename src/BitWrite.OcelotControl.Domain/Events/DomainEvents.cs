@@ -61,9 +61,12 @@ public record PluginUpgraded(PluginId PluginId, string OldVersion, string NewVer
 public record PluginUninstalled(PluginId PluginId) : DomainEvent;
 
 // License events
-public record LicenseActivated(string LicenseId) : DomainEvent;
-public record LicenseExpired(string LicenseId) : DomainEvent;
-public record LicenseRevoked(string LicenseId, string Reason) : DomainEvent;
+public record LicenseCreated(LicenseId LicenseId, string Name, string ProductCode, DateTimeOffset ExpirationDate) : DomainEvent;
+public record LicenseActivated(LicenseId LicenseId) : DomainEvent;
+public record LicenseUpdated(LicenseId LicenseId) : DomainEvent;
+public record LicenseExpired(LicenseId LicenseId) : DomainEvent;
+public record LicenseRevoked(LicenseId LicenseId, string Reason) : DomainEvent;
+public record LicenseRenewed(LicenseId LicenseId, DateTimeOffset NewExpirationDate) : DomainEvent;
 
 // Audit event
 public record AuditRecorded(string Actor, string Action, string ResourceType, string ResourceId, string Result) : DomainEvent;

@@ -193,3 +193,42 @@ public record CapabilityKey : ValueObject
 
     public static implicit operator string(CapabilityKey key) => key.Value;
 }
+
+public record LicenseStatus : ValueObject
+{
+    public string Value { get; init; }
+
+    private LicenseStatus(string value)
+    {
+        Value = value;
+    }
+
+    public static LicenseStatus Pending => new("Pending");
+    public static LicenseStatus Active => new("Active");
+    public static LicenseStatus Expired => new("Expired");
+    public static LicenseStatus Revoked => new("Revoked");
+
+    public static LicenseStatus From(string value)
+    {
+        return value switch
+        {
+            "Pending" => Pending,
+            "Active" => Active,
+            "Expired" => Expired,
+            "Revoked" => Revoked,
+            _ => throw new DomainException($"Invalid LicenseStatus: {value}", "INVALID_LICENSE_STATUS")
+        };
+    }
+
+    public bool IsActive => Value == "Active";
+    public bool IsValid => Value == "Active";
+
+    protected override IEnumerable<object> GetEqualityComponents()
+    {
+        yield return Value;
+    }
+
+    public override string ToString() => Value;
+
+    public static implicit operator string(LicenseStatus status) => status.Value;
+}

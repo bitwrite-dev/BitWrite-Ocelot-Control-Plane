@@ -54,6 +54,7 @@ public record ServiceId : ValueObject
     {
         if (value == Guid.Empty)
             throw new DomainException("ServiceId cannot be empty", "INVALID_SERVICE_ID");
+
         return new ServiceId(value);
     }
 
@@ -206,4 +207,40 @@ public record PluginId : ValueObject
     }
 
     public override string ToString() => Value;
+}
+
+public record LicenseId : ValueObject
+{
+    public Guid Value { get; init; }
+
+    private LicenseId(Guid value)
+    {
+        Value = value;
+    }
+
+    public static LicenseId New() => new(Guid.NewGuid());
+
+    public static LicenseId From(Guid value)
+    {
+        if (value == Guid.Empty)
+            throw new DomainException("LicenseId cannot be empty", "INVALID_LICENSE_ID");
+        return new LicenseId(value);
+    }
+
+    public static LicenseId From(string value)
+    {
+        if (!Guid.TryParse(value, out var guid))
+            throw new DomainException($"Invalid LicenseId format: {value}", "INVALID_LICENSE_ID_FORMAT");
+        return From(guid);
+    }
+
+    protected override IEnumerable<object> GetEqualityComponents()
+    {
+        yield return Value;
+    }
+
+    public override string ToString() => Value.ToString();
+
+    public static implicit operator Guid(LicenseId id) => id.Value;
+    public static implicit operator string(LicenseId id) => id.Value.ToString();
 }

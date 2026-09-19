@@ -240,7 +240,7 @@ Value Objects → Domain Services → Aggregates → Domain Events → Use Cases
 | 12 | **#312** | Snapshot Query UseCases | 7 | #371, #372, #373 | ✅ Done |
 | 13 | **#313** | Publication Query UseCases | 3 | #377, #378 | ✅ Done |
 | 14 | **#314** | Plugin UseCases | 6 | #379, #380, #381 | ✅ Done |
-| 15 | **#315** | Runtime UseCases | 4 | #385, #386 | 🔄 In Progress |
+| 15 | **#315** | Runtime UseCases | 4 | #385, #386 | ✅ Done |
 
 #### 🟡 Phase 3: Bounded Contexts (Week 3-4, Parallel)
 | Order | Issue | Title |

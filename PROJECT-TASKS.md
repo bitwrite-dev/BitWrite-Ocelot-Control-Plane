@@ -81,7 +81,7 @@ This document provides a prioritized list of tasks and subtasks based on DDD arc
 |   |   | #371 | [Subtask] Snapshot Query UseCases - List/Get/Validate | feature/371-snapshot-list-get-validate | ✅ **Done** | **High** |
 |   |   | #372 | [Subtask] Snapshot Query UseCases - Compare/Clone/Export | feature/372-snapshot-compare-clone-export | ✅ **Done** | **High** |
 |   |   | #373 | [Subtask] Snapshot Query UseCases - Deployment Status | feature/373-snapshot-deployment-status | ✅ **Done** | **High** |
-| 9 | — | #313 | [Task] Publication Query UseCases Implementation (3) | — | ⏳ **Ready** | **High** |
+| 9 | — | #313 | [Task] Publication Query UseCases Implementation (3) | feature/313-publication-query-usecases | ✅ **Done** | **High** |
 |   |   | #377 | [Subtask] Publication Query UseCases - List/Current | feature/377-publication-list-current | ✅ **Done** | **High** |
 |   |   | #378 | [Subtask] Publication Query UseCases - History | feature/378-publication-history | ✅ **Done** | **High** |
 | 10 | — | #314 | [Task] Plugin UseCases Implementation | — | ⏳ **Ready** | **High** |
@@ -233,7 +233,7 @@ Value Objects → Domain Services → Aggregates → Domain Events → Use Cases
 | 10 | **#310** | Service UseCases | 6 | #363, #364, #365 | ✅ Done |
 | 11 | **#311** | GlobalConfiguration UseCases | 2 | #369 | ✅ Done |
 | 12 | **#312** | Snapshot Query UseCases | 7 | #371, #372, #373 | ✅ Done |
-| 13 | **#313** | Publication Query UseCases | 3 | #377, #378 | ⏳ Ready |
+| 13 | **#313** | Publication Query UseCases | 3 | #377, #378 | ✅ Done |
 | 14 | **#314** | Plugin UseCases | 6 | — | ⏳ Ready |
 | 15 | **#315** | Runtime UseCases | 4 | — | ⏳ Ready |
 

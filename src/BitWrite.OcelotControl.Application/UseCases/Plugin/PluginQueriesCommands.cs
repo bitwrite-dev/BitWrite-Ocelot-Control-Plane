@@ -35,6 +35,13 @@ public record DisablePluginCommand(
     string CorrelationId = ""
 );
 
+public record UpgradePluginCommand(
+    PluginId Id,
+    string NewVersion,
+    string InitiatedBy = "",
+    string CorrelationId = ""
+);
+
 public record PluginListQuery(
     int Page = 1,
     int PageSize = 20

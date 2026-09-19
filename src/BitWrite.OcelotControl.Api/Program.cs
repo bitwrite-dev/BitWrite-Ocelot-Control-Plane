@@ -130,6 +130,8 @@ builder.Services.AddScoped<AppInterfaces.IConfigurationBuilder, ConfigurationBui
             builder.Services.AddScoped<UninstallPluginCommandHandler>();
             builder.Services.AddScoped<EnablePluginCommandHandler>();
             builder.Services.AddScoped<DisablePluginCommandHandler>();
+            builder.Services.AddScoped<ListPluginsQueryHandler>();
+            builder.Services.AddScoped<UpgradePluginCommandHandler>();
             // Gateway UseCase Handlers
             builder.Services.AddScoped<RegisterGatewayCommandHandler>();
             builder.Services.AddScoped<GetGatewayQueryHandler>();

@@ -88,7 +88,9 @@ This document provides a prioritized list of tasks and subtasks based on DDD arc
 |    |   | #379 | [Subtask] Plugin UseCases - Install/Get/Uninstall | feature/379-plugin-crud | ✅ **Done** | **High** |
 |    |   | #380 | [Subtask] Plugin UseCases - Enable/Disable | feature/380-plugin-enable-disable | ✅ **Done** | **High** |
 |    |   | #381 | [Subtask] Plugin UseCases - List/Upgrade | feature/381-plugin-list-upgrade | ✅ **Done** | **High** |
-| 11 | — | #315 | [Task] Runtime UseCases Implementation | — | ⏳ **Ready** | **High** |
+| 11 | — | #315 | [Task] Runtime UseCases Implementation (4) | — | ⏳ **Ready** | **High** |
+|    |   | #385 | [Subtask] Runtime UseCases - GetRuntimeStatus/GetAllGateways | feature/385-runtime-status-gateways | 🔄 **In Progress** | **High** |
+|    |   | #386 | [Subtask] Runtime UseCases - GetGatewayRuntimeDetail/ReconcileGateway | feature/386-runtime-detail-reconcile | ⏳ **Ready** | **High** |
 | 12 | — | #304 | [Task] License UseCases Implementation | — | ⏳ **Ready** (dep #302-303) | **High** |
 | 13 | — | #307 | [Task] Audit Query UseCases Implementation | — | ⏳ **Ready** (dep #305-306) | **High** |
 
@@ -238,7 +240,7 @@ Value Objects → Domain Services → Aggregates → Domain Events → Use Cases
 | 12 | **#312** | Snapshot Query UseCases | 7 | #371, #372, #373 | ✅ Done |
 | 13 | **#313** | Publication Query UseCases | 3 | #377, #378 | ✅ Done |
 | 14 | **#314** | Plugin UseCases | 6 | #379, #380, #381 | ✅ Done |
-| 15 | **#315** | Runtime UseCases | 4 | — | ⏳ Ready |
+| 15 | **#315** | Runtime UseCases | 4 | #385, #386 | 🔄 In Progress |
 
 #### 🟡 Phase 3: Bounded Contexts (Week 3-4, Parallel)
 | Order | Issue | Title |

@@ -7,6 +7,7 @@ using BitWrite.OcelotControl.Application.UseCases.Route;
 using BitWrite.OcelotControl.Application.UseCases.Service;
 using BitWrite.OcelotControl.Application.UseCases.GlobalConfiguration;
 using BitWrite.OcelotControl.Application.UseCases.Gateway;
+using BitWrite.OcelotControl.Application.UseCases.Plugin;
 using BitWrite.OcelotControl.Application.Events;
 using DomainServices = BitWrite.OcelotControl.Domain.Services;
 using BitWrite.OcelotControl.Infrastructure.Adapters;
@@ -129,6 +130,8 @@ builder.Services.AddScoped<AppInterfaces.IConfigurationBuilder, ConfigurationBui
             builder.Services.AddScoped<UninstallPluginCommandHandler>();
             builder.Services.AddScoped<EnablePluginCommandHandler>();
             builder.Services.AddScoped<DisablePluginCommandHandler>();
+            builder.Services.AddScoped<ListPluginsQueryHandler>();
+            builder.Services.AddScoped<UpgradePluginCommandHandler>();
             // Gateway UseCase Handlers
             builder.Services.AddScoped<RegisterGatewayCommandHandler>();
             builder.Services.AddScoped<GetGatewayQueryHandler>();

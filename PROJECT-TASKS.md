@@ -88,9 +88,9 @@ This document provides a prioritized list of tasks and subtasks based on DDD arc
 |    |   | #379 | [Subtask] Plugin UseCases - Install/Get/Uninstall | feature/379-plugin-crud | ✅ **Done** | **High** |
 |    |   | #380 | [Subtask] Plugin UseCases - Enable/Disable | feature/380-plugin-enable-disable | ✅ **Done** | **High** |
 |    |   | #381 | [Subtask] Plugin UseCases - List/Upgrade | feature/381-plugin-list-upgrade | ✅ **Done** | **High** |
-| 11 | — | #315 | [Task] Runtime UseCases Implementation (4) | — | ⏳ **Ready** | **High** |
-|    |   | #385 | [Subtask] Runtime UseCases - GetRuntimeStatus/GetAllGateways | feature/385-runtime-status-gateways | 🔄 **In Progress** | **High** |
-|    |   | #386 | [Subtask] Runtime UseCases - GetGatewayRuntimeDetail/ReconcileGateway | feature/386-runtime-detail-reconcile | ⏳ **Ready** | **High** |
+| 11 | — | #315 | [Task] Runtime UseCases Implementation (4) | feature/315-runtime-usecases | ✅ **Done** | **High** |
+|    |   | #385 | [Subtask] Runtime UseCases - GetRuntimeStatus/GetAllGateways | feature/385-runtime-status-gateways | ✅ **Done** | **High** |
+|    |   | #386 | [Subtask] Runtime UseCases - GetGatewayRuntimeDetail/ReconcileGateway | feature/386-runtime-detail-reconcile | 🔄 **In Progress** | **High** |
 | 12 | — | #304 | [Task] License UseCases Implementation | — | ⏳ **Ready** (dep #302-303) | **High** |
 | 13 | — | #307 | [Task] Audit Query UseCases Implementation | — | ⏳ **Ready** (dep #305-306) | **High** |
 

@@ -23,6 +23,18 @@ public record UninstallPluginCommand(
     string CorrelationId = ""
 );
 
+public record EnablePluginCommand(
+    PluginId Id,
+    string InitiatedBy = "",
+    string CorrelationId = ""
+);
+
+public record DisablePluginCommand(
+    PluginId Id,
+    string InitiatedBy = "",
+    string CorrelationId = ""
+);
+
 public record PluginListQuery(
     int Page = 1,
     int PageSize = 20

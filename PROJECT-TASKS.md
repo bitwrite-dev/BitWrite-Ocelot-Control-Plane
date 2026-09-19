@@ -233,7 +233,7 @@ Value Objects → Domain Services → Aggregates → Domain Events → Use Cases
 | 10 | **#310** | Service UseCases | 6 | #363, #364, #365 | ✅ Done |
 | 11 | **#311** | GlobalConfiguration UseCases | 2 | #369 | ✅ Done |
 | 12 | **#312** | Snapshot Query UseCases | 7 | #371, #372, #373 | ✅ Done |
-| 13 | **#313** | Publication Query UseCases | 3 | #377, #378 | ⏳ Ready |
+| 13 | **#313** | Publication Query UseCases | 3 | #377, #378 | ✅ Done |
 | 14 | **#314** | Plugin UseCases | 6 | — | ⏳ Ready |
 | 15 | **#315** | Runtime UseCases | 4 | — | ⏳ Ready |
 

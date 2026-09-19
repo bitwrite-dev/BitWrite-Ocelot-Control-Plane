@@ -86,8 +86,8 @@ This document provides a prioritized list of tasks and subtasks based on DDD arc
 |   |   | #378 | [Subtask] Publication Query UseCases - History | — | ⏳ **Ready** | **High** |
 | 10 | — | #314 | [Task] Plugin UseCases Implementation (6) | — | ⏳ **Ready** | **High** |
 |    |   | #379 | [Subtask] Plugin UseCases - Install/Get/Uninstall | feature/379-plugin-crud | ✅ **Done** | **High** |
-|    |   | #380 | [Subtask] Plugin UseCases - Enable/Disable | feature/380-plugin-enable-disable | 🔄 **In Progress** | **High** |
-|    |   | #381 | [Subtask] Plugin UseCases - List/Upgrade | feature/381-plugin-list-upgrade | ⏳ **Ready** | **High** |
+|    |   | #380 | [Subtask] Plugin UseCases - Enable/Disable | feature/380-plugin-enable-disable | ✅ **Done** | **High** |
+|    |   | #381 | [Subtask] Plugin UseCases - List/Upgrade | feature/381-plugin-list-upgrade | 🔄 **In Progress** | **High** |
 | 11 | — | #315 | [Task] Runtime UseCases Implementation | — | ⏳ **Ready** | **High** |
 | 12 | — | #304 | [Task] License UseCases Implementation | — | ⏳ **Ready** (dep #302-303) | **High** |
 | 13 | — | #307 | [Task] Audit Query UseCases Implementation | — | ⏳ **Ready** (dep #305-306) | **High** |

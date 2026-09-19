@@ -123,6 +123,12 @@ builder.Services.AddScoped<AppInterfaces.IConfigurationBuilder, ConfigurationBui
             builder.Services.AddScoped<ListPublicationsQueryHandler>();
             builder.Services.AddScoped<GetCurrentPublicationQueryHandler>();
             builder.Services.AddScoped<GetPublicationHistoryQueryHandler>();
+            // Plugin UseCase Handlers
+            builder.Services.AddScoped<InstallPluginCommandHandler>();
+            builder.Services.AddScoped<GetPluginQueryHandler>();
+            builder.Services.AddScoped<UninstallPluginCommandHandler>();
+            builder.Services.AddScoped<EnablePluginCommandHandler>();
+            builder.Services.AddScoped<DisablePluginCommandHandler>();
             // Gateway UseCase Handlers
             builder.Services.AddScoped<RegisterGatewayCommandHandler>();
             builder.Services.AddScoped<GetGatewayQueryHandler>();

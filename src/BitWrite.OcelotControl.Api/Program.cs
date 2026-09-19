@@ -122,6 +122,7 @@ builder.Services.AddScoped<AppInterfaces.IConfigurationBuilder, ConfigurationBui
             // Publication UseCase Handlers
             builder.Services.AddScoped<ListPublicationsQueryHandler>();
             builder.Services.AddScoped<GetCurrentPublicationQueryHandler>();
+            builder.Services.AddScoped<GetPublicationHistoryQueryHandler>();
             // Gateway UseCase Handlers
             builder.Services.AddScoped<RegisterGatewayCommandHandler>();
             builder.Services.AddScoped<GetGatewayQueryHandler>();

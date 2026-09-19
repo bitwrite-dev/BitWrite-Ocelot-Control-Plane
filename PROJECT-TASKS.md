@@ -81,9 +81,9 @@ This document provides a prioritized list of tasks and subtasks based on DDD arc
 |   |   | #371 | [Subtask] Snapshot Query UseCases - List/Get/Validate | feature/371-snapshot-list-get-validate | ✅ **Done** | **High** |
 |   |   | #372 | [Subtask] Snapshot Query UseCases - Compare/Clone/Export | feature/372-snapshot-compare-clone-export | ✅ **Done** | **High** |
 |   |   | #373 | [Subtask] Snapshot Query UseCases - Deployment Status | feature/373-snapshot-deployment-status | ✅ **Done** | **High** |
-| 9 | — | #313 | [Task] Publication Query UseCases Implementation (3) | feature/313-publication-query-usecases | ✅ **Done** | **High** |
+| 9 | — | #313 | [Task] Publication Query UseCases Implementation (3) | — | ⏳ **Ready** | **High** |
 |   |   | #377 | [Subtask] Publication Query UseCases - List/Current | feature/377-publication-list-current | ✅ **Done** | **High** |
-|   |   | #378 | [Subtask] Publication Query UseCases - History | feature/378-publication-history | ✅ **Done** | **High** |
+|   |   | #378 | [Subtask] Publication Query UseCases - History | — | ⏳ **Ready** | **High** |
 | 10 | — | #314 | [Task] Plugin UseCases Implementation | — | ⏳ **Ready** | **High** |
 | 11 | — | #315 | [Task] Runtime UseCases Implementation | — | ⏳ **Ready** | **High** |
 | 12 | — | #304 | [Task] License UseCases Implementation | — | ⏳ **Ready** (dep #302-303) | **High** |

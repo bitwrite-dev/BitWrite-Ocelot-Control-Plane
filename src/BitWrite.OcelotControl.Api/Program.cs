@@ -136,6 +136,8 @@ builder.Services.AddScoped<AppInterfaces.IConfigurationBuilder, ConfigurationBui
             // Runtime UseCase Handlers
             builder.Services.AddScoped<GetRuntimeStatusQueryHandler>();
             builder.Services.AddScoped<GetAllGatewaysQueryHandler>();
+            builder.Services.AddScoped<GetGatewayRuntimeDetailQueryHandler>();
+            builder.Services.AddScoped<ReconcileGatewayCommandHandler>();
             // Gateway UseCase Handlers
             builder.Services.AddScoped<RegisterGatewayCommandHandler>();
             builder.Services.AddScoped<GetGatewayQueryHandler>();

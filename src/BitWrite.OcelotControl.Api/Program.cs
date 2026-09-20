@@ -10,6 +10,7 @@ using BitWrite.OcelotControl.Application.UseCases.Gateway;
 using BitWrite.OcelotControl.Application.UseCases.Plugin;
 using BitWrite.OcelotControl.Application.UseCases.Runtime;
 using BitWrite.OcelotControl.Application.UseCases.License;
+using BitWrite.OcelotControl.Application.UseCases.Audit;
 using BitWrite.OcelotControl.Application.Events;
 using DomainServices = BitWrite.OcelotControl.Domain.Services;
 using BitWrite.OcelotControl.Infrastructure.Adapters;
@@ -149,6 +150,10 @@ builder.Services.AddScoped<AppInterfaces.IConfigurationBuilder, ConfigurationBui
             builder.Services.AddScoped<UpdateLicenseCommandHandler>();
             builder.Services.AddScoped<RenewLicenseCommandHandler>();
             builder.Services.AddScoped<RevokeLicenseCommandHandler>();
+            // Audit UseCase Handlers
+            builder.Services.AddScoped<GetAuditLogsQueryHandler>();
+            builder.Services.AddScoped<GetAuditLogByIdQueryHandler>();
+            builder.Services.AddScoped<GetAuditStatsQueryHandler>();
             // Gateway UseCase Handlers
             builder.Services.AddScoped<RegisterGatewayCommandHandler>();
             builder.Services.AddScoped<GetGatewayQueryHandler>();

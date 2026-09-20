@@ -162,6 +162,8 @@ This document provides a prioritized list of tasks and subtasks based on DDD arc
 | 2 | #302 | [Task] License Aggregate Implementation | feature/302-license-aggregate | ✅ **Done** | **High** |
 | 3 | #303 | [Task] License Repository Implementation | feature/303-license-repository | 🔄 **In Progress** | **High** |
 | 4 | #304 | [Task] License UseCases Implementation | feature/304-license-usecases | ✅ **Done** | **High" |
+| 3 | #303 | [Task] License Repository Implementation | feature/303-license-repository | ✅ **Done** | **High** |
+| 4 | #304 | [Task] License UseCases Implementation | feature/304-license-usecases | 🔄 **In Progress** | **High** |
 | 5 | #332 | [Task] Wire LicensesController to UseCases | — | ⏳ **Ready** (dep #296) | **High** |
 
 ### Audit Context (Epic #297)

@@ -170,7 +170,7 @@ This document provides a prioritized list of tasks and subtasks based on DDD arc
 | # | Issue | Title | Branch | Status | Priority |
 |---|-------|-------|--------|--------|----------|
 | 1 | #297 | [Epic] Audit Context - AuditLog Aggregate & Query | — | 📋 Open | **High** |
-| 2 | #305 | [Task] AuditLog Entity Implementation | — | ⏳ **Ready** | **High** |
+| 2 | #305 | [Task] AuditLog Entity Implementation | feature/305-auditlog-entity | 🔄 **In Progress** | **High** |
 | 3 | #306 | [Task] AuditLog Repository Implementation | — | ⏳ **Ready** | **High** |
 | 4 | #307 | [Task] Audit Query UseCases Implementation | — | ⏳ **Ready** | **High** |
 | 5 | #333 | [Task] Wire AuditController to UseCases | — | ⏳ **Ready** (dep #297) | **High** |

@@ -9,6 +9,7 @@ using BitWrite.OcelotControl.Application.UseCases.GlobalConfiguration;
 using BitWrite.OcelotControl.Application.UseCases.Gateway;
 using BitWrite.OcelotControl.Application.UseCases.Plugin;
 using BitWrite.OcelotControl.Application.UseCases.Runtime;
+using BitWrite.OcelotControl.Application.UseCases.License;
 using BitWrite.OcelotControl.Application.Events;
 using DomainServices = BitWrite.OcelotControl.Domain.Services;
 using BitWrite.OcelotControl.Infrastructure.Adapters;
@@ -139,6 +140,14 @@ builder.Services.AddScoped<AppInterfaces.IConfigurationBuilder, ConfigurationBui
             builder.Services.AddScoped<GetAllGatewaysQueryHandler>();
             builder.Services.AddScoped<GetGatewayRuntimeDetailQueryHandler>();
             builder.Services.AddScoped<ReconcileGatewayCommandHandler>();
+            // License UseCase Handlers
+            builder.Services.AddScoped<CreateLicenseCommandHandler>();
+            builder.Services.AddScoped<GetLicenseQueryHandler>();
+            builder.Services.AddScoped<ListLicensesQueryHandler>();
+            builder.Services.AddScoped<ActivateLicenseCommandHandler>();
+            builder.Services.AddScoped<UpdateLicenseCommandHandler>();
+            builder.Services.AddScoped<RenewLicenseCommandHandler>();
+            builder.Services.AddScoped<RevokeLicenseCommandHandler>();
             // Gateway UseCase Handlers
             builder.Services.AddScoped<RegisterGatewayCommandHandler>();
             builder.Services.AddScoped<GetGatewayQueryHandler>();

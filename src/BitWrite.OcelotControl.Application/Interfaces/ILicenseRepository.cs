@@ -1,5 +1,6 @@
 using BitWrite.OcelotControl.Domain.Aggregates.License;
 using BitWrite.OcelotControl.Domain.ValueObjects.Identity;
+using BitWrite.OcelotControl.Domain.ValueObjects.Status;
 
 namespace BitWrite.OcelotControl.Application.Interfaces;
 

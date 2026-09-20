@@ -105,6 +105,14 @@ public class Snapshot
     }
 
     /// <summary>
+    /// Marks the snapshot as rolled back to.
+    /// </summary>
+    public void Rollback(SnapshotVersion fromVersion, string correlationId = "")
+    {
+        AddDomainEvent(new SnapshotRolledBack(fromVersion, Version));
+    }
+
+    /// <summary>
     /// Verifies snapshot integrity by recomputing hash.
     /// </summary>
     public bool VerifyIntegrity(ConfigurationHash computedHash)

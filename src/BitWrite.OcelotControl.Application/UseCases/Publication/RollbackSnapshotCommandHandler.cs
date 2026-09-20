@@ -96,6 +96,12 @@ public class RollbackSnapshotCommandHandler
             // Mark as rollback context
             publication.Rollback(targetVersion, command.Reason);
 
+            // Also mark target snapshot as rolled back
+            targetSnapshot.Rollback(currentPublication != null ? currentPublication.SnapshotVersion : targetVersion, command.CorrelationId);
+
+            // Persist snapshot with rollback event
+            await _snapshotRepository.UpdateAsync(targetSnapshot, cancellationToken);
+
             // 7. Persist Publication
             await _publicationRepository.AddAsync(publication, cancellationToken);
 
@@ -116,6 +122,12 @@ public class RollbackSnapshotCommandHandler
             {
                 await _eventDispatcher.DispatchAsync(domainEvent, cancellationToken);
             }
+
+            foreach (var domainEvent in targetSnapshot.DomainEvents)
+            {
+                await _eventDispatcher.DispatchAsync(domainEvent, cancellationToken);
+            }
+            targetSnapshot.ClearDomainEvents();
 
             // 11. Raise audit event
             var auditEvent = new AuditRecorded(

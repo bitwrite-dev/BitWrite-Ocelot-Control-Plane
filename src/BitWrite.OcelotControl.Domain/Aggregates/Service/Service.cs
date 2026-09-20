@@ -163,6 +163,14 @@ public class Service
         return _endpoints.Where(e => e.IsActive).ToList().AsReadOnly();
     }
 
+    /// <summary>
+    /// Marks the service as deleted.
+    /// </summary>
+    public void Delete()
+    {
+        AddDomainEvent(new ServiceDeleted(Id));
+    }
+
     private void AddDomainEvent(DomainEvent domainEvent)
     {
         _domainEvents.Add(domainEvent);

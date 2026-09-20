@@ -49,6 +49,7 @@ public class GlobalConfiguration
     {
         BaseUrl = baseUrl?.Trim();
         UpdatedAt = DateTimeOffset.UtcNow;
+        AddDomainEvent(new GlobalConfigurationUpdated());
     }
 
     /// <summary>
@@ -58,6 +59,7 @@ public class GlobalConfiguration
     {
         RequestIdKey = requestIdKey?.Trim();
         UpdatedAt = DateTimeOffset.UtcNow;
+        AddDomainEvent(new GlobalConfigurationUpdated());
     }
 
     /// <summary>
@@ -74,6 +76,7 @@ public class GlobalConfiguration
 
         DownstreamScheme = scheme?.Trim();
         UpdatedAt = DateTimeOffset.UtcNow;
+        AddDomainEvent(new GlobalConfigurationUpdated());
     }
 
     /// <summary>
@@ -86,6 +89,7 @@ public class GlobalConfiguration
 
         Timeout = timeout;
         UpdatedAt = DateTimeOffset.UtcNow;
+        AddDomainEvent(new GlobalConfigurationUpdated());
     }
 
     /// <summary>
@@ -95,6 +99,7 @@ public class GlobalConfiguration
     {
         RateLimit = config;
         UpdatedAt = DateTimeOffset.UtcNow;
+        AddDomainEvent(new GlobalConfigurationUpdated());
     }
 
     /// <summary>
@@ -104,6 +109,7 @@ public class GlobalConfiguration
     {
         QoS = config;
         UpdatedAt = DateTimeOffset.UtcNow;
+        AddDomainEvent(new GlobalConfigurationUpdated());
     }
 
     /// <summary>
@@ -113,6 +119,7 @@ public class GlobalConfiguration
     {
         HttpHandler = config;
         UpdatedAt = DateTimeOffset.UtcNow;
+        AddDomainEvent(new GlobalConfigurationUpdated());
     }
 
     /// <summary>
@@ -122,6 +129,7 @@ public class GlobalConfiguration
     {
         ServiceDiscovery = config;
         UpdatedAt = DateTimeOffset.UtcNow;
+        AddDomainEvent(new GlobalConfigurationUpdated());
     }
 
     private void AddDomainEvent(DomainEvent domainEvent)

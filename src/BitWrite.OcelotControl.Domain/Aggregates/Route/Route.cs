@@ -235,6 +235,29 @@ public class Route
         UpdatedAt = DateTimeOffset.UtcNow;
     }
 
+    /// <summary>
+    /// Updates the route configuration.
+    /// </summary>
+    public void Update(HttpMethod method, UpstreamPath? upstreamPath, ServiceId? serviceId, string? key, string? host)
+    {
+        if (method != null) Method = method;
+        if (upstreamPath != null) UpstreamPath = upstreamPath;
+        if (serviceId != null) ServiceId = serviceId;
+        if (key != null) Key = key.Trim();
+        if (host != null) Host = host.ToLowerInvariant().Trim();
+        
+        UpdatedAt = DateTimeOffset.UtcNow;
+        AddDomainEvent(new RouteUpdated(Id));
+    }
+
+    /// <summary>
+    /// Marks the route as deleted.
+    /// </summary>
+    public void Delete()
+    {
+        AddDomainEvent(new RouteDeleted(Id));
+    }
+
     private void AddDomainEvent(DomainEvent domainEvent)
     {
         _domainEvents.Add(domainEvent);

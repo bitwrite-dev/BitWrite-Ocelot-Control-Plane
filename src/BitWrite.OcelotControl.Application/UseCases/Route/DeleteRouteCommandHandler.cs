@@ -25,12 +25,17 @@ public class DeleteRouteCommandHandler
         if (route == null)
             return false;
 
+        route.Delete();
+
         // Persist deletion
         await _routeRepository.DeleteAsync(command.Id, cancellationToken);
 
-        // Dispatch domain event
-        var deletedEvent = new RouteDeleted(command.Id);
-        await _eventDispatcher.DispatchAsync(deletedEvent, cancellationToken);
+        // Dispatch domain events from aggregate
+        foreach (var domainEvent in route.DomainEvents)
+        {
+            await _eventDispatcher.DispatchAsync(domainEvent, cancellationToken);
+        }
+        route.ClearDomainEvents();
 
         // Dispatch audit event
         var auditEvent = new AuditRecorded(

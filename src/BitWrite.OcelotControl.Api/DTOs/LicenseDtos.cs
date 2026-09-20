@@ -7,13 +7,38 @@ public record ActivateLicenseRequest(
     [Required][MaxLength(200)] string ActivatedBy
 );
 
+public record CreateLicenseRequest(
+    [Required][MaxLength(100)] string Name,
+    [Required][MaxLength(50)] string ProductCode,
+    [Required] DateTimeOffset ExpirationDate,
+    int MaxGateways = 1,
+    int MaxRoutes = 10,
+    string InitiatedBy = ""
+);
+
+public record UpdateLicenseRequest(
+    [MaxLength(100)] string? Name = null,
+    [MaxLength(500)] string? Description = null
+);
+
+public record RenewLicenseRequest(
+    [Required] DateTimeOffset NewExpirationDate
+);
+
+public record RevokeLicenseRequest(
+    [Required][MaxLength(500)] string Reason
+);
+
 public record LicenseResponse(
     string Id,
-    string Edition,
-    DateTimeOffset ActivatedAt,
-    DateTimeOffset? ExpiresAt,
+    string Name,
+    string ProductCode,
+    string Status,
+    DateTimeOffset ExpirationDate,
+    DateTimeOffset CreatedAt,
+    DateTimeOffset UpdatedAt,
     bool IsActive,
-    string ActivatedBy
+    string ActivatedAt
 );
 
 public record LicenseListResponse(

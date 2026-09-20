@@ -18,11 +18,13 @@ public static class RedisKeyHelper
     public static string Plugin(PluginId id) => $"ocelot:plugin:{id.Value}";
     public static string RuntimeInstance(GatewayId id) => $"ocelot:runtime:gateway:{id.Value}";
     public static string License(LicenseId id) => $"ocelot:license:{id.Value}";
+    public static string AuditLog(string id) => $"ocelot:audit:{id}";
 
     public const string IndexServices = "ocelot:index:services";
     public const string IndexRoutes = "ocelot:index:routes";
     public const string IndexSnapshots = "ocelot:index:snapshots";
     public const string IndexLicenses = "ocelot:index:licenses";
+    public const string IndexAuditLogs = "ocelot:index:audit-logs";
     
     public static string IndexServiceRoutes(ServiceId serviceId) => $"ocelot:index:service:{serviceId.Value}:routes";
     public static string IndexRouteSignature(string signature) => $"ocelot:index:route-signature:{signature}";

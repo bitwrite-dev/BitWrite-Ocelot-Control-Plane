@@ -72,6 +72,7 @@ builder.Services.AddScoped<AppInterfaces.IConfigurationBuilder, ConfigurationBui
             builder.Services.AddScoped<AppInterfaces.IRuntimeInstanceRepository, RuntimeInstanceRepositoryAdapter>();
             builder.Services.AddScoped<AppInterfaces.IPluginRepository, PluginRepositoryAdapter>();
             builder.Services.AddScoped<AppInterfaces.ILicenseRepository, RedisLicenseRepository>();
+            builder.Services.AddScoped<AppInterfaces.IAuditLogRepository, RedisAuditLogRepository>();
 
             // Infrastructure Services
             builder.Services.AddSingleton<AppInterfaces.IDistributedLock, RedisDistributedLock>();

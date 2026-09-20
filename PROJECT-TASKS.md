@@ -161,7 +161,7 @@ This document provides a prioritized list of tasks and subtasks based on DDD arc
 | 1 | #296 | [Epic] Licensing Context - License Aggregate & Management | — | 📋 Open | **High** |
 | 2 | #302 | [Task] License Aggregate Implementation | feature/302-license-aggregate | ✅ **Done** | **High** |
 | 3 | #303 | [Task] License Repository Implementation | feature/303-license-repository | 🔄 **In Progress** | **High** |
-| 4 | #304 | [Task] License UseCases Implementation | feature/304-license-usecases | 🔄 **In Progress** | **High" |
+| 4 | #304 | [Task] License UseCases Implementation | feature/304-license-usecases | ✅ **Done** | **High" |
 | 5 | #332 | [Task] Wire LicensesController to UseCases | — | ⏳ **Ready** (dep #296) | **High** |
 
 ### Audit Context (Epic #297)
@@ -247,7 +247,7 @@ Value Objects → Domain Services → Aggregates → Domain Events → Use Cases
 |---|---|---|---|
 | 16 | **#302** | License Aggregate | ✅ Done |
 | 17 | **#303** | License Repository | ✅ Done |
-| 18 | **#304** | License UseCases | 🔄 In Progress |
+| 18 | **#304** | License UseCases | ✅ Done |
 | 19 | **#305** | AuditLog Entity | ⏳ Ready |
 | 20 | **#306** | AuditLog Repository | ⏳ Ready |
 | 21 | **#307** | Audit Query UseCases | ⏳ Ready |

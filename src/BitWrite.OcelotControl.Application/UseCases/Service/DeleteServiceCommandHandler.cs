@@ -25,12 +25,17 @@ public class DeleteServiceCommandHandler
         if (service == null)
             return false;
 
+        service.Delete();
+
         // Persist deletion
         await _serviceRepository.DeleteAsync(command.Id, cancellationToken);
 
-        // Dispatch domain event
-        var deletedEvent = new ServiceDeleted(command.Id);
-        await _eventDispatcher.DispatchAsync(deletedEvent, cancellationToken);
+        // Dispatch domain events from aggregate
+        foreach (var domainEvent in service.DomainEvents)
+        {
+            await _eventDispatcher.DispatchAsync(domainEvent, cancellationToken);
+        }
+        service.ClearDomainEvents();
 
         // Dispatch audit event
         var auditEvent = new AuditRecorded(

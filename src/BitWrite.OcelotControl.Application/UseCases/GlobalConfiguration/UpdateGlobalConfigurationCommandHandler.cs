@@ -52,9 +52,12 @@ public class UpdateGlobalConfigurationCommandHandler
         // Persist
         await _globalConfigRepository.UpdateAsync(config, cancellationToken);
 
-        // Dispatch domain event
-        var domainEvent = new GlobalConfigurationUpdated();
-        await _eventDispatcher.DispatchAsync(domainEvent, cancellationToken);
+        // Dispatch domain events from aggregate
+        foreach (var domainEvent in config.DomainEvents)
+        {
+            await _eventDispatcher.DispatchAsync(domainEvent, cancellationToken);
+        }
+        config.ClearDomainEvents();
 
         // Dispatch audit event
         var auditEvent = new AuditRecorded(

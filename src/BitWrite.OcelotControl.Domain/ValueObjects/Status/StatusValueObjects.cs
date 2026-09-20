@@ -222,6 +222,7 @@ public record LicenseStatus : ValueObject
 
     public bool IsActive => Value == "Active";
     public bool IsValid => Value == "Active";
+    public bool IsExpired => Value == "Expired";
 
     protected override IEnumerable<object> GetEqualityComponents()
     {

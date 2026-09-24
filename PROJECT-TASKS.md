@@ -275,13 +275,13 @@ Value Objects → Domain Services → Aggregates → Domain Events → Use Cases
 | 33 | **#333** | Wire AuditController | 1 |
 
 #### 🟣 Phase 6: Testing & Quality (Week 4-6, Parallel)
-| Order | Issue | Title |
-|---|---|---|
-| 34 | **#334** | Application Layer Tests |
-| 35 | **#335** | Infrastructure Layer Tests |
-| 36 | **#336** | API/Controller Tests |
-| 37 | **#337** | Architecture Tests |
-| 38 | **#338** | CI/CD Pipeline |
+| Order | Issue | Title | Status |
+|---|---|---|---|
+| 34 | **#334** | Application Layer Tests | ✅ Done |
+| 35 | **#335** | Infrastructure Layer Tests | ⏳ Ready |
+| 36 | **#336** | API/Controller Tests | ⏳ Ready |
+| 37 | **#337** | Architecture Tests | ✅ Done |
+| 38 | **#338** | CI/CD Pipeline | ⏳ Ready |
 
 #### ⚪ Phase 7: Future (v1.1)
 | Order | Issue | Title |
@@ -295,8 +295,8 @@ Value Objects → Domain Services → Aggregates → Domain Events → Use Cases
 | Status | Count | Issues |
 |---|---|---|
 | 📋 Epic (Open) | 6 | #296, #297, #298, #300, #301, #217 |
-| ✅ Task/Subtask (Done) | 10 | #324-333 (Controller Wiring) |
-| ⏳ Task/Subtask (Ready) | 29 | #302-315, #316-323, #334-339, #262-263, #284-285 |
+| ✅ Task/Subtask (Done) | 12 | #324-334 (Controller Wiring + App Tests) |
+| ⏳ Task/Subtask (Ready) | 27 | #302-315, #316-323, #335-339, #262-263, #284-285 |
 | ⏳ Task/Subtask (Dep on Epic) | 9 | #332 (dep #296), #333 (dep #297), plus 7 controller wiring deps |
 
 ---

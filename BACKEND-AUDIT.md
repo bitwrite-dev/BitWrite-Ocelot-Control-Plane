@@ -223,14 +223,15 @@
 - ✅ DTOs exist: AuditDtos.cs
 - ✅ Controller scaffolded (#333)
 
-### SDK Project (25% implemented) - #340
+### SDK Project (30% implemented) - #340
 - `BitWrite.OcelotControl.SDK.csproj` - Configured with package references
 - `OcelotControlClient` - Base HTTP client with auth
-- `JwtTokenProvider` - JWT token handling with refresh
+- `JwtTokenProvider` - JWT token handling with refresh **(with 9 unit tests)**
 - `GatewaysClient` - Gateway API operations
 - `ServiceCollectionExtensions.AddOcelotControlSdk()` - DI registration
 - Models for Gateway (Request/Response)
 - NuGet package generation configured
+- SDK Tests project created with 9 JWT tests
 - Remaining: Other 9 clients, Models for all endpoints, Sample app, Documentation
 
 ---

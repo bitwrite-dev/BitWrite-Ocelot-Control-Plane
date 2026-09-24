@@ -1,4 +1,7 @@
-using BitWrite.OcelotControl.Api.DTOs;
+using ApiDtos = BitWrite.OcelotControl.Api.DTOs;
+using AppPlugin = BitWrite.OcelotControl.Application.UseCases.Plugin;
+using BitWrite.OcelotControl.Domain.ValueObjects.Identity;
+using BitWrite.OcelotControl.Domain.ValueObjects.Status;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BitWrite.OcelotControl.Api.Controllers;
@@ -7,20 +10,49 @@ namespace BitWrite.OcelotControl.Api.Controllers;
 [Route("api/v1/plugins")]
 public class PluginsController : BaseApiController
 {
+    private readonly AppPlugin.InstallPluginCommandHandler _installPluginCommandHandler;
+    private readonly AppPlugin.GetPluginQueryHandler _getPluginQueryHandler;
+    private readonly AppPlugin.ListPluginsQueryHandler _listPluginsQueryHandler;
+    private readonly AppPlugin.EnablePluginCommandHandler _enablePluginCommandHandler;
+    private readonly AppPlugin.DisablePluginCommandHandler _disablePluginCommandHandler;
+    private readonly AppPlugin.UninstallPluginCommandHandler _uninstallPluginCommandHandler;
+    private readonly AppPlugin.UpgradePluginCommandHandler _upgradePluginCommandHandler;
+
+    public PluginsController(
+        AppPlugin.InstallPluginCommandHandler installPluginCommandHandler,
+        AppPlugin.GetPluginQueryHandler getPluginQueryHandler,
+        AppPlugin.ListPluginsQueryHandler listPluginsQueryHandler,
+        AppPlugin.EnablePluginCommandHandler enablePluginCommandHandler,
+        AppPlugin.DisablePluginCommandHandler disablePluginCommandHandler,
+        AppPlugin.UninstallPluginCommandHandler uninstallPluginCommandHandler,
+        AppPlugin.UpgradePluginCommandHandler upgradePluginCommandHandler)
+    {
+        _installPluginCommandHandler = installPluginCommandHandler;
+        _getPluginQueryHandler = getPluginQueryHandler;
+        _listPluginsQueryHandler = listPluginsQueryHandler;
+        _enablePluginCommandHandler = enablePluginCommandHandler;
+        _disablePluginCommandHandler = disablePluginCommandHandler;
+        _uninstallPluginCommandHandler = uninstallPluginCommandHandler;
+        _upgradePluginCommandHandler = upgradePluginCommandHandler;
+    }
+
     [HttpGet]
-    public async Task<ActionResult<PluginListResponse>> GetPlugins(
+    public async Task<ActionResult<ApiDtos.PluginListResponse>> GetPlugins(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20)
     {
         try
         {
-            // TODO: Implement using UseCase handler
-            var response = new PluginListResponse(
-                new List<PluginResponse>(),
-                0,
-                page,
-                pageSize
+            var query = new AppPlugin.PluginListQuery(page, pageSize);
+            var result = await _listPluginsQueryHandler.HandleAsync(query);
+
+            var response = new ApiDtos.PluginListResponse(
+                result.Plugins.Select(MapToResponse).ToList(),
+                result.TotalCount,
+                result.Page,
+                result.PageSize
             );
+
             return HandleResult(response);
         }
         catch (Exception ex)
@@ -30,24 +62,23 @@ public class PluginsController : BaseApiController
     }
 
     [HttpPost]
-    public async Task<ActionResult<PluginResponse>> InstallPlugin(InstallPluginRequest request)
+    public async Task<ActionResult<ApiDtos.PluginResponse>> InstallPlugin(ApiDtos.InstallPluginRequest request)
     {
         try
         {
-            // TODO: Implement using UseCase handler
-            var response = new PluginResponse(
+            var scope = PluginScope.From(request.Scope);
+
+            var command = new AppPlugin.InstallPluginCommand(
                 request.Id,
                 request.Name,
                 request.Version,
                 request.Description,
-                request.Scope,
-                true,
-                DateTimeOffset.UtcNow,
-                null,
-                null,
-                null
+                scope,
+                User.Identity?.Name ?? "system"
             );
-            return HandleResult(response);
+
+            var result = await _installPluginCommandHandler.HandleAsync(command);
+            return HandleResult(MapToResponse(result));
         }
         catch (Exception ex)
         {
@@ -56,12 +87,17 @@ public class PluginsController : BaseApiController
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<PluginResponse>> GetPlugin(string id)
+    public async Task<ActionResult<ApiDtos.PluginResponse>> GetPlugin(string id)
     {
         try
         {
-            // TODO: Implement using UseCase handler
-            return NotFound();
+            var query = new AppPlugin.GetPluginQuery(PluginId.From(id));
+            var result = await _getPluginQueryHandler.HandleAsync(query);
+
+            if (result == null)
+                return NotFound();
+
+            return HandleResult(MapToResponse(result));
         }
         catch (Exception ex)
         {
@@ -70,12 +106,17 @@ public class PluginsController : BaseApiController
     }
 
     [HttpPatch("{id}/enable")]
-    public async Task<ActionResult<PluginResponse>> EnablePlugin(string id)
+    public async Task<ActionResult<ApiDtos.PluginResponse>> EnablePlugin(string id)
     {
         try
         {
-            // TODO: Implement using UseCase handler
-            return NotFound();
+            var command = new AppPlugin.EnablePluginCommand(
+                PluginId.From(id),
+                User.Identity?.Name ?? "system"
+            );
+
+            var result = await _enablePluginCommandHandler.HandleAsync(command);
+            return HandleResult(MapToResponse(result));
         }
         catch (Exception ex)
         {
@@ -84,12 +125,17 @@ public class PluginsController : BaseApiController
     }
 
     [HttpPatch("{id}/disable")]
-    public async Task<ActionResult<PluginResponse>> DisablePlugin(string id)
+    public async Task<ActionResult<ApiDtos.PluginResponse>> DisablePlugin(string id)
     {
         try
         {
-            // TODO: Implement using UseCase handler
-            return NotFound();
+            var command = new AppPlugin.DisablePluginCommand(
+                PluginId.From(id),
+                User.Identity?.Name ?? "system"
+            );
+
+            var result = await _disablePluginCommandHandler.HandleAsync(command);
+            return HandleResult(MapToResponse(result));
         }
         catch (Exception ex)
         {
@@ -102,12 +148,57 @@ public class PluginsController : BaseApiController
     {
         try
         {
-            // TODO: Implement using UseCase handler
-            return NotFound();
+            var command = new AppPlugin.UninstallPluginCommand(
+                PluginId.From(id),
+                User.Identity?.Name ?? "system"
+            );
+
+            await _uninstallPluginCommandHandler.HandleAsync(command);
+            return NoContent();
         }
         catch (Exception ex)
         {
             return HandleError(ex);
         }
     }
+
+    [HttpPut("{id}/upgrade")]
+    public async Task<ActionResult<ApiDtos.PluginResponse>> UpgradePlugin(string id, UpgradePluginRequest request)
+    {
+        try
+        {
+            var command = new AppPlugin.UpgradePluginCommand(
+                PluginId.From(id),
+                request.NewVersion,
+                User.Identity?.Name ?? "system"
+            );
+
+            var result = await _upgradePluginCommandHandler.HandleAsync(command);
+            return HandleResult(MapToResponse(result));
+        }
+        catch (Exception ex)
+        {
+            return HandleError(ex);
+        }
+    }
+
+    private static ApiDtos.PluginResponse MapToResponse(AppPlugin.PluginResponse plugin)
+    {
+        return new ApiDtos.PluginResponse(
+            plugin.Id.Value,
+            plugin.Name,
+            plugin.Version,
+            plugin.Description,
+            plugin.Scope.Value,
+            plugin.IsEnabled,
+            plugin.InstalledAt,
+            plugin.LastUpdated,
+            plugin.LastEnabled,
+            plugin.LastDisabled
+        );
+    }
 }
+
+public record UpgradePluginRequest(
+    string NewVersion
+);

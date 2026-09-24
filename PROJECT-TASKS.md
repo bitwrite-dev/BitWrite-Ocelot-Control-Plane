@@ -193,8 +193,25 @@ This document provides a prioritized list of tasks and subtasks based on DDD arc
 ## Phase 8: SDK (Future - v1.1)
 
 | # | Issue | Title | Branch | Status | Priority |
-|---|-------|-------|--------|--------|----------|
+|---|---|---|---|---|---|
 | 1 | #340 | [Task] Implement SDK Project | — | ⏳ **Ready** | Low |
+| 1.1 | #341 | SDK Project Setup & Structure | — | ⏳ Ready | Low |
+| 1.2 | #342 | SDK Authentication (JWT) | — | ⏳ Ready | Low |
+| 1.3 | #343 | SDK Core Client (OcelotControlClient) | — | ⏳ Ready | Low |
+| 1.4 | #344 | SDK Gateway Client | — | ⏳ Ready | Low |
+| 1.5 | #345 | SDK Route Client | — | ⏳ Ready | Low |
+| 1.6 | #346 | SDK Service Client | — | ⏳ Ready | Low |
+| 1.7 | #347 | SDK Snapshot Client | — | ⏳ Ready | Low |
+| 1.8 | #348 | SDK Publication Client | — | ⏳ Ready | Low |
+| 1.9 | #349 | SDK Plugin Client | — | ⏳ Ready | Low |
+| 1.10 | #350 | SDK Runtime Client | — | ⏳ Ready | Low |
+| 1.11 | #351 | SDK License Client | — | ⏳ Ready | Low |
+| 1.12 | #352 | SDK Audit Client | — | ⏳ Ready | Low |
+| 1.13 | #353 | SDK GlobalConfig Client | — | ⏳ Ready | Low |
+| 1.14 | #354 | SDK Models (Requests/Responses) | — | ⏳ Ready | Low |
+| 1.15 | #355 | SDK DI Extension (AddOcelotControlSdk) | — | ⏳ Ready | Low |
+| 1.16 | #356 | SDK NuGet Packaging & Sample App | — | ⏳ Ready | Low |
+| 1.17 | #357 | SDK Documentation & Examples | — | ⏳ Ready | Low |
 
 ---
 
@@ -284,9 +301,28 @@ Value Objects → Domain Services → Aggregates → Domain Events → Use Cases
 | 38 | **#338** | CI/CD Pipeline | ⏳ Ready |
 
 #### ⚪ Phase 7: Future (v1.1)
-| Order | Issue | Title |
-|---|---|---|
-| 39 | **#340** | Implement SDK Project |
+| Order | Issue | Title | Status |
+|---|---|---|---|
+| 39 | **#340** | Implement SDK Project | ⏳ Ready |
+| 39.1 | **#341** | SDK Project Setup & Structure | ⏳ Ready |
+| 39.2 | **#342** | SDK Authentication (JWT) | ⏳ Ready |
+| 39.3 | **#343** | SDK Core Client (OcelotControlClient) | ⏳ Ready |
+| 39.4 | **#344** | SDK Gateway Client | ⏳ Ready |
+| 39.5 | **#345** | SDK Route Client | ⏳ Ready |
+| 39.6 | **#346** | SDK Service Client | ⏳ Ready |
+| 39.7 | **#347** | SDK Snapshot Client | ⏳ Ready |
+| 39.8 | **#348** | SDK Publication Client | ⏳ Ready |
+| 39.9 | **#349** | SDK Plugin Client | ⏳ Ready |
+| 39.10 | **#350** | SDK Runtime Client | ⏳ Ready |
+| 39.11 | **#351** | SDK License Client | ⏳ Ready |
+| 39.12 | **#352** | SDK Audit Client | ⏳ Ready |
+| 39.13 | **#353** | SDK GlobalConfig Client | ⏳ Ready |
+| 39.14 | **#354** | SDK Models (Requests/Responses) | ⏳ Ready |
+| 39.15 | **#355** | SDK DI Extension (AddOcelotControlSdk) | ⏳ Ready |
+| 39.16 | **#356** | SDK NuGet Packaging & Sample App | ⏳ Ready |
+| 39.17 | **#357** | SDK Documentation & Examples | ⏳ Ready |
+| 39.16 | **#356** | SDK NuGet Packaging & Sample App | ⏳ Ready |
+| 39.15 | **#357** | SDK Documentation & Examples | ⏳ Ready |
 
 ---
 
@@ -297,7 +333,7 @@ Value Objects → Domain Services → Aggregates → Domain Events → Use Cases
 | 📋 Epic (Open) | 6 | #296, #297, #298, #300, #301, #217 |
 | ✅ Task/Subtask (Done) | 13 | #324-335 (Controller Wiring + App Tests + Infra Tests) |
 | ✅ Phase 5 Complete | - | All 10 controllers wired (45/51 endpoints) |
-| ⏳ Task/Subtask (Ready) | 28 | #302-315, #316-323, #336-339, #262-263, #284-285 |
+| ⏳ Task/Subtask (Ready) | 44 | #302-315, #316-323, #336-339, #262-263, #284-285, #341-358 |
 | ⏳ Task/Subtask (Dep on Epic) | 9 | #332 (dep #296), #333 (dep #297), plus 7 controller wiring deps |
 
 ---

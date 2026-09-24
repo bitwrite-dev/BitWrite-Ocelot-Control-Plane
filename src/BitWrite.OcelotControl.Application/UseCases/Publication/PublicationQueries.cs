@@ -1,4 +1,4 @@
-using BitWrite.OcelotControl.Application.UseCases.Publication;
+namespace BitWrite.OcelotControl.Application.UseCases.Publication;
 
 public record ListPublicationsQuery(
     int Page = 1,

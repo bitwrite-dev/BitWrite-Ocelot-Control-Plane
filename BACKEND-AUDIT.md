@@ -164,6 +164,7 @@
 |---|---|---|
 | Domain.Tests | 207 passing | ✅ Solid coverage |
 | Application.Tests | 42 passing | ✅ Comprehensive (Gateway, Route, Service, License UseCases) |
+| Infrastructure.Tests | 27 passing | ✅ Redis, Outbox, Repositories |
 | IntegrationTests | 1 passing | ⚠️ Basic |
 | ArchitectureTests | 1 passing | ✅ NetArchTest |
 
@@ -172,6 +173,9 @@
 | Area | Status | Issue |
 |---|---|---|
 | CreateSnapshotCommandHandler | ✅ Covered | #334 |
+| RedisKeyHelper | ✅ Covered | #335 |
+| RedisSerializer | ✅ Covered | #335 |
+| OutboxRepository | ✅ Covered | #335 |
 | PublishSnapshotCommandHandler | ❌ No tests | #334 |
 | RollbackSnapshotCommandHandler | ❌ No tests | #334 |
 | All 50+ UseCase Handlers | ❌ No tests | #334 |

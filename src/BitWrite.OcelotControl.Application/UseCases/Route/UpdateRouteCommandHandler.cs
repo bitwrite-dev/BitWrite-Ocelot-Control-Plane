@@ -80,6 +80,14 @@ public class UpdateRouteCommandHandler
         if (command.LoadBalancerOptions != null)
             route.SetLoadBalancer(command.LoadBalancerOptions);
 
+        // Call Update to raise RouteUpdated event
+        route.Update(
+            command.Method,
+            command.UpstreamPath,
+            command.ServiceId,
+            command.Key,
+            command.Host);
+
         // Persist
         await _routeRepository.UpdateAsync(route, cancellationToken);
 

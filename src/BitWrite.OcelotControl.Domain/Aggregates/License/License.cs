@@ -24,6 +24,7 @@ public class License
     public DateTimeOffset? ActivatedAt { get; private set; }
     public DateTimeOffset? RevokedAt { get; private set; }
     public string? RevocationReason { get; private set; }
+    public string? Description { get; private set; }
     public int MaxGateways { get; private set; }
     public int MaxRoutes { get; private set; }
 
@@ -42,6 +43,7 @@ public class License
         int maxGateways = 1,
         int maxRoutes = 10,
         IReadOnlyList<LicenseFeature>? features = null,
+        string? description = null,
         string correlationId = "")
     {
         if (string.IsNullOrWhiteSpace(name))
@@ -69,7 +71,8 @@ public class License
             CreatedAt = DateTimeOffset.UtcNow,
             UpdatedAt = DateTimeOffset.UtcNow,
             MaxGateways = maxGateways,
-            MaxRoutes = maxRoutes
+            MaxRoutes = maxRoutes,
+            Description = description?.Trim()
         };
 
         if (features != null)
@@ -160,6 +163,7 @@ public class License
             throw new DomainException("License name cannot be empty", "INVALID_LICENSE_NAME");
 
         Name = name.Trim();
+        Description = description?.Trim();
         UpdatedAt = DateTimeOffset.UtcNow;
 
         AddDomainEvent(new LicenseUpdated(Id));

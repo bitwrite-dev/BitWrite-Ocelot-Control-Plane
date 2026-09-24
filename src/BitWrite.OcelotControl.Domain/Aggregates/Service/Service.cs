@@ -156,6 +156,21 @@ public class Service
     }
 
     /// <summary>
+    /// Updates the service name and description.
+    /// </summary>
+    public void Update(string name, string? description)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            throw new DomainException("Service name cannot be empty", "INVALID_SERVICE_NAME");
+
+        Name = name.Trim();
+        Description = description?.Trim();
+        UpdatedAt = DateTimeOffset.UtcNow;
+
+        AddDomainEvent(new ServiceUpdated(Id));
+    }
+
+    /// <summary>
     /// Gets all active endpoints.
     /// </summary>
     public IReadOnlyList<ServiceEndpoint> GetActiveEndpoints()

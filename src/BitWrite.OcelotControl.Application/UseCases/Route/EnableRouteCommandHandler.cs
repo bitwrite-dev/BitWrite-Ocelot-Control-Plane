@@ -33,6 +33,14 @@ public class EnableRouteCommandHandler
 
         await _routeRepository.UpdateAsync(route, cancellationToken);
 
+        // Dispatch domain events from aggregate
+        foreach (var domainEvent in route.DomainEvents)
+        {
+            await _eventDispatcher.DispatchAsync(domainEvent, cancellationToken);
+        }
+        route.ClearDomainEvents();
+
+        // Dispatch audit event
         await _eventDispatcher.DispatchAsync(new AuditRecorded(
             command.InitiatedBy,
             "Enable",

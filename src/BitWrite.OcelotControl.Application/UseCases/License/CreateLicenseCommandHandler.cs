@@ -34,7 +34,8 @@ public class CreateLicenseCommandHandler
             command.ExpirationDate,
             command.MaxGateways,
             command.MaxRoutes,
-            null
+            null,
+            command.Description
         );
 
         await _licenseRepository.AddAsync(license, cancellationToken);

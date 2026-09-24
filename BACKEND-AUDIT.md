@@ -1,6 +1,6 @@
 # BitWrite Ocelot Control Plane - Backend Audit Report
 
-> Date: 2026-09-17
+> Date: 2026-09-24
 > Branch: `develop`
 > Commit: latest on develop
 
@@ -25,7 +25,7 @@
 | Publication Aggregate | `Aggregates/Publication/Publication.cs` | ✅ Complete |
 | Plugin Aggregate | `Aggregates/Plugin/Plugin.cs` | ✅ Complete |
 | RuntimeInstance Aggregate | `Aggregates/RuntimeInstance/RuntimeInstance.cs` | ✅ Complete |
-| Domain Events (all records) | `Events/DomainEvents.cs` | ⚠️ Partial - Missing License/Gateway/Route/Service/Plugin events |
+| Domain Events (all records) | `Events/DomainEvents.cs` | ✅ Complete - All events added (#339) |
 | Domain Exceptions | `Exceptions/DomainException.cs` | ✅ Complete |
 | ConfigurationBuilder | `Services/ConfigurationBuilder.cs` | ✅ Complete |
 | ConfigurationCanonicalizer | `Services/ConfigurationCanonicalizer.cs` | ✅ Complete |
@@ -34,8 +34,12 @@
 | OcelotCapabilityResolver | `Services/OcelotCapabilityResolver.cs` | ✅ Complete |
 | SnapshotIntegrityVerifier | `Services/SnapshotServices.cs` | ✅ Complete |
 | SnapshotVersionAllocator | `Services/SnapshotServices.cs` | ✅ Complete |
-| **License Aggregate** | — | ❌ **Missing** (#302) |
-| **AuditLog Aggregate/Entity** | — | ❌ **Missing** (#305) |
+| License Aggregate | `Aggregates/License/License.cs` | ✅ Complete (#302) |
+| License Repository | `Repositories/LicenseRepository.cs` | ✅ Complete (#303) |
+| License UseCases | `UseCases/License/` | ✅ Complete (#304) |
+| AuditLog Entity | `Aggregates/AuditLog/AuditLog.cs` | ✅ Complete (#305) |
+| AuditLog Repository | `Repositories/AuditLogRepository.cs` | ✅ Complete (#306) |
+| Audit Query UseCases | `UseCases/Audit/` | ✅ Complete (#307) |
 
 ### Application Layer (~15% Complete)
 
@@ -133,18 +137,18 @@
 | Controller | Endpoints | Status | Issue |
 |---|---|---|---|
 | BaseApiController | HandleResult, HandleError | ✅ Real logic | — |
-| GatewaysController | 5 endpoints | ❌ ALL STUBS | #324 |
-| RoutesController | 11 endpoints | ❌ ALL STUBS | #325 |
-| SnapshotsController | 10 endpoints | ❌ 7 STUBS (3 done) | #328 |
-| PublicationsController | 3 endpoints | ❌ ALL STUBS | #329 |
-| GlobalConfigurationController | 2 endpoints | ❌ ALL STUBS | #327 |
-| ServicesController | 6 endpoints | ❌ ALL STUBS | #326 |
-| PluginsController | 6 endpoints | ❌ ALL STUBS | #330 |
+| GatewaysController | 5 endpoints | ✅ Wired to UseCases | #324 |
+| RoutesController | 11 endpoints | ✅ Wired to UseCases | #325 |
+| ServicesController | 6 endpoints | ✅ Wired to UseCases | #326 |
+| GlobalConfigurationController | 2 endpoints | ✅ Wired to UseCases | #327 |
+| SnapshotsController | 10 endpoints | ✅ Wired to UseCases | #328 |
+| PublicationsController | 3 endpoints | ✅ Wired to UseCases | #329 |
+| PluginsController | 6 endpoints | ✅ Wired to UseCases | #330 |
 | RuntimeController | 4 endpoints | ❌ ALL STUBS | #331 |
-| LicensesController | 3 endpoints | ❌ ALL STUBS | #332 |
-| AuditController | 1 endpoint | ❌ STUB | #333 |
+| LicensesController | 5 endpoints | ✅ Wired to UseCases | #332 |
+| AuditController | 1 endpoint | ✅ Wired to UseCases | #333 |
 
-**Total: 51 stub endpoints with hardcoded/mock data**
+**Total: 45/51 endpoints wired to UseCases (88%)**
 
 **Supporting Components (Complete):**
 - 12 DTO files ✅
@@ -267,16 +271,16 @@
 | 321 | [Task] Implement IOcelotConfigApplier | Task | **Critical** | #301 | ✅ Done |
 | 322 | [Task] Add Missing Repository Interfaces to Application Layer | Task | High | #301 | ✅ Done |
 | 323 | [Task] DI Registration - Register All Handlers, Repositories, Domain Services | Task | **Critical** | #300 |
-| 324 | [Task] Wire GatewaysController to UseCases | Task | High | #300 |
-| 325 | [Task] Wire RoutesController to UseCases | Task | High | #300 |
-| 326 | [Task] Wire ServicesController to UseCases | Task | High | #300 |
-| 327 | [Task] Wire GlobalConfigurationController to UseCases | Task | High | #300 |
-| 328 | [Task] Wire SnapshotsController to UseCases | Task | High | #300 |
-| 329 | [Task] Wire PublicationsController to UseCases | Task | High | #300 |
-| 330 | [Task] Wire PluginsController to UseCases | Task | High | #300 |
+| 324 | [Task] Wire GatewaysController to UseCases | Task | High | #300 | ✅ Done |
+| 325 | [Task] Wire RoutesController to UseCases | Task | High | #300 | ✅ Done |
+| 326 | [Task] Wire ServicesController to UseCases | Task | High | #300 | ✅ Done |
+| 327 | [Task] Wire GlobalConfigurationController to UseCases | Task | High | #300 | ✅ Done |
+| 328 | [Task] Wire SnapshotsController to UseCases | Task | High | #300 | ✅ Done |
+| 329 | [Task] Wire PublicationsController to UseCases | Task | High | #300 | ✅ Done |
+| 330 | [Task] Wire PluginsController to UseCases | Task | High | #300 | ✅ Done |
 | 331 | [Task] Wire RuntimeController to UseCases | Task | High | #300 |
-| 332 | [Task] Wire LicensesController to UseCases | Task | High | #296 |
-| 333 | [Task] Wire AuditController to UseCases | Task | High | #297 |
+| 332 | [Task] Wire LicensesController to UseCases | Task | High | #296 | ✅ Done |
+| 333 | [Task] Wire AuditController to UseCases | Task | High | #297 | ✅ Done |
 | 334 | [Task] Application Layer Tests - UseCase Handlers | Task | High | #298 |
 | 335 | [Task] Infrastructure Layer Tests | Task | High | #298 |
 | 336 | [Task] API/Controller Tests | Task | High | #298 |

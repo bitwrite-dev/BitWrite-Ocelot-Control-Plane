@@ -9,6 +9,7 @@ public record CreateLicenseCommand(
     DateTimeOffset ExpirationDate,
     int MaxGateways = 1,
     int MaxRoutes = 10,
+    string? Description = null,
     string InitiatedBy = "",
     string CorrelationId = ""
 );

@@ -26,14 +26,15 @@ public class UpdateLicenseCommandHandler
         if (license == null)
             return null;
 
-        if (!string.IsNullOrWhiteSpace(command.Name) && command.Name != license.Name)
-        {
-            license.UpdateMetadata(command.Name, license.ProductCode);
-        }
+        var name = !string.IsNullOrWhiteSpace(command.Name) && command.Name != license.Name
+            ? command.Name
+            : license.Name;
 
-        if (command.Description != null)
+        var description = command.Description ?? license.Description;
+
+        if (name != license.Name || description != license.Description)
         {
-            license.UpdateMetadata(license.Name, license.ProductCode, command.Description);
+            license.UpdateMetadata(name, license.ProductCode, description);
         }
 
         await _licenseRepository.UpdateAsync(license, cancellationToken);

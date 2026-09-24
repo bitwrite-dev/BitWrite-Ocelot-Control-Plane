@@ -26,16 +26,13 @@ public class UpdateServiceCommandHandler
         if (service == null)
             return null;
 
-        // Update name if provided
-        if (!string.IsNullOrWhiteSpace(command.Name))
-        {
-            service.UpdateName(command.Name);
-        }
+        // Update name and description if provided
+        var name = !string.IsNullOrWhiteSpace(command.Name) ? command.Name : service.Name;
+        var description = command.Description ?? service.Description;
 
-        // Update description if provided
-        if (command.Description != null)
+        if (name != service.Name || description != service.Description)
         {
-            service.UpdateDescription(command.Description);
+            service.Update(name, description);
         }
 
         // Update downstream targets if provided

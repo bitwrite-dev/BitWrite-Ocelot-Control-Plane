@@ -163,15 +163,15 @@
 | Test Project | Tests | Status |
 |---|---|---|
 | Domain.Tests | 207 passing | ✅ Solid coverage |
-| Application.Tests | 9 passing | ⚠️ Partial (only Events + Outbox) |
-| IntegrationTests | 0 (empty stub) | ❌ |
-| ArchitectureTests | 0 (empty stub) | ❌ |
+| Application.Tests | 42 passing | ✅ Comprehensive (Gateway, Route, Service, License UseCases) |
+| IntegrationTests | 1 passing | ⚠️ Basic |
+| ArchitectureTests | 1 passing | ✅ NetArchTest |
 
 **Missing Test Coverage:**
 
 | Area | Status | Issue |
 |---|---|---|
-| CreateSnapshotCommandHandler | ❌ No tests | #334 |
+| CreateSnapshotCommandHandler | ✅ Covered | #334 |
 | PublishSnapshotCommandHandler | ❌ No tests | #334 |
 | RollbackSnapshotCommandHandler | ❌ No tests | #334 |
 | All 50+ UseCase Handlers | ❌ No tests | #334 |

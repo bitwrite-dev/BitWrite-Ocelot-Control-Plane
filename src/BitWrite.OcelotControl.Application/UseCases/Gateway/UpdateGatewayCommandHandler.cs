@@ -19,11 +19,11 @@ public class UpdateGatewayCommandHandler
         _eventDispatcher = eventDispatcher;
     }
 
-    public async Task<GatewayResponse?> HandleAsync(UpdateGatewayCommand command, CancellationToken cancellationToken = default)
+    public async Task<GatewayResponse> HandleAsync(UpdateGatewayCommand command, CancellationToken cancellationToken = default)
     {
         var gateway = await _gatewayRepository.GetAsync(command.Id, cancellationToken);
         if (gateway == null)
-            return null;
+            throw new InvalidOperationException($"Gateway {command.Id} not found");
 
         // Update name if provided
         if (!string.IsNullOrWhiteSpace(command.Name) && command.Name != gateway.Name)

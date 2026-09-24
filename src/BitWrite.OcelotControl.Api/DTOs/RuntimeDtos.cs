@@ -20,5 +20,15 @@ public record RuntimeGatewaysResponse(
 );
 
 public record ReconcileRequest(
+    [Required] string GatewayId,
+    [Required] int TargetVersion,
     [Required] string InitiatedBy
+);
+
+public record ReconcileResponse(
+    string GatewayId,
+    int TargetVersion,
+    bool Success,
+    string? ErrorMessage,
+    DateTimeOffset ReconciledAt
 );

@@ -195,10 +195,10 @@ This document provides a prioritized list of tasks and subtasks based on DDD arc
 | # | Issue | Title | Branch | Status | Priority |
 |---|---|---|---|---|---|
 | 1 | #340 | [Task] Implement SDK Project | — | ⏳ **Ready** | Low |
-| 1.1 | #341 | SDK Project Setup & Structure | — | ⏳ Ready | Low |
-| 1.2 | #342 | SDK Authentication (JWT) | — | ⏳ Ready | Low |
-| 1.3 | #343 | SDK Core Client (OcelotControlClient) | — | ⏳ Ready | Low |
-| 1.4 | #344 | SDK Gateway Client | — | ⏳ Ready | Low |
+| 1.1 | #341 | SDK Project Setup & Structure | — | ✅ Done | Low |
+| 1.2 | #342 | SDK Authentication (JWT) | — | ✅ Done | Low |
+| 1.3 | #343 | SDK Core Client (OcelotControlClient) | — | ✅ Done | Low |
+| 1.4 | #344 | SDK Gateway Client | — | ✅ Done | Low |
 | 1.5 | #345 | SDK Route Client | — | ⏳ Ready | Low |
 | 1.6 | #346 | SDK Service Client | — | ⏳ Ready | Low |
 | 1.7 | #347 | SDK Snapshot Client | — | ⏳ Ready | Low |
@@ -206,10 +206,10 @@ This document provides a prioritized list of tasks and subtasks based on DDD arc
 | 1.9 | #349 | SDK Plugin Client | — | ⏳ Ready | Low |
 | 1.10 | #350 | SDK Runtime Client | — | ⏳ Ready | Low |
 | 1.11 | #351 | SDK License Client | — | ⏳ Ready | Low |
-| 1.12 | #352 | SDK Audit Client | — | ⏳ Ready | Low |
+| 1.10 | #352 | SDK Audit Client | — | ⏳ Ready | Low |
 | 1.13 | #353 | SDK GlobalConfig Client | — | ⏳ Ready | Low |
-| 1.14 | #354 | SDK Models (Requests/Responses) | — | ⏳ Ready | Low |
-| 1.15 | #355 | SDK DI Extension (AddOcelotControlSdk) | — | ⏳ Ready | Low |
+| 1.14 | #354 | SDK Models (Requests/Responses) | — | ✅ Done | Low |
+| 1.15 | #355 | SDK DI Extension (AddOcelotControlSdk) | — | ✅ Done | Low |
 | 1.16 | #356 | SDK NuGet Packaging & Sample App | — | ⏳ Ready | Low |
 | 1.17 | #357 | SDK Documentation & Examples | — | ⏳ Ready | Low |
 
@@ -303,11 +303,11 @@ Value Objects → Domain Services → Aggregates → Domain Events → Use Cases
 #### ⚪ Phase 7: Future (v1.1)
 | Order | Issue | Title | Status |
 |---|---|---|---|
-| 39 | **#340** | Implement SDK Project | ⏳ Ready |
-| 39.1 | **#341** | SDK Project Setup & Structure | ⏳ Ready |
-| 39.2 | **#342** | SDK Authentication (JWT) | ⏳ Ready |
-| 39.3 | **#343** | SDK Core Client (OcelotControlClient) | ⏳ Ready |
-| 39.4 | **#344** | SDK Gateway Client | ⏳ Ready |
+| 39 | **#340** | Implement SDK Project | 🔄 In Progress |
+| 39.1 | **#341** | SDK Project Setup & Structure | ✅ Done |
+| 39.2 | **#342** | SDK Authentication (JWT) | ✅ Done |
+| 39.3 | **#343** | SDK Core Client (OcelotControlClient) | ✅ Done |
+| 39.4 | **#344** | SDK Gateway Client | ✅ Done |
 | 39.5 | **#345** | SDK Route Client | ⏳ Ready |
 | 39.6 | **#346** | SDK Service Client | ⏳ Ready |
 | 39.7 | **#347** | SDK Snapshot Client | ⏳ Ready |
@@ -317,8 +317,8 @@ Value Objects → Domain Services → Aggregates → Domain Events → Use Cases
 | 39.11 | **#351** | SDK License Client | ⏳ Ready |
 | 39.12 | **#352** | SDK Audit Client | ⏳ Ready |
 | 39.13 | **#353** | SDK GlobalConfig Client | ⏳ Ready |
-| 39.14 | **#354** | SDK Models (Requests/Responses) | ⏳ Ready |
-| 39.15 | **#355** | SDK DI Extension (AddOcelotControlSdk) | ⏳ Ready |
+| 39.14 | **#354** | SDK Models (Requests/Responses) | ✅ Done |
+| 39.15 | **#355** | SDK DI Extension (AddOcelotControlSdk) | ✅ Done |
 | 39.16 | **#356** | SDK NuGet Packaging & Sample App | ⏳ Ready |
 | 39.17 | **#357** | SDK Documentation & Examples | ⏳ Ready |
 | 39.16 | **#356** | SDK NuGet Packaging & Sample App | ⏳ Ready |

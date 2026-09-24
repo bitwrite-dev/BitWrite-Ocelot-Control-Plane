@@ -177,6 +177,7 @@
 | RedisSerializer | ✅ Covered | #335 |
 | OutboxRepository | ✅ Covered | #335 |
 | PublishSnapshotCommandHandler | ❌ No tests | #334 |
+| SDK Project | 🔄 In Progress | #340 |
 | RollbackSnapshotCommandHandler | ❌ No tests | #334 |
 | All 50+ UseCase Handlers | ❌ No tests | #334 |
 | All Controllers | ❌ No API tests | #336 |
@@ -222,8 +223,15 @@
 - ✅ DTOs exist: AuditDtos.cs
 - ✅ Controller scaffolded (#333)
 
-### SDK Project (0% implemented) - #340
-- `BitWrite.OcelotControl.SDK.csproj` exists but contains zero .cs files
+### SDK Project (25% implemented) - #340
+- `BitWrite.OcelotControl.SDK.csproj` - Configured with package references
+- `OcelotControlClient` - Base HTTP client with auth
+- `JwtTokenProvider` - JWT token handling with refresh
+- `GatewaysClient` - Gateway API operations
+- `ServiceCollectionExtensions.AddOcelotControlSdk()` - DI registration
+- Models for Gateway (Request/Response)
+- NuGet package generation configured
+- Remaining: Other 9 clients, Models for all endpoints, Sample app, Documentation
 
 ---
 
@@ -234,11 +242,11 @@
 | Domain | ~90% | License + AuditLog aggregates, Missing Domain Events | #302, #305, #339 |
 | Application | ~25% | 45+ UseCases, 2 missing interfaces (License, Audit) | #309-#315 |
 | Infrastructure | ~75% | 3 partial repos (Pub, Runtime, Plugin), License/Audit repos | #316, #317, #303, #306 |
-| API | ~30% | 46 stub endpoints (5 Gateway done) | #324-#333 |
-| Tests | ~40% | 12+ test areas missing | #334-#338 |
+| API | ~30% | 41 stub endpoints (10 Gateway done) | #324-#333 |
+| Tests | ~45% | 11+ test areas missing | #334-#338 |
 | Licensing | 0% | Full bounded context | #296, #302-304, #332 |
 | Audit | 5% | Persistence + queries | #297, #305-307, #333 |
-| SDK | 0% | Full project | #340 |
+| SDK | 25% | 9 clients, Models, Sample app, Docs | #340 |
 
 **Total estimated remaining backend tasks: ~42**
 

@@ -338,6 +338,28 @@ public class OcelotCapabilityResolverTests
         capabilities.Should().Contain(c => c.Value == "http");
         capabilities.Should().Contain(c => c.Value == "custom-auth");
     }
+
+    [Fact]
+    public void ResolveEffectiveCapabilities_ShouldReturnNonEmptySetForVersionUsedByRuntimeAdapter()
+    {
+        // RuntimeAdapter registers the gateway with these capabilities, and
+        // RuntimeInstance.Register rejects an empty set (NO_CAPABILITIES). See #430.
+        var capabilities = _resolver.ResolveEffectiveCapabilities(
+            OcelotVersion.Parse("20.0.0"), new List<string>());
+
+        capabilities.Should().NotBeEmpty();
+        capabilities.Should().OnlyContain(c => !string.IsNullOrWhiteSpace(c.Value));
+    }
+
+    [Fact]
+    public void ResolveEffectiveCapabilities_ShouldReturnBuiltInCapabilitiesWithNoPlugins()
+    {
+        var capabilities = _resolver.ResolveEffectiveCapabilities(
+            OcelotVersion.V18_0, new List<string>());
+
+        capabilities.Should().NotBeEmpty();
+        capabilities.Should().BeEquivalentTo(_resolver.GetSupportedCapabilities(OcelotVersion.V18_0));
+    }
 }
 
 public class ConfigurationCanonicalizerTests

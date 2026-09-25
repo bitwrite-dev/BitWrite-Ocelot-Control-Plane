@@ -52,28 +52,63 @@ public class OcelotConfigApplier : IOcelotConfigApplier
 
     private void ValidateConfiguration(JsonElement configuration)
     {
-        if (!configuration.TryGetProperty("GlobalConfiguration", out _))
+        if (!TryGetProperty(configuration, "GlobalConfiguration", out _))
         {
             throw new InvalidOperationException("GlobalConfiguration is required");
         }
 
-        if (!configuration.TryGetProperty("Routes", out var routes) || routes.GetArrayLength() == 0)
+        if (!TryGetProperty(configuration, "Routes", out var routes)
+            || routes.ValueKind != JsonValueKind.Array
+            || routes.GetArrayLength() == 0)
         {
             throw new InvalidOperationException("At least one route is required");
         }
 
         foreach (var route in routes.EnumerateArray())
         {
-            if (!route.TryGetProperty("UpstreamPathTemplate", out var path) || string.IsNullOrWhiteSpace(path.GetString()))
+            if (!TryGetProperty(route, "UpstreamPathTemplate", out var path)
+                || path.ValueKind != JsonValueKind.String
+                || string.IsNullOrWhiteSpace(path.GetString()))
             {
                 throw new InvalidOperationException("Route UpstreamPathTemplate is required");
             }
 
-            if (!route.TryGetProperty("DownstreamHostAndPorts", out var hosts) || hosts.GetArrayLength() == 0)
+            if (!TryGetProperty(route, "DownstreamHostAndPorts", out var hosts)
+                || hosts.ValueKind != JsonValueKind.Array
+                || hosts.GetArrayLength() == 0)
             {
                 throw new InvalidOperationException("Route must have at least one downstream host");
             }
         }
+    }
+
+    /// <summary>
+    /// Case-insensitive property lookup. Ocelot configuration may be produced with
+    /// PascalCase (Ocelot's own convention) or camelCase (this solution's default
+    /// serializer policy), and <see cref="JsonElement.TryGetProperty(string, out JsonElement)"/>
+    /// is case-sensitive.
+    /// </summary>
+    private static bool TryGetProperty(JsonElement element, string propertyName, out JsonElement value)
+    {
+        if (element.ValueKind == JsonValueKind.Object && element.TryGetProperty(propertyName, out value))
+        {
+            return true;
+        }
+
+        if (element.ValueKind == JsonValueKind.Object)
+        {
+            foreach (var property in element.EnumerateObject())
+            {
+                if (string.Equals(property.Name, propertyName, StringComparison.OrdinalIgnoreCase))
+                {
+                    value = property.Value;
+                    return true;
+                }
+            }
+        }
+
+        value = default;
+        return false;
     }
 }
 

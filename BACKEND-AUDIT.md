@@ -109,7 +109,7 @@
 | RedisGatewayRepository | `Repositories/GatewayRepository.cs` | ✅ Complete | — |
 | RedisRouteRepository | `Repositories/RouteRepository.cs` | ✅ Complete | — |
 | RedisServiceRepository | `Repositories/ServiceRepository.cs` | ✅ Complete | — |
-| RedisSnapshotRepository | `Repositories/SnapshotRepository.cs` | ✅ Complete | — |
+| RedisSnapshotRepository | `Repositories/SnapshotRepository.cs` | ✅ Complete (JSON string storage) | #430 |
 | RedisPublicationRepository | `Repositories/PublicationRepository.cs` | ✅ Complete | #316 |
 | RedisGlobalConfigurationRepository | `Repositories/GlobalConfigurationRepository.cs` | ✅ Complete | — |
 | RedisRuntimeInstanceRepository | `Repositories/RuntimeInstanceRepository.cs` | ✅ Complete | #317 |
@@ -130,7 +130,14 @@
 | **LicenseRepository** | — | ❌ **Missing** | #303 |
 | **AuditLogRepository** | — | ❌ **Missing** | #306 |
 | RedisOutboxRepository | `Outbox/RedisOutboxRepository.cs` | ✅ Complete | #320 |
-| IOcelotConfigApplier impl | `Adapters/OcelotConfigApplier.cs` | ✅ Complete (Redis/File providers) | #321 |
+| IOcelotConfigApplier impl | `Adapters/OcelotConfigApplier.cs` | ⚠️ Complete but **case-sensitive validation** | #430 |
+
+**Runtime Layer:**
+
+| Component | File | Status | Issue |
+|---|---|---|---|
+| RuntimeAdapter | `Runtime/Adapters/RuntimeAdapter.cs` | ⚠️ Reconciliation + apply implemented, **apply path blocked** | #430 |
+| RuntimeAdapter scoped deps | `Runtime/Adapters/RuntimeAdapter.cs` | ✅ Resolved via `IServiceScopeFactory` | #430 |
 
 ### API Layer (~30% Scaffolding Only)
 
@@ -301,6 +308,7 @@
 | 338 | [Task] CI/CD Pipeline - GitHub Actions | Task | High | #298 |
 | 339 | [Task] Add Missing Domain Events | Task | High | — |
 | 340 | [Task] Implement SDK Project | Task | Low | — (v1.1) |
+| 430 | [Bug] RuntimeAdapter cannot complete snapshot application | Bug | **Critical** | #301 | ⏳ Open |
 
 ---
 
@@ -344,6 +352,7 @@
 |---|---|---|
 | 22 | **#316** | Fix PublicationRepository Stubs |
 | 23 | **#317** | Fix RuntimeInstance/Plugin Repository Stubs |
+| 24 | **#430** | RuntimeAdapter cannot complete snapshot application (⏳ blocks gateway config apply) |
 
 ### 🔵 Phase 5: Controller Wiring (Depends on Phase 1-2)
 | Order | Issue | Title | Endpoints |

@@ -66,6 +66,40 @@ public class Snapshot
     }
 
     /// <summary>
+    /// Reconstitutes a snapshot from persisted state, preserving status and
+    /// timestamps. Unlike <see cref="Create"/>, this raises no domain events,
+    /// because the events it would represent have already happened.
+    /// </summary>
+    public static Snapshot Reconstitute(
+        string content,
+        ConfigurationHash hash,
+        SnapshotVersion version,
+        SnapshotStatus status,
+        string createdBy,
+        DateTimeOffset createdAt,
+        DateTimeOffset? publishedAt = null,
+        DateTimeOffset? archivedAt = null)
+    {
+        if (string.IsNullOrWhiteSpace(content))
+            throw new DomainException("Snapshot content cannot be empty", "EMPTY_SNAPSHOT_CONTENT");
+
+        if (string.IsNullOrWhiteSpace(createdBy))
+            throw new DomainException("Created by cannot be empty", "INVALID_CREATED_BY");
+
+        return new Snapshot
+        {
+            Version = version,
+            Status = status,
+            Hash = hash,
+            Content = content,
+            CreatedBy = createdBy.Trim(),
+            CreatedAt = createdAt,
+            PublishedAt = publishedAt,
+            ArchivedAt = archivedAt
+        };
+    }
+
+    /// <summary>
     /// Marks the snapshot as validated.
     /// </summary>
     public void MarkValidated(bool isValid, string correlationId = "")

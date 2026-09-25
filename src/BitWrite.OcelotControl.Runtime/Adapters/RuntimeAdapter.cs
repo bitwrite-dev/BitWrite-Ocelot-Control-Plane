@@ -1,11 +1,10 @@
 using BitWrite.OcelotControl.Application.Interfaces;
 using BitWrite.OcelotControl.Domain.Aggregates.RuntimeInstance;
 using BitWrite.OcelotControl.Domain.Aggregates.Snapshot;
-using BitWrite.OcelotControl.Domain.Services;
 using BitWrite.OcelotControl.Domain.ValueObjects.Configuration;
 using BitWrite.OcelotControl.Domain.ValueObjects.Identity;
 using BitWrite.OcelotControl.Domain.ValueObjects.Status;
-using BitWrite.OcelotControl.Infrastructure.Adapters;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
@@ -15,12 +14,8 @@ namespace BitWrite.OcelotControl.Runtime.Adapters;
 public class RuntimeAdapter : BackgroundService
 {
     private readonly IConnectionMultiplexer _connectionMultiplexer;
-    private readonly ISnapshotRepository _snapshotRepository;
-    private readonly IRuntimeInstanceRepository _runtimeInstanceRepository;
-    private readonly ISnapshotIntegrityVerifier _integrityVerifier;
-    private readonly IOcelotCapabilityResolver _capabilityResolver;
+    private readonly IServiceScopeFactory _scopeFactory;
     private readonly IOcelotConfigApplier _configApplier;
-    private readonly IDomainEventDispatcher _eventDispatcher;
     private readonly ILogger<RuntimeAdapter> _logger;
     private readonly TimeSpan _pollInterval = TimeSpan.FromSeconds(30);
     private readonly TimeSpan _retryInterval = TimeSpan.FromSeconds(5);
@@ -31,21 +26,13 @@ public class RuntimeAdapter : BackgroundService
 
     public RuntimeAdapter(
         IConnectionMultiplexer connectionMultiplexer,
-        ISnapshotRepository snapshotRepository,
-        IRuntimeInstanceRepository runtimeInstanceRepository,
-        ISnapshotIntegrityVerifier integrityVerifier,
-        IOcelotCapabilityResolver capabilityResolver,
+        IServiceScopeFactory scopeFactory,
         IOcelotConfigApplier configApplier,
-        IDomainEventDispatcher eventDispatcher,
         ILogger<RuntimeAdapter> logger)
     {
         _connectionMultiplexer = connectionMultiplexer;
-        _snapshotRepository = snapshotRepository;
-        _runtimeInstanceRepository = runtimeInstanceRepository;
-        _integrityVerifier = integrityVerifier;
-        _capabilityResolver = capabilityResolver;
+        _scopeFactory = scopeFactory;
         _configApplier = configApplier;
-        _eventDispatcher = eventDispatcher;
         _logger = logger;
     }
 
@@ -161,14 +148,18 @@ public class RuntimeAdapter : BackgroundService
                     version, retryCount + 1, maxRetries + 1);
 
                 // 1. Retrieve Snapshot
-                var snapshot = await _snapshotRepository.GetAsync(version, cancellationToken);
+                using var scope = _scopeFactory.CreateScope();
+                var snapshotRepository = scope.ServiceProvider.GetRequiredService<ISnapshotRepository>();
+                
+                var snapshot = await snapshotRepository.GetAsync(version, cancellationToken);
                 if (snapshot == null)
                 {
                     throw new InvalidOperationException($"Snapshot {version} not found");
                 }
 
                 // 2. Verify integrity
-                var computedHash = _integrityVerifier.ComputeHash(snapshot.Content);
+                var integrityVerifier = scope.ServiceProvider.GetRequiredService<ISnapshotIntegrityVerifier>();
+                var computedHash = integrityVerifier.ComputeHash(snapshot.Content);
                 if (!snapshot.VerifyIntegrity(computedHash))
                 {
                     throw new InvalidOperationException($"Snapshot {version} integrity verification failed");
@@ -177,12 +168,14 @@ public class RuntimeAdapter : BackgroundService
                 // 3. Check Ocelot version compatibility
                 var ocelotVersion = OcelotVersion.Parse("20.0.0"); // In real implementation, get from config
                 var features = ExtractFeaturesFromSnapshot(snapshot.Content);
-                var capabilityErrors = _capabilityResolver.IsCapabilitySupported("", ocelotVersion);
+                
+                // Resolve capability resolver from scope
+                var capabilityResolver = scope.ServiceProvider.GetRequiredService<IOcelotCapabilityResolver>();
                 
                 // For now, just check if any features are incompatible
                 foreach (var feature in features)
                 {
-                    if (!_capabilityResolver.IsCapabilitySupported(feature, ocelotVersion))
+                    if (!capabilityResolver.IsCapabilitySupported(feature, ocelotVersion))
                     {
                         throw new InvalidOperationException($"Feature {feature} not supported by Ocelot {ocelotVersion}");
                     }
@@ -199,14 +192,19 @@ public class RuntimeAdapter : BackgroundService
                 _currentVersion = version;
 
                 // 7. Update RuntimeInstance state
-                var runtimeInstance = await _runtimeInstanceRepository.GetAsync(_gatewayId, cancellationToken);
+                using var scope2 = _scopeFactory.CreateScope();
+                var runtimeInstanceRepository = scope2.ServiceProvider.GetRequiredService<IRuntimeInstanceRepository>();
+                var runtimeInstance = await runtimeInstanceRepository.GetAsync(_gatewayId, cancellationToken);
                 if (runtimeInstance == null)
                 {
-                    runtimeInstance = RuntimeInstance.Register(_gatewayId, Array.Empty<string>(), string.Empty);
+                    runtimeInstance = RuntimeInstance.Register(
+                        _gatewayId,
+                        ResolveCapabilities(capabilityResolver, ocelotVersion),
+                        string.Empty);
                 }
                 runtimeInstance.RecordHeartbeat();
                 runtimeInstance.RecordConfigApplied(version);
-                await _runtimeInstanceRepository.UpdateAsync(runtimeInstance, cancellationToken);
+                await runtimeInstanceRepository.UpdateAsync(runtimeInstance, cancellationToken);
 
                 // 8. Report activation result
                 await ReportActivationResultAsync(version, true, null, cancellationToken);
@@ -233,6 +231,23 @@ public class RuntimeAdapter : BackgroundService
         }
     }
 
+    private List<string> ResolveCapabilities(IOcelotCapabilityResolver capabilityResolver, OcelotVersion ocelotVersion)
+    {
+        var capabilities = capabilityResolver
+            .ResolveEffectiveCapabilities(ocelotVersion, Array.Empty<string>())
+            .Select(c => c.Value)
+            .ToList();
+
+        if (capabilities.Count == 0)
+        {
+            throw new InvalidOperationException(
+                $"No Ocelot capabilities resolved for version {ocelotVersion}; " +
+                "cannot register the runtime instance");
+        }
+
+        return capabilities;
+    }
+
     private async Task RollbackToKnownGoodAsync(CancellationToken cancellationToken)
     {
         if (_lastKnownGoodVersion != null && _lastKnownGoodConfig != null)
@@ -244,11 +259,13 @@ public class RuntimeAdapter : BackgroundService
                 await _configApplier.ApplyAsync(_lastKnownGoodConfig, cancellationToken);
                 _currentVersion = _lastKnownGoodVersion;
 
-                var runtimeInstance = await _runtimeInstanceRepository.GetAsync(_gatewayId, cancellationToken);
+                using var scope = _scopeFactory.CreateScope();
+                var runtimeInstanceRepository = scope.ServiceProvider.GetRequiredService<IRuntimeInstanceRepository>();
+                var runtimeInstance = await runtimeInstanceRepository.GetAsync(_gatewayId, cancellationToken);
                 if (runtimeInstance != null)
                 {
                     runtimeInstance.RecordConfigApplied(_lastKnownGoodVersion!);
-                    await _runtimeInstanceRepository.UpdateAsync(runtimeInstance, cancellationToken);
+                    await runtimeInstanceRepository.UpdateAsync(runtimeInstance, cancellationToken);
                 }
             }
             catch (Exception ex)

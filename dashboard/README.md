@@ -66,6 +66,29 @@ dashboard/
     └── index.css            # Tailwind import + shadcn design tokens
 ```
 
+## Layout and navigation
+
+`src/navigation.ts` is the single source of truth for the sidebar. Section grouping follows spec §53: **Management, Configuration, Operations, System**.
+
+There is deliberately **no Consumers section** — see ADR-020. Consumers are not exposed by the control plane. A test asserts its absence so it cannot be reintroduced by accident.
+
+Each nav item can carry `roles`, mirroring the API's `Admin` / `GatewayManager` / `RouteManager` / `SnapshotManager` policies. `visibleSections()` filters items and drops sections left empty, so no heading renders with nothing under it. This is a usability affordance only — the API enforces access.
+
+Routes live in `src/route-table.ts`, and `assertNavigationIsRoutable()` runs at module load. A sidebar entry with no matching route throws immediately instead of becoming a silent dead link.
+
+Pages that are not implemented yet render an explicit "Not implemented yet" state linking to their tracking issue, rather than a blank screen that would be indistinguishable from a bug.
+
+## Shared components
+
+| Component | Purpose |
+|---|---|
+| `components/app-layout.tsx` | app shell + `PageHeader` (the single level-1 heading per page) |
+| `components/sidebar.tsx` | desktop sidebar and the mobile sheet |
+| `components/page-state.tsx` | `LoadingState`, `EmptyState`, `ErrorState`, `ForbiddenState` |
+| `components/status-badge.tsx` | status pill; tone mapping in `lib/status-tone.ts` |
+
+`ErrorState` renders the API correlation id, so a user can quote it in a bug report.
+
 ## API client
 
 `src/api/` is the typed client for the `/api/v1` surface.
@@ -127,10 +150,10 @@ The tests assert behaviour rather than copy — e.g. that a heading landmark exi
 ## Adding shadcn/ui components
 
 ```bash
-npx shadcn@latest add <component>
+npx shadcn@latest add <component> && npm run fix:shadcn-paths
 ```
 
-If the CLI creates a literal `@/` directory instead of writing into `src/`, move the files and delete the stray directory — this happens when the path alias in `tsconfig.app.json` and `tsconfig.node.json` is not picked up.
+The CLI resolves the `@/` alias literally and writes to a stray `./@/` directory instead of `./src/`. `fix:shadcn-paths` moves those files into place and removes the stray directory. The second command is not optional — skipping it leaves the component unreachable.
 
 ## Notes
 

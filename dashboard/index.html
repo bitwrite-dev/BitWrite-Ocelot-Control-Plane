@@ -4,7 +4,21 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>dashboard</title>
+    <title>Ocelot Control Plane</title>
+    <meta
+      name="description"
+      content="Management console for the BitWrite Ocelot Control Plane"
+    />
+    <script>
+      // Tailwind v4 with `@custom-variant dark (&:where(.dark, .dark *))` activates
+      // dark mode only via a class, so `prefers-color-scheme` is not picked up on
+      // its own. Applied here, before first paint, to avoid a flash of the wrong
+      // theme. A later settings toggle (#445) can override this by setting the
+      // class itself.
+      if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.documentElement.classList.add('dark')
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

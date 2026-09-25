@@ -46,22 +46,43 @@ Override the target with `VITE_DEV_API_TARGET` if the API runs elsewhere. Set `V
 | `npm run build` | Type-check (`tsc -b`) then build to `dist/` |
 | `npm run preview` | Serve the production build locally |
 | `npm run lint` | Lint via oxlint |
-
-Unit tests and CI are added in the follow-up PR — see the issue comments on [#432](../issues/432) for the PR split.
+| `npm run test` | Unit tests (Vitest, single run) |
+| `npm run test:watch` | Unit tests in watch mode |
+| `npm run check` | **All gates** — lint, test, build. Same three steps CI runs. |
 
 ## Project layout
 
 ```
 dashboard/
 ├── components.json          # shadcn/ui config (style: radix-nova)
+├── .oxlintrc.json           # lint config; shadcn/ui generated files exempted
 ├── vite.config.ts           # plugins, @/ alias, /api dev proxy
 ├── .env.example             # documented env vars
 └── src/
-    ├── components/ui/       # shadcn/ui components (button, card, …)
+    ├── components/ui/       # shadcn/ui components (button, card, …) — vendored, do not hand-edit
     ├── lib/utils.ts         # cn() class merge helper
+    ├── test/                # Vitest tests + setup
     ├── App.tsx
     └── index.css            # Tailwind import + shadcn design tokens
 ```
+
+## Tests
+
+Vitest with jsdom and Testing Library. Tests live in `src/test/` and use the `@/` alias, so they resolve modules the same way the app does.
+
+```bash
+npm run test
+```
+
+`src/test/setup.ts` loads `@testing-library/jest-dom` matchers globally.
+
+The tests assert behaviour rather than copy — e.g. that a heading landmark exists and that generated variant classes are applied — so editing placeholder text does not break them.
+
+## Continuous integration
+
+`.github/workflows/dashboard.yml` runs `npm ci`, then lint, test and build on every push and PR touching `dashboard/`. This is the only workflow in the repository; the .NET solution has no CI yet ([#338](../issues/338)).
+
+`npm ci` is used rather than `npm install` so CI installs exactly what the lockfile pins and fails if `package.json` and the lockfile drift apart.
 
 ## Adding shadcn/ui components
 

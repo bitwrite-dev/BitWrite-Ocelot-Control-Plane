@@ -13,7 +13,12 @@ export default function App() {
     <main className="flex min-h-screen items-center justify-center bg-background p-6">
       <Card className="w-full max-w-lg">
         <CardHeader>
-          <CardTitle>BitWrite Ocelot Control Plane</CardTitle>
+          {/* shadcn's CardTitle renders a div, so the page would otherwise have
+              no heading landmark. These props restore the semantics without
+              touching the generated styling. Revisit when #434 builds the shell. */}
+          <CardTitle role="heading" aria-level={1}>
+            BitWrite Ocelot Control Plane
+          </CardTitle>
           <CardDescription>
             Dashboard bootstrap is in place (#432). The application shell lands in #434.
           </CardDescription>

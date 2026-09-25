@@ -154,3 +154,28 @@ $RECYCLE.BIN/
 # JetBrains Rider
 .idea/
 *.sln.iml
+
+## Node.js / Dashboard (dashboard/)
+
+# Dependencies
+node_modules/
+
+# Build output (Vite). Note [Dd]ebug/ and [Rr]elease/ above do not cover this.
+dist/
+dist-ssr/
+build/
+
+# Vite / tooling caches
+.vite/
+*.tsbuildinfo
+.eslintcache
+
+# Environment — API base URL and local client config must not be committed
+.env
+.env.local
+.env.*.local
+
+# Test output
+coverage/
+playwright-report/
+test-results/

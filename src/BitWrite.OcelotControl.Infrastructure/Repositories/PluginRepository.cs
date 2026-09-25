@@ -7,7 +7,7 @@ using StackExchange.Redis;
 
 namespace BitWrite.OcelotControl.Infrastructure.Repositories;
 
-public class RedisPluginRepository : RedisRepositoryBase
+public class RedisPluginRepository : RedisRepositoryBase, IPluginRepository
 {
     private const string PluginsIndexKey = "ocelot:index:plugins";
 

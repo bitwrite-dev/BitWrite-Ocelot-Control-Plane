@@ -68,6 +68,16 @@ describe('AppLayout', () => {
     expect(within(nav).queryByRole('link', { name: 'Settings' })).not.toBeInTheDocument()
   })
 
+  it('renders a decorative icon per nav item without polluting the accessible name', () => {
+    renderAt('/')
+    const nav = screen.getByRole('navigation', { name: 'Main' })
+    const link = within(nav).getByRole('link', { name: 'Routes' })
+
+    // The label alone is the accessible name; the icon is presentation only.
+    expect(link).toHaveAccessibleName('Routes')
+    expect(link.querySelector('svg')).not.toBeNull()
+  })
+
   it('marks the active route', () => {
     renderAt('/routes')
     const nav = screen.getByRole('navigation', { name: 'Main' })

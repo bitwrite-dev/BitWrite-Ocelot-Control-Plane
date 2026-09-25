@@ -45,6 +45,20 @@ describe('navigation model', () => {
     )
   })
 
+  it('gives every item an icon', () => {
+    for (const section of NAV_SECTIONS) {
+      for (const item of section.items) {
+        expect(item.icon, `${item.label} has no icon`).toBeDefined()
+      }
+    }
+  })
+
+  it('uses distinct icons so items are distinguishable', () => {
+    const items = NAV_SECTIONS.flatMap((s) => s.items)
+    const icons = items.map((i) => i.icon)
+    expect(new Set(icons).size).toBe(icons.length)
+  })
+
   it('keeps NAV_PATHS in sync with the sections', () => {
     expect(NAV_PATHS).toEqual(NAV_SECTIONS.flatMap((s) => s.items.map((i) => i.path)))
   })

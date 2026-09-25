@@ -1,3 +1,20 @@
+import {
+  Activity,
+  Boxes,
+  Camera,
+  Gauge,
+  KeyRound,
+  LayoutDashboard,
+  Puzzle,
+  Route,
+  ScrollText,
+  Send,
+  Server,
+  Settings,
+  SlidersHorizontal,
+  type LucideIcon,
+} from 'lucide-react'
+
 /**
  * Navigation model for the dashboard.
  *
@@ -21,6 +38,8 @@ export interface NavItem {
   /** Route path, absolute, e.g. `/routes`. */
   path: string
   label: string
+  /** Lucide icon, matching the icon library configured in components.json. */
+  icon: LucideIcon
   /** Roles allowed to see this item. Undefined means all authenticated users. */
   roles?: Role[]
 }
@@ -36,37 +55,42 @@ export const NAV_SECTIONS: NavSection[] = [
     id: 'management',
     label: 'Management',
     items: [
-      { path: '/', label: 'Overview' },
-      { path: '/gateways', label: 'Gateways', roles: ['Admin', 'GatewayManager'] },
-      { path: '/routes', label: 'Routes', roles: ['Admin', 'RouteManager'] },
-      { path: '/services', label: 'Services', roles: ['Admin', 'RouteManager'] },
+      { path: '/', label: 'Overview', icon: LayoutDashboard },
+      { path: '/gateways', label: 'Gateways', icon: Server, roles: ['Admin', 'GatewayManager'] },
+      { path: '/routes', label: 'Routes', icon: Route, roles: ['Admin', 'RouteManager'] },
+      { path: '/services', label: 'Services', icon: Boxes, roles: ['Admin', 'RouteManager'] },
     ],
   },
   {
     id: 'configuration',
     label: 'Configuration',
     items: [
-      { path: '/global-configuration', label: 'Global Configuration', roles: ['Admin'] },
-      { path: '/plugins', label: 'Plugins', roles: ['Admin'] },
-      { path: '/licenses', label: 'Licenses', roles: ['Admin'] },
+      {
+        path: '/global-configuration',
+        label: 'Global Configuration',
+        icon: SlidersHorizontal,
+        roles: ['Admin'],
+      },
+      { path: '/plugins', label: 'Plugins', icon: Puzzle, roles: ['Admin'] },
+      { path: '/licenses', label: 'Licenses', icon: KeyRound, roles: ['Admin'] },
     ],
   },
   {
     id: 'operations',
     label: 'Operations',
     items: [
-      { path: '/snapshots', label: 'Snapshots', roles: ['Admin', 'SnapshotManager'] },
-      { path: '/publications', label: 'Publications', roles: ['Admin', 'SnapshotManager'] },
-      { path: '/runtime', label: 'Runtime', roles: ['Admin', 'GatewayManager'] },
-      { path: '/monitoring', label: 'Monitoring', roles: ['Admin', 'GatewayManager'] },
+      { path: '/snapshots', label: 'Snapshots', icon: Camera, roles: ['Admin', 'SnapshotManager'] },
+      { path: '/publications', label: 'Publications', icon: Send, roles: ['Admin', 'SnapshotManager'] },
+      { path: '/runtime', label: 'Runtime', icon: Activity, roles: ['Admin', 'GatewayManager'] },
+      { path: '/monitoring', label: 'Monitoring', icon: Gauge, roles: ['Admin', 'GatewayManager'] },
     ],
   },
   {
     id: 'system',
     label: 'System',
     items: [
-      { path: '/audit', label: 'Audit Log', roles: ['Admin'] },
-      { path: '/settings', label: 'Settings', roles: ['Admin'] },
+      { path: '/audit', label: 'Audit Log', icon: ScrollText, roles: ['Admin'] },
+      { path: '/settings', label: 'Settings', icon: Settings, roles: ['Admin'] },
     ],
   },
 ]

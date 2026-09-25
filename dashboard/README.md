@@ -72,6 +72,8 @@ dashboard/
 
 There is deliberately **no Consumers section** — see ADR-020. Consumers are not exposed by the control plane. A test asserts its absence so it cannot be reintroduced by accident.
 
+Each nav item carries a Lucide `icon` — the library configured in `components.json` — rendered decoratively so the label stays the accessible name. Icon names are checked against the installed package rather than guessed.
+
 Each nav item can carry `roles`, mirroring the API's `Admin` / `GatewayManager` / `RouteManager` / `SnapshotManager` policies. `visibleSections()` filters items and drops sections left empty, so no heading renders with nothing under it. This is a usability affordance only — the API enforces access.
 
 Routes live in `src/route-table.ts`, and `assertNavigationIsRoutable()` runs at module load. A sidebar entry with no matching route throws immediately instead of becoming a silent dead link.

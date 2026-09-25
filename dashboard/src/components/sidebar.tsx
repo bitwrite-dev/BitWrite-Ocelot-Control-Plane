@@ -1,3 +1,4 @@
+import { Menu } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 
 import {
@@ -44,14 +45,23 @@ function NavLinks({ roles, onNavigate }: { roles?: Role[]; onNavigate?: () => vo
                     onClick={onNavigate}
                     className={({ isActive }) =>
                       [
-                        'block rounded-md px-3 py-2 text-sm transition-colors',
+                        'flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors',
                         isActive
                           ? 'bg-primary text-primary-foreground font-medium'
                           : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
                       ].join(' ')
                     }
                   >
-                    {item.label}
+                    {({ isActive }) => (
+                      <>
+                        <item.icon
+                          className="size-4 shrink-0"
+                          aria-hidden={!isActive}
+                          strokeWidth={2}
+                        />
+                        {item.label}
+                      </>
+                    )}
                   </NavLink>
                 </li>
               ))}
@@ -88,16 +98,7 @@ export function MobileSidebar({ roles }: { roles?: Role[] }) {
     <Sheet>
       <SheetTrigger asChild>
         <Button variant="ghost" size="icon" className="md:hidden" aria-label="Open navigation">
-          <svg
-            viewBox="0 0 24 24"
-            className="size-5"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            aria-hidden="true"
-          >
-            <path d="M4 6h16M4 12h16M4 18h16" strokeLinecap="round" />
-          </svg>
+          <Menu className="size-5" aria-hidden="true" />
         </Button>
       </SheetTrigger>
       <SheetContent side="left" className="w-64 p-0">

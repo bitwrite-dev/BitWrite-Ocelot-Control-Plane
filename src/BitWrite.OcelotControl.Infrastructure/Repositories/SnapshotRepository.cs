@@ -5,11 +5,18 @@ using BitWrite.OcelotControl.Domain.ValueObjects.Identity;
 using BitWrite.OcelotControl.Domain.ValueObjects.Status;
 using BitWrite.OcelotControl.Infrastructure.Redis;
 using StackExchange.Redis;
+using System.Text.Json;
 
 namespace BitWrite.OcelotControl.Infrastructure.Repositories;
 
 public class RedisSnapshotRepository : RedisRepositoryBase, ISnapshotRepository
 {
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        PropertyNameCaseInsensitive = true
+    };
+
     public RedisSnapshotRepository(IConnectionMultiplexer connectionMultiplexer) 
         : base(connectionMultiplexer)
     {
@@ -18,32 +25,24 @@ public class RedisSnapshotRepository : RedisRepositoryBase, ISnapshotRepository
     public async Task<Snapshot?> GetAsync(SnapshotVersion version, CancellationToken cancellationToken = default)
     {
         var key = RedisKeyHelper.Snapshot(version);
-        var entries = await GetHashAsync(key);
-        
-        if (entries.Length == 0)
+        var json = await StringGetAsync(key);
+
+        if (string.IsNullOrWhiteSpace(json))
             return null;
 
-        var hash = GetEntry(entries, "Hash");
-        var content = GetEntry(entries, "Content");
-        var status = GetEntry(entries, "Status");
-        var createdBy = GetEntry(entries, "CreatedBy");
-        var createdAt = DateTimeOffset.Parse(GetEntry(entries, "CreatedAt"));
-        var publishedAt = DateTimeOffset.TryParse(GetEntry(entries, "PublishedAt"), out var pa) ? pa : (DateTimeOffset?)null;
-        var archivedAt = DateTimeOffset.TryParse(GetEntry(entries, "ArchivedAt"), out var aa) ? aa : (DateTimeOffset?)null;
+        var document = JsonSerializer.Deserialize<SnapshotDocument>(json, JsonOptions);
+        if (document == null)
+            return null;
 
-        var snapshot = Snapshot.Create(
-            content,
-            ConfigurationHash.FromString(hash),
-            version,
-            createdBy
-        );
-
-        if (status == SnapshotStatus.Published.Value)
-            snapshot.Publish();
-        else if (status == SnapshotStatus.Archived.Value)
-            snapshot.Archive();
-
-        return snapshot;
+        return Snapshot.Reconstitute(
+            document.Content,
+            ConfigurationHash.FromString(document.Hash),
+            SnapshotVersion.From(document.Version),
+            SnapshotStatus.From(document.Status),
+            document.CreatedBy,
+            document.CreatedAt,
+            document.PublishedAt,
+            document.ArchivedAt);
     }
 
     public async Task<Snapshot?> GetLatestAsync(CancellationToken cancellationToken = default)
@@ -79,24 +78,36 @@ public class RedisSnapshotRepository : RedisRepositoryBase, ISnapshotRepository
     public async Task AddAsync(Snapshot snapshot, CancellationToken cancellationToken = default)
     {
         var key = RedisKeyHelper.Snapshot(snapshot.Version);
-        var entries = new HashEntry[]
+        var document = new SnapshotDocument
         {
-            new("Version", snapshot.Version.Value.ToString()),
-            new("Hash", snapshot.Hash.Value),
-            new("Content", snapshot.Content),
-            new("Status", snapshot.Status.Value),
-            new("CreatedBy", snapshot.CreatedBy),
-            new("CreatedAt", snapshot.CreatedAt.ToString("O")),
-            new("PublishedAt", snapshot.PublishedAt?.ToString("O") ?? ""),
-            new("ArchivedAt", snapshot.ArchivedAt?.ToString("O") ?? "")
+            Version = snapshot.Version.Value,
+            Hash = snapshot.Hash.Value,
+            Content = snapshot.Content,
+            Status = snapshot.Status.Value,
+            CreatedBy = snapshot.CreatedBy,
+            CreatedAt = snapshot.CreatedAt,
+            PublishedAt = snapshot.PublishedAt,
+            ArchivedAt = snapshot.ArchivedAt
         };
 
-        await SetHashAsync(key, entries);
+        await StringSetAsync(key, JsonSerializer.Serialize(document, JsonOptions));
         await SortedSetAddAsync(RedisKeyHelper.IndexSnapshots, snapshot.Version.Value.ToString(), snapshot.Version.Value);
     }
 
     public async Task UpdateAsync(Snapshot snapshot, CancellationToken cancellationToken = default)
     {
         await AddAsync(snapshot, cancellationToken);
+    }
+
+    private sealed class SnapshotDocument
+    {
+        public int Version { get; set; }
+        public string Hash { get; set; } = string.Empty;
+        public string Content { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
+        public string CreatedBy { get; set; } = string.Empty;
+        public DateTimeOffset CreatedAt { get; set; }
+        public DateTimeOffset? PublishedAt { get; set; }
+        public DateTimeOffset? ArchivedAt { get; set; }
     }
 }

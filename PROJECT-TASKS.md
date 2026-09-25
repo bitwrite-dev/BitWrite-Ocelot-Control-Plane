@@ -112,6 +112,7 @@ This document provides a prioritized list of tasks and subtasks based on DDD arc
 | 9 | — | #322 | [Task] Add Missing Repository Interfaces to Application Layer | feature/322-add-missing-repo-interfaces | ✅ **Done** | **High** |
 | 10 | — | #303 | [Task] License Repository Implementation | — | ⏳ **Ready** (dep #302) | **High** |
 | 11 | — | #306 | [Task] AuditLog Repository Implementation | — | ⏳ **Ready** (dep #305) | **High** |
+| 12 | — | #430 | [Bug] RuntimeAdapter cannot complete snapshot application | feature/430-runtimeadapter-apply-failures | 🔴 **In Progress** | **Critical** |
 
 ---
 
@@ -335,6 +336,7 @@ Value Objects → Domain Services → Aggregates → Domain Events → Use Cases
 | ✅ Phase 5 Complete | - | All 10 controllers wired (45/51 endpoints) |
 | ⏳ Task/Subtask (Ready) | 44 | #302-315, #316-323, #336-339, #262-263, #284-285, #341-358 |
 | ⏳ Task/Subtask (Dep on Epic) | 9 | #332 (dep #296), #333 (dep #297), plus 7 controller wiring deps |
+| 🔴 Bug (Blocking) | 1 | #430 (RuntimeAdapter snapshot apply — blocks gateway config apply) |
 
 ---
 

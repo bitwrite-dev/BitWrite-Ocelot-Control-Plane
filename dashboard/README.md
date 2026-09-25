@@ -66,6 +66,46 @@ dashboard/
     └── index.css            # Tailwind import + shadcn design tokens
 ```
 
+## API client
+
+`src/api/` is the typed client for the `/api/v1` surface.
+
+```ts
+import { createApiClient } from '@/api'
+
+const client = createApiClient()
+
+const { routes, totalCount } = await client.resources.routes.list({ page: 1, pageSize: 20 })
+```
+
+| Module | Responsibility |
+|---|---|
+| `http.ts` | fetch wrapper — base URL, query building, JSON, bearer token, cancellation |
+| `errors.ts` | `ApiError`, and normalisation of the two error shapes the API returns |
+| `resources.ts` | one module-level namespace per controller |
+| `types.ts` | generated from `src/BitWrite.OcelotControl.Api/DTOs` — do not hand-edit |
+| `auth.ts` | access-token seam; **the strategy is still undecided, see #433** |
+| `config.ts` | reads `VITE_API_BASE_URL` |
+
+### Two error shapes, one `ApiError`
+
+The API returns two different failure formats and the client flattens both into a single `ApiError`:
+
+1. `{ correlationId, error, type }` from `GlobalExceptionMiddleware`
+2. `ValidationProblemDetails` — `{ type, title, status, errors: { field: [...] } }` — emitted by `[ApiController]` when model binding fails
+
+So callers get `error.message`, `error.status`, `error.correlationId`, and `error.fieldErrors` without branching on the wire format. `error.isValidation` distinguishes the second shape, and `error.isNetworkError` means the request never reached the API.
+
+`AbortError` is deliberately rethrown untouched, so a cancelled request is not mistaken for a network failure.
+
+### Auth is not wired yet
+
+`createApiClient` takes an `AccessTokenProvider`; the default sends no `Authorization` header. **This is not a finished auth story** — the API has no token-issuance endpoint, so the two options are adding one or implementing OIDC against an external IdP. See #433.
+
+### CORS
+
+The dev server proxies `/api`, so development needs no CORS. A cross-origin deployment does, so the API enables a named `DashboardCors` policy reading `Cors:AllowedOrigins` from configuration — origins are never wildcarded, which keeps credentialed requests possible later.
+
 ## Tests
 
 Vitest with jsdom and Testing Library. Tests live in `src/test/` and use the `@/` alias, so they resolve modules the same way the app does.

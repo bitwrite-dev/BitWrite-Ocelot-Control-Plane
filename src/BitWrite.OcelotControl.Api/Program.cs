@@ -33,6 +33,24 @@ namespace BitWrite.OcelotControl.Api
         {
             var builder = WebApplication.CreateBuilder(args);
 
+            // CORS for the dashboard. The dev server proxies /api (see
+            // dashboard/vite.config.ts) so same-origin requests need nothing, but a
+            // production deployment serving the built assets from another origin
+            // does. Origins are configured, never a wildcard, so credentialed
+            // requests remain possible once authentication lands.
+            const string DashboardCorsPolicy = "DashboardCors";
+            var dashboardOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+                ?? new[] { "http://localhost:5173" };
+
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy(DashboardCorsPolicy, policy => policy
+                    .WithOrigins(dashboardOrigins)
+                    .AllowAnyHeader()
+                    .AllowAnyMethod()
+                    .WithExposedHeaders("X-Correlation-Id"));
+            });
+
             // Add services to the container.
             builder.Services.AddControllers();
             builder.Services.AddFluentValidationAutoValidation();
@@ -234,6 +252,7 @@ builder.Services.AddScoped<AppInterfaces.IConfigurationBuilder, ConfigurationBui
             // Configure the HTTP request pipeline.
             app.UseMiddleware<GlobalExceptionMiddleware>();
             app.UseMiddleware<CorrelationIdMiddleware>();
+            app.UseCors(DashboardCorsPolicy);
 
             if (app.Environment.IsDevelopment())
             {

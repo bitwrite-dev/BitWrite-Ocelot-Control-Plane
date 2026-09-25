@@ -5,7 +5,7 @@ using StackExchange.Redis;
 
 namespace BitWrite.OcelotControl.Infrastructure.Repositories;
 
-public class RedisRuntimeInstanceRepository : RedisRepositoryBase
+public class RedisRuntimeInstanceRepository : RedisRepositoryBase, IRuntimeInstanceRepository
 {
     private const string RuntimeInstancesIndexKey = "ocelot:index:runtimeinstances";
 

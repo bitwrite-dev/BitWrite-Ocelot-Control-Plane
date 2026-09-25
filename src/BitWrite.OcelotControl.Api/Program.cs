@@ -81,11 +81,19 @@ builder.Services.AddScoped<AppInterfaces.IConfigurationBuilder, ConfigurationBui
             builder.Services.AddSingleton<IOutboxRepository, RedisOutboxRepository>();
             builder.Services.AddScoped<AppInterfaces.IOutboxRepository, OutboxRepositoryAdapter>();
 
+            // Infrastructure repository interfaces consumed by the Application-layer
+            // adapters registered above. Without these the adapters cannot be activated
+            // and the host fails to start with "Unable to resolve service for type".
+            builder.Services.AddScoped<IRuntimeInstanceRepository, RedisRuntimeInstanceRepository>();
+            builder.Services.AddScoped<IPluginRepository, RedisPluginRepository>();
+
             // IOcelotConfigApplier Implementation (Infrastructure.Adapters - real impl with Redis/File providers)
             builder.Services.AddSingleton<InfraAdapters.IConfigurationProvider, InfraAdapters.RedisConfigurationProvider>();
             builder.Services.AddSingleton<AppInterfaces.IOcelotConfigApplier, InfraAdapters.OcelotConfigApplier>();
 
+            // JsonEventSerializer is stateless, so the interface mapping is a singleton.
             builder.Services.AddSingleton<JsonEventSerializer>();
+            builder.Services.AddSingleton<IEventSerializer, JsonEventSerializer>();
             builder.Services.AddScoped<AppInterfaces.IEventSerializer, EventSerializerAdapter>();
 
             // UseCase Handlers (Commands) - EXISTING

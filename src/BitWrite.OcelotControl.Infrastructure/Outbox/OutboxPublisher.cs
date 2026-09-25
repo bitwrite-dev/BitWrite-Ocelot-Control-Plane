@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using BitWrite.OcelotControl.Application.Interfaces;
@@ -10,22 +11,19 @@ namespace BitWrite.OcelotControl.Infrastructure.Outbox;
 
 public class OutboxPublisher : BackgroundService
 {
-    private readonly AppIOutboxRepository _outboxRepository;
+    private readonly IServiceScopeFactory _scopeFactory;
     private readonly IRedisPublisher _redisPublisher;
-    private readonly AppIEventSerializer _eventSerializer;
     private readonly ILogger<OutboxPublisher> _logger;
     private readonly TimeSpan _interval = TimeSpan.FromSeconds(10);
     private const int MaxRetries = 5;
 
     public OutboxPublisher(
-        AppIOutboxRepository outboxRepository,
+        IServiceScopeFactory scopeFactory,
         IRedisPublisher redisPublisher,
-        AppIEventSerializer eventSerializer,
         ILogger<OutboxPublisher> logger)
     {
-        _outboxRepository = outboxRepository;
+        _scopeFactory = scopeFactory;
         _redisPublisher = redisPublisher;
-        _eventSerializer = eventSerializer;
         _logger = logger;
     }
 
@@ -52,7 +50,13 @@ public class OutboxPublisher : BackgroundService
 
     private async Task ProcessPendingMessagesAsync(CancellationToken cancellationToken)
     {
-        var pendingMessages = await _outboxRepository.GetPendingAsync(batchSize: 100, cancellationToken);
+        // A BackgroundService is a singleton, so the scoped outbox repository and
+        // event serializer are resolved per polling cycle rather than injected.
+        using var scope = _scopeFactory.CreateScope();
+        var outboxRepository = scope.ServiceProvider.GetRequiredService<AppIOutboxRepository>();
+        var eventSerializer = scope.ServiceProvider.GetRequiredService<AppIEventSerializer>();
+
+        var pendingMessages = await outboxRepository.GetPendingAsync(batchSize: 100, cancellationToken);
 
         foreach (var message in pendingMessages)
         {
@@ -65,14 +69,14 @@ public class OutboxPublisher : BackgroundService
 
                 await _redisPublisher.PublishAsync(channel, message.Payload, cancellationToken);
 
-                await _outboxRepository.MarkProcessedAsync(message.Id, cancellationToken);
+                await outboxRepository.MarkProcessedAsync(message.Id, cancellationToken);
                 
                 _logger.LogInformation("Successfully published message: {MessageId}", message.Id);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to publish message: {MessageId}", message.Id);
-                await HandlePublishFailureAsync(message, ex, cancellationToken);
+                await HandlePublishFailureAsync(outboxRepository, message, ex, cancellationToken);
             }
         }
     }
@@ -111,7 +115,7 @@ public class OutboxPublisher : BackgroundService
         return "unknown";
     }
 
-    private async Task HandlePublishFailureAsync(AppOutboxMessage message, Exception exception, CancellationToken cancellationToken)
+    private async Task HandlePublishFailureAsync(AppIOutboxRepository outboxRepository, AppOutboxMessage message, Exception exception, CancellationToken cancellationToken)
     {
         var newRetryCount = message.RetryCount + 1;
 
@@ -120,10 +124,10 @@ public class OutboxPublisher : BackgroundService
             _logger.LogError("Message {MessageId} exceeded max retries ({MaxRetries}). Moving to dead letter.", 
                 message.Id, MaxRetries);
             
-            await _outboxRepository.MarkFailedAsync(message.Id, 
+            await outboxRepository.MarkFailedAsync(message.Id, 
                 $"Max retries exceeded: {exception.Message}", cancellationToken);
             
-            await _outboxRepository.AddToDeadLetterAsync(message.Id, exception.Message, cancellationToken);
+            await outboxRepository.AddToDeadLetterAsync(message.Id, exception.Message, cancellationToken);
         }
         else
         {
@@ -131,7 +135,7 @@ public class OutboxPublisher : BackgroundService
             _logger.LogWarning("Publish failed for message {MessageId}. Retry {RetryCount}/{MaxRetries} in {Delay}ms", 
                 message.Id, newRetryCount, MaxRetries, delay.TotalMilliseconds);
             
-            await _outboxRepository.MarkFailedAsync(message.Id, 
+            await outboxRepository.MarkFailedAsync(message.Id, 
                 $"Retry {newRetryCount}/{MaxRetries}: {exception.Message}", cancellationToken);
             
             await Task.Delay(delay, cancellationToken);

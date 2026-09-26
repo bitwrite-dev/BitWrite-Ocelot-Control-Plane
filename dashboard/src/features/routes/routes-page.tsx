@@ -9,6 +9,7 @@ import { EnabledBadge } from '@/components/status-badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { Plus } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -227,6 +228,14 @@ export function RoutesPage() {
       <PageHeader
         title="Routes"
         description="All routes known to the control plane."
+        actions={
+          <Button asChild>
+            <Link to="/routes/new">
+              <Plus className="size-4" aria-hidden="true" />
+              Create route
+            </Link>
+          </Button>
+        }
       />
 
       <div className="space-y-4">

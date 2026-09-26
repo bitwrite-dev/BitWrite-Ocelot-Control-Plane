@@ -4,6 +4,7 @@ import { createAppProviders } from '@/app-providers'
 import { AppLayout } from '@/components/app-layout'
 import { NotFoundPage, PlaceholderPage } from '@/pages/placeholders'
 import { OverviewPage } from '@/features/overview/overview-page'
+import { RoutesPage } from '@/features/routes/routes-page'
 import { DYNAMIC_PATHS, PLACEHOLDER_PATHS, assertNavigationIsRoutable } from '@/route-table'
 import type { Role } from '@/navigation'
 
@@ -14,8 +15,9 @@ const routes = [
     path: '/',
     element: <AppLayout />,
     children: [
-      // The index route is the first real page; the rest are still placeholders.
+      // The first two real pages; the rest are still placeholders.
       { index: true, element: <OverviewPage /> },
+      { path: 'routes', element: <RoutesPage /> },
       ...PLACEHOLDER_PATHS.filter((path) => path !== '/').map((path) => ({
         path: path.replace(/^\//, ''),
         element: <PlaceholderPage path={path} />,

@@ -220,6 +220,10 @@ describe('OverviewPage', () => {
     renderOverview(client)
 
     expect(await screen.findByText('Cannot reach the control plane API')).toBeInTheDocument()
+    // The message must say how to fix it, not just restate the browser error.
+    expect(
+      screen.getByText(/dotnet run --project src\/BitWrite.OcelotControl.Api/),
+    ).toBeInTheDocument()
   })
 
   it('queries the gateways endpoint, not runtime/status', async () => {

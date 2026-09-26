@@ -83,9 +83,17 @@ export function toDisplayError(error: unknown): {
 } {
   if (error instanceof ApiError) {
     if (error.isNetworkError) {
+      // By far the most common cause in development is simply that the API is
+      // not running, so say what to do about it rather than restating the
+      // browser's network error verbatim.
       return {
         title: 'Cannot reach the control plane API',
-        message: error.message,
+        message:
+          `${error.message}\n\n` +
+          'The dashboard proxies /api to the API process, so the API must be running.\n' +
+          'Start it with:\n' +
+          '  dotnet run --project src/BitWrite.OcelotControl.Api\n\n' +
+          'It listens on http://localhost:5039. Override with VITE_DEV_API_TARGET if it runs elsewhere.',
       }
     }
     return {

@@ -11,13 +11,22 @@ Tracked by [#262](../issues/262). The bootstrap is [#432](../issues/432), the AP
 
 ## Getting started
 
+Two processes are needed: the API and the dev server.
+
 ```bash
+# terminal 1 — the API
+dotnet run --project src/BitWrite.OcelotControl.Api      # listens on :5039
+
+# terminal 2 — the dashboard
+cd dashboard
 npm install
 cp .env.example .env.local   # optional; defaults work for local dev
 npm run dev
 ```
 
 The dev server runs on <http://localhost:5173>.
+
+> If the API is not running, the page shows **"Cannot reach the control plane API"** — the dev server proxies `/api`, so there is nothing to reach. Start the API as above.
 
 ## Talking to the API
 

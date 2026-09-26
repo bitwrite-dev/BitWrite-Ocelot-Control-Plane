@@ -46,6 +46,48 @@ public class Service
     }
 
     /// <summary>
+    /// Reconstitutes a service from persisted state, preserving its identity,
+    /// timestamps and endpoints.
+    ///
+    /// Infrastructure adapters must use this rather than <see cref="Create"/>:
+    /// Create mints a new <see cref="ServiceId"/> and stamps
+    /// <see cref="DateTimeOffset.UtcNow"/>, so round-tripping through a
+    /// repository would hand out a different id on every read and break any
+    /// aggregate that references this service. It also has no endpoint
+    /// parameter, so endpoints would be silently dropped.
+    /// </summary>
+    public static Service Reconstitute(
+        ServiceId id,
+        string name,
+        string? description,
+        DateTimeOffset createdAt,
+        DateTimeOffset updatedAt,
+        IReadOnlyList<ServiceEndpoint>? endpoints = null)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            throw new DomainException("Service name cannot be empty", "INVALID_SERVICE_NAME");
+
+        var service = new Service
+        {
+            Id = id,
+            Name = name.Trim(),
+            Description = description?.Trim(),
+            CreatedAt = createdAt,
+            UpdatedAt = updatedAt
+        };
+
+        // Added directly rather than through AddHost, which would re-validate and
+        // re-stamp state that is already known-good, and would raise events for a
+        // fact that has already been recorded.
+        if (endpoints is not null)
+        {
+            service._endpoints.AddRange(endpoints);
+        }
+
+        return service;
+    }
+
+    /// <summary>
     /// Adds a host endpoint to the service.
     /// </summary>
     public void AddHost(string host, int port, int weight = 1, string correlationId = "")

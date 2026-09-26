@@ -82,6 +82,54 @@ public class Route
     }
 
     /// <summary>
+    /// Reconstitutes a route from persisted state, preserving its identity,
+    /// enabled state and timestamps.
+    ///
+    /// Infrastructure adapters must use this rather than <see cref="Create"/>:
+    /// Create mints a new <see cref="RouteId"/>, forces <c>IsEnabled</c> back to
+    /// true and stamps <see cref="DateTimeOffset.UtcNow"/>, so reloading a route
+    /// would change its id every time and would undo a disable.
+    /// </summary>
+    public static Route Reconstitute(
+        RouteId id,
+        HttpMethod method,
+        UpstreamPath upstreamPath,
+        ServiceId serviceId,
+        IReadOnlyList<DownstreamTarget> downstreamTargets,
+        bool isEnabled,
+        DateTimeOffset createdAt,
+        DateTimeOffset updatedAt,
+        string? key = null,
+        string? host = null)
+    {
+        if (downstreamTargets is null || downstreamTargets.Count == 0)
+            throw new DomainException("Route must have at least one downstream target", "NO_DOWNSTREAM_TARGETS");
+
+        return new Route
+        {
+            Id = id,
+            Method = method,
+            UpstreamPath = upstreamPath,
+            ServiceId = serviceId,
+            Key = key?.Trim(),
+            Host = host?.ToLowerInvariant().Trim(),
+            IsEnabled = isEnabled,
+            CreatedAt = createdAt,
+            UpdatedAt = updatedAt
+        }.WithTargets(downstreamTargets);
+    }
+
+    /// <summary>
+    /// Appends targets to a newly built route. Split out so Reconstitute does not
+    /// repeat the assignment that Create performs.
+    /// </summary>
+    private Route WithTargets(IReadOnlyList<DownstreamTarget> targets)
+    {
+        _downstreamTargets.AddRange(targets);
+        return this;
+    }
+
+    /// <summary>
     /// Enables the route.
     /// </summary>
     public void Enable(string correlationId = "")

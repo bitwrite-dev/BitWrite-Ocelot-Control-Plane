@@ -21,13 +21,21 @@ public class RedisServiceRepository : RedisRepositoryBase, IServiceRepository
         if (entries.Length == 0)
             return null;
 
-        var service = Service.Create(
+        var endpointsJson = GetEntry(entries, "Endpoints");
+        var endpoints = !string.IsNullOrEmpty(endpointsJson)
+            ? DeserializeEndpoints(endpointsJson)
+            : new List<ServiceEndpoint>();
+
+        // Reconstitute, not Create: Create mints a new ServiceId, so reading a
+        // service twice returned two different ids and any route referencing it
+        // could no longer be resolved.
+        return Service.Reconstitute(
             id,
             GetEntry(entries, "Name"),
-            string.Empty // correlationId
-        );
-
-        return service;
+            GetEntry(entries, "Description"),
+            DateTimeOffset.Parse(GetEntry(entries, "CreatedAt")),
+            DateTimeOffset.Parse(GetEntry(entries, "UpdatedAt")),
+            endpoints);
     }
 
     public async Task<List<Service>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -62,7 +70,9 @@ public class RedisServiceRepository : RedisRepositoryBase, IServiceRepository
             new("Name", service.Name),
             new("Description", service.Description ?? ""),
             new("CreatedAt", service.CreatedAt.ToString("O")),
-            new("UpdatedAt", service.UpdatedAt.ToString("O"))
+            new("UpdatedAt", service.UpdatedAt.ToString("O")),
+            // Endpoints were never persisted, so they could not survive a reload.
+            new("Endpoints", RedisSerializer.Serialize(SerializeEndpoints(service.Endpoints)))
         };
 
         await SetHashAsync(key, entries);
@@ -80,4 +90,34 @@ public class RedisServiceRepository : RedisRepositoryBase, IServiceRepository
         await DeleteAsync(key);
         await SetRemoveAsync("ocelot:index:services", id.Value.ToString());
     }
+
+    /// <summary>
+    /// Persisted shape of <see cref="ServiceEndpoint"/>.
+    ///
+    /// The domain type has `internal` setters, which System.Text.Json will not
+    /// write to — deserializing it directly produced objects with empty host and
+    /// port 0. The domain deliberately carries no serialization attributes, so the
+    /// mapping lives here instead.
+    /// </summary>
+    private sealed record EndpointRecord(string Host, int Port, int Weight, bool IsActive);
+
+    private static List<ServiceEndpoint> DeserializeEndpoints(string json)
+    {
+        var records = RedisSerializer.Deserialize<List<EndpointRecord>>(json) ?? new List<EndpointRecord>();
+
+        // Built via Service.Create/AddHost so the domain invariants still apply.
+        var carrier = Service.Create("__endpoints__");
+        foreach (var record in records)
+        {
+            if (string.IsNullOrWhiteSpace(record.Host)) continue;
+            carrier.AddHost(record.Host, record.Port, weight: record.Weight <= 0 ? 1 : record.Weight);
+        }
+
+        return carrier.Endpoints.ToList();
+    }
+
+    private static List<EndpointRecord> SerializeEndpoints(IReadOnlyList<ServiceEndpoint> endpoints) =>
+        endpoints
+            .Select(e => new EndpointRecord(e.Host, e.Port, e.Weight, e.IsActive))
+            .ToList();
 }

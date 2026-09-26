@@ -35,31 +35,28 @@ public class RedisRouteRepository : RedisRepositoryBase, IRouteRepository
 
         var serviceId = ServiceId.From(GetEntry(entries, "ServiceId"));
         var targetsJson = GetEntry(entries, "DownstreamTargets");
-        var targets = !string.IsNullOrEmpty(targetsJson) 
-            ? RedisSerializer.Deserialize<List<DownstreamTarget>>(targetsJson) 
+        var targets = !string.IsNullOrEmpty(targetsJson)
+            ? DeserializeTargets(targetsJson)
             : new List<DownstreamTarget>();
 
-        var route = Route.Create(
+        // Reconstitute, not Create. Create mints a fresh RouteId, forces
+        // IsEnabled back to true and re-stamps the timestamps; the previous code
+        // worked around the id with reflection, passed the host into the `key`
+        // parameter slot, and re-added targets that Create had already added.
+        return Route.Reconstitute(
+            id,
             routeKey.Method,
             routeKey.Path,
             serviceId,
             targets,
-            routeKey.Host != "" ? routeKey.Host : null,
-            routeKey.Host,
-            string.Empty // correlationId
-        );
-
-        // Override the auto-generated ID
-        var routeIdField = typeof(Route).GetProperty("Id");
-        routeIdField?.SetValue(route, id);
-
-        // Add downstream targets if present
-        foreach (var target in targets)
-        {
-            route.AddDownstreamTarget(target);
-        }
-
-        return route;
+            bool.TryParse(GetEntry(entries, "IsEnabled"), out var isEnabled) && isEnabled,
+            DateTimeOffset.Parse(GetEntry(entries, "CreatedAt")),
+            DateTimeOffset.Parse(GetEntry(entries, "UpdatedAt")),
+            // Fall back to the signature for rows written before FriendlyKey existed.
+            key: GetEntry(entries, "FriendlyKey") is { Length: > 0 } friendly
+                ? friendly
+                : GetEntry(entries, "Key"),
+            host: GetEntry(entries, "Host"));
     }
 
     public async Task<List<Route>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -91,13 +88,17 @@ public class RedisRouteRepository : RedisRepositoryBase, IRouteRepository
         var entries = new HashEntry[]
         {
             new("Id", route.Id.Value.ToString()),
+            // "Key" holds the composite RouteKey signature. The caller-supplied
+            // friendly key was never persisted, so it was replaced by that
+            // signature on every read; it lives in its own field now.
             new("Key", route.RouteKey.ToSignature()),
+            new("FriendlyKey", route.Key ?? ""),
             new("Method", route.Method.Value),
             new("UpstreamPath", route.UpstreamPath.Value),
             new("Host", route.Host ?? ""),
             new("ServiceId", route.ServiceId.Value.ToString()),
             new("IsEnabled", route.IsEnabled.ToString()),
-            new("DownstreamTargets", RedisSerializer.Serialize(route.DownstreamTargets)),
+            new("DownstreamTargets", RedisSerializer.Serialize(SerializeTargets(route.DownstreamTargets))),
             new("CreatedAt", route.CreatedAt.ToString("O")),
             new("UpdatedAt", route.UpdatedAt.ToString("O"))
         };
@@ -131,4 +132,34 @@ public class RedisRouteRepository : RedisRepositoryBase, IRouteRepository
             await StringSetAsync(RedisKeyHelper.IndexRouteSignature(signature), "");
         }
     }
+
+    /// <summary>
+    /// Persisted shape of <see cref="DownstreamTarget"/>.
+    ///
+    /// The domain record has a private constructor and no [JsonConstructor], so
+    /// System.Text.Json refuses to deserialize it and the read threw — which
+    /// GetAllAsync swallowed, making the whole route list come back empty. The
+    /// domain carries no serialization attributes by design, so the mapping lives
+    /// here.
+    /// </summary>
+    private sealed record TargetRecord(string Scheme, string Host, int Port, string Path);
+
+    private static List<DownstreamTarget> DeserializeTargets(string json)
+    {
+        var records = RedisSerializer.Deserialize<List<TargetRecord>>(json) ?? new List<TargetRecord>();
+
+        return records
+            .Where(r => !string.IsNullOrWhiteSpace(r.Host))
+            .Select(r => DownstreamTarget.Create(
+                string.IsNullOrWhiteSpace(r.Scheme) ? "http" : r.Scheme,
+                r.Host,
+                r.Port,
+                string.IsNullOrWhiteSpace(r.Path) ? "/" : r.Path))
+            .ToList();
+    }
+
+    private static List<TargetRecord> SerializeTargets(IReadOnlyList<DownstreamTarget> targets) =>
+        targets
+            .Select(t => new TargetRecord(t.Scheme, t.Host, t.Port, t.Path))
+            .ToList();
 }

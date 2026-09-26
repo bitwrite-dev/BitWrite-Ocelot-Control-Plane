@@ -143,43 +143,34 @@ public class RedisLicenseRepository : RedisRepositoryBase, ILicenseRepository
     private License DeserializeLicense(HashEntry[] entries)
     {
         var featuresJson = GetEntry(entries, "Features");
-        var features = string.IsNullOrEmpty(featuresJson) 
-            ? new List<LicenseFeature>() 
-            : JsonSerializer.Deserialize<List<LicenseFeature>>(featuresJson, new JsonSerializerOptions 
+        var features = string.IsNullOrEmpty(featuresJson)
+            ? new List<LicenseFeature>()
+            : JsonSerializer.Deserialize<List<LicenseFeature>>(featuresJson, new JsonSerializerOptions
             {
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            });
+            }) ?? new List<LicenseFeature>();
 
-        var license = License.Create(
+        // Reconstitute, not Create. Create mints a fresh LicenseId, resets the
+        // lifecycle state, and rejects an expiration date in the past — so this
+        // used to rewrite seven properties through reflection just to undo what
+        // Create had done, and listing licenses threw once one expired.
+        return License.Reconstitute(
+            LicenseId.From(Guid.Parse(GetEntry(entries, "Id"))),
             GetEntry(entries, "Name"),
             GetEntry(entries, "ProductCode"),
+            LicenseStatus.From(GetEntry(entries, "Status")),
             DateTimeOffset.Parse(GetEntry(entries, "ExpirationDate")),
             int.Parse(GetEntry(entries, "MaxGateways")),
             int.Parse(GetEntry(entries, "MaxRoutes")),
-            features,
-            string.Empty
-        );
-
-        // Use reflection to set internal fields since License.Create sets them
-        var id = LicenseId.From(Guid.Parse(GetEntry(entries, "Id")));
-        var status = LicenseStatus.From(GetEntry(entries, "Status"));
-        var createdAt = DateTimeOffset.Parse(GetEntry(entries, "CreatedAt"));
-        var updatedAt = DateTimeOffset.Parse(GetEntry(entries, "UpdatedAt"));
-        var activatedAt = DateTimeOffset.TryParse(GetEntry(entries, "ActivatedAt"), out var act) ? act : (DateTimeOffset?)null;
-        var revokedAt = DateTimeOffset.TryParse(GetEntry(entries, "RevokedAt"), out var rev) ? rev : (DateTimeOffset?)null;
-        var revocationReason = GetEntry(entries, "RevocationReason");
-
-        // Use reflection to set private fields
-        typeof(License).GetProperty(nameof(License.Id))!.SetValue(license, id);
-        typeof(License).GetProperty(nameof(License.Status))!.SetValue(license, LicenseStatus.From(GetEntry(entries, "Status")));
-        typeof(License).GetProperty(nameof(License.CreatedAt))!.SetValue(license, createdAt);
-        typeof(License).GetProperty(nameof(License.UpdatedAt))!.SetValue(license, updatedAt);
-        typeof(License).GetProperty(nameof(License.ActivatedAt))!.SetValue(license, activatedAt);
-        typeof(License).GetProperty(nameof(License.RevokedAt))!.SetValue(license, revokedAt);
-        typeof(License).GetProperty(nameof(License.RevocationReason))!.SetValue(license, revocationReason);
-
-        return license;
+            DateTimeOffset.Parse(GetEntry(entries, "CreatedAt")),
+            DateTimeOffset.Parse(GetEntry(entries, "UpdatedAt")),
+            DateTimeOffset.TryParse(GetEntry(entries, "ActivatedAt"), out var act) ? act : null,
+            DateTimeOffset.TryParse(GetEntry(entries, "RevokedAt"), out var rev) ? rev : null,
+            NullIfEmpty(GetEntry(entries, "RevocationReason")));
     }
+
+    private static string? NullIfEmpty(string value) =>
+        string.IsNullOrEmpty(value) ? null : value;
 
     private static double ToUnixTimestamp(DateTimeOffset dateTime)
     {

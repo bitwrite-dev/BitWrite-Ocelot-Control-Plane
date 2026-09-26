@@ -102,7 +102,13 @@ Query hooks live next to the feature that uses them — `src/features/overview/q
 | Route | Page | Issue |
 |---|---|---|
 | `/` | Overview | #435 |
-| everything else | placeholder linking to its tracking issue | #436–#445 |
+| `/routes` | Routes list | #436 |
+| everything else | placeholder linking to its tracking issue | #437–#445 |
+
+`components/data-table.tsx` is the shared list: server-side paging, a page-size
+selector, a windowed page control, and the loading/empty/row-count states. It does
+no client-side sorting or filtering, so it stays correct as datasets grow. The
+eleven remaining list pages are expected to build on it.
 
 The Overview uses `GET /api/v1/runtime/gateways`, not `GET /api/v1/runtime/status` — the latter requires a `gatewayId` that callers are never told about and answers 400 (see #450).
 

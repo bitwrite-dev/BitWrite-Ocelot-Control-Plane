@@ -56,6 +56,15 @@ public record UpstreamPath : ValueObject
 
     private static readonly Regex ValidPathPattern = new(@"^(/[a-zA-Z0-9\-._~!$&'()*+,;=:@%]*)*$", RegexOptions.Compiled);
 
+    /// <summary>
+    /// An Ocelot placeholder segment: <c>{name}</c>, where the name is a legal
+    /// identifier. Ocelot uses these for catch-all and templated upstream paths
+    /// (<c>/api/{everything}</c>), which are the most common shape a proxy route
+    /// takes — so rejecting them made the common case impossible.
+    /// </summary>
+    private static readonly Regex PlaceholderPattern =
+        new(@"\{[A-Za-z_][A-Za-z0-9_]*\}", RegexOptions.Compiled);
+
     private UpstreamPath(string value)
     {
         Value = value;
@@ -70,12 +79,65 @@ public record UpstreamPath : ValueObject
         if (!normalized.StartsWith("/"))
             normalized = "/" + normalized;
 
-        // Basic validation - more sophisticated validation can be added
-        if (!ValidPathPattern.IsMatch(normalized))
+        ValidatePlaceholders(normalized, value);
+
+        if (!ValidPathPattern.IsMatch(StripPlaceholders(normalized)))
             throw new DomainException($"Invalid UpstreamPath format: {value}", "INVALID_UPSTREAM_PATH_FORMAT");
 
         return new UpstreamPath(normalized);
     }
+
+    /// <summary>
+    /// Validates every <c>…</c> in the path is a well-formed placeholder.
+    ///
+    /// Checking this separately is what keeps the path pattern itself strict: the
+    /// braces are validated for balance, a non-empty name and a legal identifier
+    /// shape, so <c>/api/{}</c>, <c>/api/{unclosed</c> and <c>/api/{has space}</c>
+    /// are all still rejected.
+    /// </summary>
+    private static void ValidatePlaceholders(string path, string original)
+    {
+        var index = 0;
+        while (index < path.Length)
+        {
+            var open = path.IndexOf('{', index);
+            if (open < 0) return;
+
+            var close = path.IndexOf('}', open + 1);
+            if (close < 0)
+            {
+                throw new DomainException(
+                    $"Unclosed placeholder in UpstreamPath: {original}",
+                    "INVALID_UPSTREAM_PATH_PLACEHOLDER");
+            }
+
+            var name = path[(open + 1)..close];
+            if (string.IsNullOrEmpty(name) || !IsLegalIdentifier(name))
+            {
+                throw new DomainException(
+                    $"Invalid placeholder '{{{name}}}' in UpstreamPath: {original}",
+                    "INVALID_UPSTREAM_PATH_PLACEHOLDER");
+            }
+
+            index = close + 1;
+        }
+    }
+
+    private static bool IsLegalIdentifier(string name)
+    {
+        if (name.Length == 0) return false;
+        if (!char.IsLetter(name[0]) && name[0] != '_') return false;
+        return name.All(c => char.IsLetterOrDigit(c) || c == '_');
+    }
+
+    /// <summary>
+    /// Replaces each placeholder with a character the path pattern already allows,
+    /// so the surrounding path is validated on its own terms. Using a placeholder
+    /// name that happens to be valid (<c>{catchAll}</c>) would work, but any name
+    /// is permitted, so the substitution is not.
+    /// </summary>
+    private static string StripPlaceholders(string path) =>
+        PlaceholderPattern.Replace(path, "x");
 
     public UpstreamPath Append(string segment)
     {

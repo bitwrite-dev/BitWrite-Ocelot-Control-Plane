@@ -5,6 +5,7 @@ import { AppLayout } from '@/components/app-layout'
 import { NotFoundPage, PlaceholderPage } from '@/pages/placeholders'
 import { OverviewPage } from '@/features/overview/overview-page'
 import { RoutesPage } from '@/features/routes/routes-page'
+import { CreateRouteWizardPage } from '@/features/routes-wizard/create-route-wizard'
 import { DYNAMIC_PATHS, PLACEHOLDER_PATHS, assertNavigationIsRoutable } from '@/route-table'
 import type { Role } from '@/navigation'
 
@@ -18,6 +19,7 @@ const routes = [
       // The first two real pages; the rest are still placeholders.
       { index: true, element: <OverviewPage /> },
       { path: 'routes', element: <RoutesPage /> },
+      { path: 'routes/new', element: <CreateRouteWizardPage /> },
       ...PLACEHOLDER_PATHS.filter((path) => path !== '/').map((path) => ({
         path: path.replace(/^\//, ''),
         element: <PlaceholderPage path={path} />,

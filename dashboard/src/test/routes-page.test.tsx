@@ -134,6 +134,17 @@ describe('RoutesPage', () => {
     expect(within(row).getByText('localhost:5001')).toBeInTheDocument()
   })
 
+  it('links to the create wizard from the header', async () => {
+    const { impl } = stubFetch()
+    renderRoutes(impl)
+
+    await screen.findByText('users-list')
+    expect(screen.getByRole('link', { name: /create route/i })).toHaveAttribute(
+      'href',
+      '/routes/new',
+    )
+  })
+
   it('shows an em dash where auth or rate limiting is absent', async () => {
     const { impl } = stubFetch({
       routes: [

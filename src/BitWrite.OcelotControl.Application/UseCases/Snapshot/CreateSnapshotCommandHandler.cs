@@ -134,15 +134,15 @@ public class CreateSnapshotCommandHandler
             throw new InvalidOperationException($"Ocelot capability validation failed: {string.Join(", ", capabilityErrors.Select(e => $"{e.Code}: {e.Message}"))}");
         }
 
-        // 3.5 JSON Serialization Validation
-        _integrityVerifier.ValidateIntegrity(
-            _canonicalizer.CanonicalizeJson(ocelotConfig),
-            _configurationBuilder.CalculateConfigurationHash(ocelotConfig),
-            SnapshotVersion.First());
-
-        // 4. Canonicalize and Hash
+        // 4. Canonicalize once, then hash exactly the string that is stored.
+        //
+        // The stored hash must cover Snapshot.Content, because that is what
+        // VerifyIntegrity hashes when it re-reads a snapshot. Hashing the
+        // configuration object instead — CalculateConfigurationHash canonicalises
+        // it into a different, human-readable text format — guaranteed a
+        // mismatch, so every snapshot failed its own integrity check.
         var canonicalJson = _canonicalizer.CanonicalizeJson(ocelotConfig);
-        var hash = _configurationBuilder.CalculateConfigurationHash(ocelotConfig);
+        var hash = _integrityVerifier.ComputeHash(canonicalJson);
 
         // 5. Version Allocation
         var version = _versionAllocator.AllocateNext();

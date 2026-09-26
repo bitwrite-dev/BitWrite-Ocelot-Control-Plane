@@ -85,6 +85,66 @@ public class License
     }
 
     /// <summary>
+    /// Reconstitutes a license from persisted state, preserving its identity,
+    /// status, lifecycle timestamps and features.
+    ///
+    /// Infrastructure adapters must use this rather than <see cref="Create"/> for
+    /// two reasons. Create mints a new <see cref="LicenseId"/> and resets the
+    /// lifecycle state, so a read would change the id and lose activation. It
+    /// also rejects an expiration date in the past, so listing licenses would
+    /// throw as soon as one expired.
+    ///
+    /// Validation of *new* licenses still happens in <see cref="Create"/>; this
+    /// path restores state that was already accepted once.
+    /// </summary>
+    public static License Reconstitute(
+        LicenseId id,
+        string name,
+        string productCode,
+        LicenseStatus status,
+        DateTimeOffset expirationDate,
+        int maxGateways,
+        int maxRoutes,
+        DateTimeOffset createdAt,
+        DateTimeOffset updatedAt,
+        DateTimeOffset? activatedAt = null,
+        DateTimeOffset? revokedAt = null,
+        string? revocationReason = null,
+        string? description = null,
+        IReadOnlyList<LicenseFeature>? features = null)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            throw new DomainException("License name cannot be empty", "INVALID_LICENSE_NAME");
+
+        if (string.IsNullOrWhiteSpace(productCode))
+            throw new DomainException("Product code cannot be empty", "INVALID_PRODUCT_CODE");
+
+        var license = new License
+        {
+            Id = id,
+            Name = name.Trim(),
+            ProductCode = productCode.Trim(),
+            Status = status,
+            ExpirationDate = expirationDate,
+            MaxGateways = maxGateways,
+            MaxRoutes = maxRoutes,
+            CreatedAt = createdAt,
+            UpdatedAt = updatedAt,
+            ActivatedAt = activatedAt,
+            RevokedAt = revokedAt,
+            RevocationReason = revocationReason,
+            Description = description?.Trim(),
+        };
+
+        if (features is not null)
+        {
+            license._features.AddRange(features);
+        }
+
+        return license;
+    }
+
+    /// <summary>
     /// Activates the license.
     /// </summary>
     public void Activate(string correlationId = "")

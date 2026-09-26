@@ -43,6 +43,44 @@ public class GlobalConfiguration
     }
 
     /// <summary>
+    /// Reconstitutes the global configuration from persisted state, preserving
+    /// its identity, updated-at stamp and nested configuration objects.
+    ///
+    /// Infrastructure adapters must use this rather than <see cref="Create"/>:
+    /// Create mints a new <see cref="Guid"/> and resets every field to its
+    /// default, so a read followed by a save would silently revert the stored
+    /// configuration.
+    /// </summary>
+    public static GlobalConfiguration Reconstitute(
+        Guid id,
+        string? baseUrl,
+        string? requestIdKey,
+        string? downstreamScheme,
+        int? timeout,
+        RateLimitConfig? rateLimit,
+        QoSConfig? qos,
+        HttpHandlerConfig? httpHandler,
+        ServiceDiscoveryConfig? serviceDiscovery,
+        DateTimeOffset updatedAt)
+    {
+        var config = new GlobalConfiguration
+        {
+            Id = id,
+            BaseUrl = baseUrl,
+            RequestIdKey = requestIdKey,
+            DownstreamScheme = downstreamScheme,
+            Timeout = timeout,
+            RateLimit = rateLimit,
+            QoS = qos,
+            HttpHandler = httpHandler,
+            ServiceDiscovery = serviceDiscovery,
+            UpdatedAt = updatedAt
+        };
+
+        return config;
+    }
+
+    /// <summary>
     /// Updates the base URL.
     /// </summary>
     public void SetBaseUrl(string? baseUrl)

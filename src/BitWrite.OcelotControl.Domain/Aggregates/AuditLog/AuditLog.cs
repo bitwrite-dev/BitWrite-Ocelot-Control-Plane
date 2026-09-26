@@ -72,6 +72,50 @@ public class AuditLog
     }
 
     /// <summary>
+    /// Reconstitutes an audit entry from persisted state, preserving its id and
+    /// timestamp.
+    ///
+    /// Infrastructure adapters must use this rather than <see cref="Create"/>:
+    /// Create generates a fresh id and stamps <see cref="DateTimeOffset.UtcNow"/>,
+    /// so reading an entry back would change its identity and its recorded time.
+    /// An audit trail is only meaningful if the recorded values are the ones that
+    /// actually happened.
+    /// </summary>
+    public static AuditLog Reconstitute(
+        string id,
+        string actor,
+        string action,
+        string resourceType,
+        string resourceId,
+        string result,
+        DateTimeOffset timestamp,
+        string? correlationId = null,
+        string? details = null)
+    {
+        if (string.IsNullOrWhiteSpace(id))
+            throw new Domain.Exceptions.DomainException("Audit id cannot be empty", "INVALID_AUDIT_ID");
+
+        if (string.IsNullOrWhiteSpace(actor))
+            throw new Domain.Exceptions.DomainException("Actor cannot be empty", "INVALID_AUDIT_ACTOR");
+
+        if (string.IsNullOrWhiteSpace(action))
+            throw new Domain.Exceptions.DomainException("Action cannot be empty", "INVALID_AUDIT_ACTION");
+
+        return new AuditLog
+        {
+            Id = id,
+            Actor = actor.Trim(),
+            Action = action.Trim(),
+            ResourceType = resourceType.Trim(),
+            ResourceId = resourceId.Trim(),
+            Result = result.Trim(),
+            Timestamp = timestamp,
+            CorrelationId = correlationId,
+            Details = details,
+        };
+    }
+
+    /// <summary>
     /// Creates an audit log from a domain event.
     /// </summary>
     public static AuditLog FromDomainEvent(DomainEvent domainEvent, string result)

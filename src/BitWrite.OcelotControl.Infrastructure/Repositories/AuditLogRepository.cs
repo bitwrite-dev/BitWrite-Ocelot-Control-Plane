@@ -165,25 +165,23 @@ public class RedisAuditLogRepository : RedisRepositoryBase, IAuditLogRepository
 
     private AuditLog DeserializeAuditLog(HashEntry[] entries)
     {
-        var id = GetEntry(entries, "Id");
-        var actor = GetEntry(entries, "Actor");
-        var action = GetEntry(entries, "Action");
-        var resourceType = GetEntry(entries, "ResourceType");
-        var resourceId = GetEntry(entries, "ResourceId");
-        var result = GetEntry(entries, "Result");
-        var timestamp = DateTimeOffset.Parse(GetEntry(entries, "Timestamp"));
-        var correlationId = GetEntry(entries, "CorrelationId");
-        var details = GetEntry(entries, "Details");
-
-        return AuditLog.Create(
-            actor,
-            action,
-            resourceType,
-            resourceId,
-            result,
-            string.IsNullOrEmpty(correlationId) ? null : correlationId,
-            string.IsNullOrEmpty(details) ? null : details);
+        // Reconstitute, not Create: Create generates a new id and stamps the
+        // current time, so every read rewrote the identity and the recorded
+        // timestamp of an audit entry.
+        return AuditLog.Reconstitute(
+            GetEntry(entries, "Id"),
+            GetEntry(entries, "Actor"),
+            GetEntry(entries, "Action"),
+            GetEntry(entries, "ResourceType"),
+            GetEntry(entries, "ResourceId"),
+            GetEntry(entries, "Result"),
+            DateTimeOffset.Parse(GetEntry(entries, "Timestamp")),
+            NullIfEmpty(GetEntry(entries, "CorrelationId")),
+            NullIfEmpty(GetEntry(entries, "Details")));
     }
+
+    private static string? NullIfEmpty(string value) =>
+        string.IsNullOrEmpty(value) ? null : value;
 
     private static double ToUnixTimestamp(DateTimeOffset dateTime)
     {

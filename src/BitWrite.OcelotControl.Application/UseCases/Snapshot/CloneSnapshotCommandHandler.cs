@@ -51,9 +51,10 @@ public class CloneSnapshotCommandHandler
             throw new InvalidOperationException("Failed to deserialize snapshot content");
         }
 
-        // Canonicalize and hash using the OcelotConfiguration object
+        // Hash exactly the string that is stored, for the same reason as
+        // CreateSnapshotCommandHandler: VerifyIntegrity hashes Snapshot.Content.
         var canonicalJson = _canonicalizer.CanonicalizeJson(ocelotConfig);
-        var hash = _configurationBuilder.CalculateConfigurationHash(ocelotConfig);
+        var hash = _integrityVerifier.ComputeHash(canonicalJson);
 
         // Create new snapshot
         var clonedSnapshot = DomainSnapshot.Create(

@@ -91,7 +91,10 @@ public class ValidateRouteCommandHandler
         try
         {
             var canonicalJson = _canonicalizer.CanonicalizeJson(ocelotConfig);
-            var hash = _configurationBuilder.CalculateConfigurationHash(ocelotConfig);
+            // Hash the canonicalised string, which is what a snapshot would store.
+            // Hashing the object canonicalised it into a different text format and
+            // the comparison below could never succeed.
+            var hash = _integrityVerifier.ComputeHash(canonicalJson);
             _integrityVerifier.ValidateIntegrity(canonicalJson, hash, SnapshotVersion.First());
         }
         catch (Exception ex)

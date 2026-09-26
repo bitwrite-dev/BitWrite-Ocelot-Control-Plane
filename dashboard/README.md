@@ -125,7 +125,9 @@ const { routes, totalCount } = await client.resources.routes.list({ page: 1, pag
 | `resources.ts` | one module-level namespace per controller |
 | `types.ts` | generated from `src/BitWrite.OcelotControl.Api/DTOs` — do not hand-edit |
 | `auth.ts` | access-token seam; **the strategy is still undecided, see #433** |
-| `config.ts` | reads `VITE_API_BASE_URL` |
+| `config.ts` | reads `VITE_API_BASE_URL` — an **origin**, never a path prefix |
+
+`VITE_API_BASE_URL` defaults to empty, meaning same-origin. Resource paths are full API paths (`/api/v1/...`), so the browser requests them directly and the dev server's `/api` proxy forwards them. Setting it to a path prefix such as `/api` is wrong: it concatenates with the `/api/` already in every path and yields `/api/api/v1/...`, which 404s. For a cross-origin deployment set an absolute origin, e.g. `https://api.example.com`.
 
 ### Two error shapes, one `ApiError`
 

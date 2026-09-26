@@ -18,17 +18,24 @@ export interface RequestOptions {
   onUnauthorized?: () => void
 }
 
+/**
+ * Builds the request URL.
+ *
+ * `baseUrl` is an origin (possibly empty for same-origin) and `path` is the
+ * full API path, so the two are simply concatenated. An empty base must not be
+ * normalised into `/` — that would turn `/api/v1/routes` into `//api/v1/routes`.
+ */
 function buildUrl(baseUrl: string, path: string, query?: QueryParams): string {
   const normalizedPath = path.startsWith('/') ? path : `/${path}`
-  const url = new URL(`${baseUrl}${normalizedPath}`, 'http://placeholder.invalid')
+  // `URL` needs an absolute base to parse, so the query is assembled against a
+  // throwaway origin and only the search string is kept.
+  const url = new URL(`${normalizedPath}`, 'http://placeholder.invalid')
 
   for (const [key, value] of Object.entries(query ?? {})) {
     if (value === undefined || value === null || value === '') continue
     url.searchParams.set(key, String(value))
   }
 
-  // `URL` needs an absolute base to parse, but the app may be using a relative
-  // base, so rebuild the path+search by hand.
   return `${baseUrl}${normalizedPath}${url.search}`
 }
 
@@ -56,7 +63,9 @@ export function createHttpClient(
   tokenProvider: AccessTokenProvider = anonymousTokenProvider,
   options: ApiClientOptions = {},
 ): HttpClient {
-  const baseUrl = options.baseUrl ?? getApiBaseUrl()
+  // Normalise here as well as in getApiBaseUrl, because baseUrl is a public
+  // option and a trailing slash would otherwise yield `//api/v1/...`.
+  const baseUrl = (options.baseUrl ?? getApiBaseUrl()).replace(/\/+$/, '')
   const doFetch = options.fetchImpl ?? globalThis.fetch.bind(globalThis)
 
   async function request<T>(path: string, requestOptions: RequestOptions = {}): Promise<T> {

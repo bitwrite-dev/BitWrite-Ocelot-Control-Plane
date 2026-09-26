@@ -91,6 +91,21 @@ Pages that are not implemented yet render an explicit "Not implemented yet" stat
 
 `ErrorState` renders the API correlation id, so a user can quote it in a bug report.
 
+## Data fetching
+
+`@tanstack/react-query` provides caching, deduplication and request cancellation. `createAppProviders` builds the `QueryClient` and the API client together and provides both through context, so components never import a singleton and tests can inject a client with a stubbed `fetch`.
+
+Query hooks live next to the feature that uses them — `src/features/overview/queries.ts` for now. Query keys are centralised in the same module so invalidation cannot drift from the fetch.
+
+## Pages
+
+| Route | Page | Issue |
+|---|---|---|
+| `/` | Overview | #435 |
+| everything else | placeholder linking to its tracking issue | #436–#445 |
+
+The Overview uses `GET /api/v1/runtime/gateways`, not `GET /api/v1/runtime/status` — the latter requires a `gatewayId` that callers are never told about and answers 400 (see #450).
+
 ## API client
 
 `src/api/` is the typed client for the `/api/v1` surface.

@@ -14,10 +14,14 @@ public record RouteResponse(
     bool IsEnabled,
     IReadOnlyList<DownstreamTarget> DownstreamTargets,
     AuthenticationOptions? AuthenticationOptions,
+    AuthorizationOptions? AuthorizationOptions,
     RateLimitOptions? RateLimitOptions,
     QoSOptions? QoSOptions,
     CacheOptions? CacheOptions,
     LoadBalancerOptions? LoadBalancerOptions,
+    HeaderOptions? HeaderOptions,
+    ClaimOptions? ClaimOptions,
+    QueryOptions? QueryOptions,
     DateTimeOffset CreatedAt,
     DateTimeOffset UpdatedAt
 );

@@ -187,6 +187,13 @@ public class ServicesController : BaseApiController
             "",
             true,
             new List<ApiDtos.DownstreamTargetResponse>(),
+            // This endpoint answers from a reduced summary, so it reports no
+            // option blocks. It already reports no targets and no service id
+            // either; filling those in properly is a separate change.
+            null,
+            null,
+            null,
+            null,
             null,
             null,
             null,

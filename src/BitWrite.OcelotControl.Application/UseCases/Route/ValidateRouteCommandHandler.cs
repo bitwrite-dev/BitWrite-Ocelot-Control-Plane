@@ -66,14 +66,14 @@ public class ValidateRouteCommandHandler
         FeaturesOf(route));
 
     /// <summary>
-    /// The capabilities a stored route has switched on, including the ones the
-    /// route DTO cannot carry yet.
+    /// The capabilities a stored route has switched on.
     /// </summary>
     internal static IReadOnlyList<string> FeaturesOf(DomainRoute route)
     {
         var features = new List<string>();
 
         if (route.AuthenticationOptions != null) features.Add("authentication");
+        if (route.AuthorizationOptions != null) features.Add("authorization");
         if (route.RateLimitOptions != null) features.Add("rate-limiting");
         if (route.QoSOptions != null) features.Add("qos");
         if (route.CacheOptions != null) features.Add("caching");

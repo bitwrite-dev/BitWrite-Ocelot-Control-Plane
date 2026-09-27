@@ -50,13 +50,16 @@ public class RouteValidator
     private static readonly Dictionary<string, string> FeatureFields = new()
     {
         ["authentication"] = "authenticationOptions.allowedScopes",
+        ["authorization"] = "authorizationOptions",
         ["rate-limiting"] = "rateLimitOptions",
         ["qos"] = "qosOptions",
         ["caching"] = "cacheOptions",
         ["load-balancing"] = "loadBalancerOptions",
-        ["header-transformation"] = "transformations",
-        ["claim-transformation"] = "transformations",
-        ["query-string-transformation"] = "transformations",
+        // Each transformation has its own field, so a failure points at the
+        // block that caused it rather than a generic "transformations".
+        ["header-transformation"] = "headerTransformations",
+        ["claim-transformation"] = "claimTransformations",
+        ["query-string-transformation"] = "queryTransformations",
     };
 
     private readonly IRouteRepository _routeRepository;

@@ -77,30 +77,6 @@ public class ReplaceRouteCommandHandler
                 "Success"),
             cancellationToken);
 
-        return MapToResponse(route);
+        return RouteResponseMapper.Map(route);
     }
-
-    /// <summary>
-    /// Projects the aggregate onto the response shape.
-    /// </summary>
-    /// <remarks>
-    /// The option blocks are passed through as the domain holds them, which is
-    /// how the create handler reports them too.
-    /// </remarks>
-    private static RouteResponse MapToResponse(DomainRoute route) =>
-        new(
-            route.Id,
-            route.Key,
-            route.Method,
-            route.UpstreamPath,
-            route.ServiceId,
-            route.IsEnabled,
-            route.DownstreamTargets,
-            route.AuthenticationOptions,
-            route.RateLimitOptions,
-            route.QoSOptions,
-            route.CacheOptions,
-            route.LoadBalancerOptions,
-            route.CreatedAt,
-            route.UpdatedAt);
 }

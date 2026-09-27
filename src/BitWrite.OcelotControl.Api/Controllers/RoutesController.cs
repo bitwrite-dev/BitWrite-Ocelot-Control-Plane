@@ -434,6 +434,8 @@ public class RoutesController : BaseApiController
             ToTransformationsResponse(route.HeaderOptions),
             ToTransformationsResponse(route.ClaimOptions),
             ToTransformationsResponse(route.QueryOptions),
+            route.Priority,
+            route.RouteIsCaseSensitive,
             route.CreatedAt,
             route.UpdatedAt);
 

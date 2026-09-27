@@ -216,6 +216,55 @@ public class RouteFeaturePersistenceTests
     }
 
     [Fact]
+    public async Task Route_ShouldRoundTripPriorityAndCaseSensitivity()
+    {
+        // These were never written at all, so a reload lost them. Silent again,
+        // because a route without a priority still loads and still routes.
+        var route = NewRoute();
+        route.Replace(
+            HttpMethod.Get,
+            UpstreamPath.From("/api/test"),
+            route.ServiceId,
+            new List<DownstreamTarget> { DownstreamTarget.Create("http", "localhost", 5001) },
+            "key",
+            host: null,
+            authenticationOptions: null,
+            rateLimitOptions: null,
+            qosOptions: null,
+            cacheOptions: null,
+            loadBalancerOptions: null,
+            priority: 250,
+            routeIsCaseSensitive: true);
+
+        var loaded = await RoundTrip(route);
+
+        loaded.Priority.Should().Be(250);
+        loaded.RouteIsCaseSensitive.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Route_ShouldRoundTripTheUpstreamHost()
+    {
+        var route = NewRoute();
+        route.Replace(
+            HttpMethod.Get,
+            UpstreamPath.From("/api/test"),
+            route.ServiceId,
+            new List<DownstreamTarget> { DownstreamTarget.Create("http", "localhost", 5001) },
+            "key",
+            host: "api.example.com",
+            authenticationOptions: null,
+            rateLimitOptions: null,
+            qosOptions: null,
+            cacheOptions: null,
+            loadBalancerOptions: null);
+
+        var loaded = await RoundTrip(route);
+
+        loaded.Host.Should().Be("api.example.com");
+    }
+
+    [Fact]
     public async Task Route_ShouldReturnNullForOptionsThatWereNeverSet()
     {
         var loaded = await RoundTrip(NewRoute());

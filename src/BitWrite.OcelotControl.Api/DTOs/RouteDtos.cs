@@ -48,7 +48,9 @@ public record CreateRouteRequest(
     LoadBalancerOptionsRequest? LoadBalancerOptions,
     TransformationsRequest? HeaderTransformations,
     TransformationsRequest? ClaimTransformations,
-    TransformationsRequest? QueryTransformations
+    TransformationsRequest? QueryTransformations,
+    [Range(0, 1000)] int Priority = 0,
+    bool RouteIsCaseSensitive = false
 );
 
 /// <summary>
@@ -75,7 +77,9 @@ public record UpdateRouteRequest(
     LoadBalancerOptionsRequest? LoadBalancerOptions,
     TransformationsRequest? HeaderTransformations,
     TransformationsRequest? ClaimTransformations,
-    TransformationsRequest? QueryTransformations
+    TransformationsRequest? QueryTransformations,
+    [Range(0, 1000)] int Priority = 0,
+    bool RouteIsCaseSensitive = false
 );
 
 public record DownstreamTargetRequest(
@@ -126,6 +130,8 @@ public record RouteResponse(
     TransformationsResponse? HeaderTransformations,
     TransformationsResponse? ClaimTransformations,
     TransformationsResponse? QueryTransformations,
+    int Priority,
+    bool RouteIsCaseSensitive,
     DateTimeOffset CreatedAt,
     DateTimeOffset UpdatedAt
 );

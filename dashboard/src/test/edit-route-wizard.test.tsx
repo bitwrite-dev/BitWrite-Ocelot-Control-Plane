@@ -18,6 +18,8 @@ const STORED = {
   host: 'api.example.com',
   serviceId: 'svc-users',
   isEnabled: true,
+  priority: 30,
+  routeIsCaseSensitive: true,
   downstreamTargets: [{ host: 'localhost', port: 5001, scheme: 'http', path: '/' }],
   authenticationOptions: { allowedScopes: ['users.read'] },
   rateLimitOptions: { enableRateLimiting: true, period: 'Hour', limit: 250 },
@@ -191,6 +193,10 @@ describe('EditRouteWizardPage', () => {
       qosOptions: { timeoutSeconds: 45, circuitBreakerTimeoutSeconds: 10 },
       cacheOptions: { ttlSeconds: 120 },
       loadBalancerOptions: { algorithm: 'LeastConnection' },
+      // Carried from the stored route: these are always sent, unlike the
+      // feature blocks that are omitted when switched off.
+      priority: 30,
+      routeIsCaseSensitive: true,
     })
   })
 
@@ -315,6 +321,8 @@ describe('the shaping is the same for create and replace', () => {
       method: 'GET',
       upstreamPath: '/x',
       host: '',
+      priority: 0,
+      routeIsCaseSensitive: false,
       serviceId: 's',
       downstreamTargets: [{ host: 'h', port: 1, scheme: 'http', path: '/' }],
       allowedScopes: [],

@@ -121,6 +121,8 @@ describe('toCreateRequest', () => {
       'host',
       'key',
       'method',
+      'priority',
+      'routeIsCaseSensitive',
       'serviceId',
       'upstreamPath',
     ])

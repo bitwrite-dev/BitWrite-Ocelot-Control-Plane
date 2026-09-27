@@ -48,6 +48,9 @@ export interface RouteDraft {
   method: string
   upstreamPath: string
   host: string
+  /** Higher is matched first among overlapping routes. */
+  priority: number
+  routeIsCaseSensitive: boolean
   serviceId: string
   downstreamTargets: DownstreamTargetDraft[]
   /** Authentication is one field on the API: a list of allowed scopes. */
@@ -89,6 +92,9 @@ export const emptyRouteDraft = (): RouteDraft => ({
   method: 'GET',
   upstreamPath: '',
   host: '',
+  // Zero and case-insensitive are the Ocelot defaults for both.
+  priority: 0,
+  routeIsCaseSensitive: false,
   serviceId: '',
   downstreamTargets: [{ host: '', port: '', scheme: 'http', path: '/' }],
   allowedScopes: [],
@@ -234,10 +240,13 @@ const qos: WizardStep = {
 const advanced: WizardStep = {
   id: 'advanced',
   title: 'Advanced Options',
-  description: 'Response caching and load balancing.',
+  description: 'Matching behaviour, response caching and load balancing.',
   requires: [5],
   validate: (draft) => {
     const errors: string[] = []
+    if (!Number.isInteger(draft.priority) || draft.priority < 0 || draft.priority > 1000) {
+      errors.push('Priority must be between 0 and 1000')
+    }
     if (draft.cache.enabled) {
       const ttl = inRangeError('Cache TTL (seconds)', draft.cache.ttlSeconds, 1, 86400)
       if (ttl) errors.push(ttl)
@@ -300,6 +309,10 @@ export function toCreateRequest(draft: RouteDraft) {
     method: draft.method,
     upstreamPath: draft.upstreamPath.trim(),
     host: draft.host.trim() === '' ? null : draft.host.trim(),
+    // Not optional: a route is always built with them, unlike the feature
+    // blocks that are omitted when switched off.
+    priority: draft.priority,
+    routeIsCaseSensitive: draft.routeIsCaseSensitive,
     serviceId: draft.serviceId,
     downstreamTargets: draft.downstreamTargets.map((target) => ({
       host: target.host.trim(),
@@ -411,6 +424,8 @@ export function draftFromRoute(route: RouteResponse): RouteDraft {
   draft.method = route.method
   draft.upstreamPath = route.upstreamPath
   draft.host = route.host ?? ''
+  draft.priority = route.priority
+  draft.routeIsCaseSensitive = route.routeIsCaseSensitive
   draft.serviceId = route.serviceId
   draft.downstreamTargets =
     route.downstreamTargets.length > 0

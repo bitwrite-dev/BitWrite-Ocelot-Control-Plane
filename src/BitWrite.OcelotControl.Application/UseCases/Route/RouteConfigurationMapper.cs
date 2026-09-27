@@ -35,6 +35,8 @@ public static class RouteConfigurationMapper
             LoadBalancerOptions = route.LoadBalancerOptions,
             HeaderOptions = route.HeaderOptions,
             ClaimOptions = route.ClaimOptions,
-            QueryOptions = route.QueryOptions
+            QueryOptions = route.QueryOptions,
+            Priority = route.Priority,
+            RouteIsCaseSensitive = route.RouteIsCaseSensitive
         };
 }

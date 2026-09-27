@@ -32,6 +32,8 @@ public record ReplaceRouteCommand(
     HeaderOptions? HeaderOptions = null,
     ClaimOptions? ClaimOptions = null,
     QueryOptions? QueryOptions = null,
+    int priority = 0,
+    bool routeIsCaseSensitive = false,
     string InitiatedBy = "",
     string CorrelationId = ""
 );

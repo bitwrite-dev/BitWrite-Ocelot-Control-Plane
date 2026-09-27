@@ -22,6 +22,8 @@ public record RouteResponse(
     HeaderOptions? HeaderOptions,
     ClaimOptions? ClaimOptions,
     QueryOptions? QueryOptions,
+    int Priority,
+    bool RouteIsCaseSensitive,
     DateTimeOffset CreatedAt,
     DateTimeOffset UpdatedAt
 );

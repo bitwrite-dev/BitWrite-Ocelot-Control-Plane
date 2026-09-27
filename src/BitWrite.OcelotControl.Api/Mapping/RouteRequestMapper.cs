@@ -81,6 +81,8 @@ public static class RouteRequestMapper
             headers,
             claims,
             query,
+            request.Priority,
+            request.RouteIsCaseSensitive,
             initiatedBy));
     }
 
@@ -138,6 +140,8 @@ public static class RouteRequestMapper
             headers,
             claims,
             query,
+            request.Priority,
+            request.RouteIsCaseSensitive,
             initiatedBy));
     }
 

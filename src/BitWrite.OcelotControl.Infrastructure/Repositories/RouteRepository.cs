@@ -59,6 +59,12 @@ public class RedisRouteRepository : RedisRepositoryBase, IRouteRepository
                 ? friendly
                 : GetEntry(entries, "Key"),
             host: GetEntry(entries, "Host"),
+            priority: int.TryParse(GetEntry(entries, "Priority"), out var storedPriority)
+                ? storedPriority
+                : 0,
+            routeIsCaseSensitive:
+                bool.TryParse(GetEntry(entries, "RouteIsCaseSensitive"), out var storedCase)
+                    && storedCase,
             authenticationOptions: DeserializeAuthentication(GetEntry(entries, "AuthenticationOptions")),
             authorizationOptions: DeserializeAuthorization(GetEntry(entries, "AuthorizationOptions")),
             rateLimitOptions: DeserializeRateLimit(GetEntry(entries, "RateLimitOptions")),
@@ -118,6 +124,8 @@ public class RedisRouteRepository : RedisRepositoryBase, IRouteRepository
             new("Host", route.Host ?? ""),
             new("ServiceId", route.ServiceId.Value.ToString()),
             new("IsEnabled", route.IsEnabled.ToString()),
+            new("Priority", route.Priority.ToString()),
+            new("RouteIsCaseSensitive", route.RouteIsCaseSensitive.ToString()),
             new("DownstreamTargets", RedisSerializer.Serialize(SerializeTargets(route.DownstreamTargets))),
             // Every feature config is persisted. They were all missing, so a
             // route came back from storage with nothing configured and the

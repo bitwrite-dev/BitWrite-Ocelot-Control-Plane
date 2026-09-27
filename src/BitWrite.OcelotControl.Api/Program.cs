@@ -126,7 +126,9 @@ builder.Services.AddScoped<AppInterfaces.IConfigurationBuilder, ConfigurationBui
             builder.Services.AddScoped<EnableRouteCommandHandler>();
             builder.Services.AddScoped<DisableRouteCommandHandler>();
             builder.Services.AddScoped<GetRouteStatusCommandHandler>();
+            builder.Services.AddScoped<RouteValidator>();
             builder.Services.AddScoped<ValidateRouteCommandHandler>();
+            builder.Services.AddScoped<ValidateRouteDraftCommandHandler>();
             builder.Services.AddScoped<PreviewRouteQueryHandler>();
             builder.Services.AddScoped<GetEffectiveRouteQueryHandler>();
             builder.Services.AddScoped<ListRoutesQueryHandler>();

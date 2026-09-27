@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { useApi } from '@/app-providers'
 import { toCreateRequest, type RouteDraft } from './wizard-model'
+import type { RouteValidationResponse } from '@/api'
 
 /**
  * Query hooks for the Create Route Wizard.
@@ -41,3 +42,20 @@ export function useCreateRoute() {
       ]).then(() => undefined),
   })
 }
+
+/**
+ * Asks the API to check a draft before it is saved.
+ *
+ * Runs the same checks the create path would, without persisting anything, so
+ * the Review step can report a problem before the operator commits to it.
+ */
+export function useValidateRouteDraft() {
+  const api = useApi()
+
+  return useMutation({
+    mutationFn: (draft: RouteDraft) =>
+      api.resources.routes.validateDraft(toCreateRequest(draft)),
+  })
+}
+
+export type DraftValidation = RouteValidationResponse

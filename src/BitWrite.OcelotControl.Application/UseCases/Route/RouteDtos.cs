@@ -62,9 +62,17 @@ public record ValidateRouteCommand(
     string CorrelationId = ""
 );
 
-public record ValidateRouteResponse(
-    bool IsValid,
-    IReadOnlyList<string> Errors
+/// <summary>
+/// Validates a route the operator has not saved yet.
+/// </summary>
+/// <remarks>
+/// The body is mapped by the API layer, so the handler only runs the shared
+/// checks. Kept beside ValidateRouteCommand so both entry points are discoverable.
+/// </remarks>
+public record ValidateRouteDraftCommand(
+    RouteValidationInput Input,
+    string InitiatedBy = "",
+    string CorrelationId = ""
 );
 
 public record PreviewRouteQuery(

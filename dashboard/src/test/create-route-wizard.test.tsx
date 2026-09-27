@@ -46,15 +46,19 @@ const CREATED = {
 interface StubOptions {
   createStatus?: number
   createBody?: unknown
+  /** Draft validation verdict returned by POST /api/v1/routes/validate. */
+  validation?: { isValid: boolean; errors: { field: string | null; code: string; message: string }[] }
   /** Fails the services lookup, which blocks the wizard entirely. */
   servicesError?: boolean
 }
 
 function stubFetch(options: StubOptions = {}) {
   const posts: unknown[] = []
+  const calls: string[] = []
 
   const impl = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = new URL(String(input), 'http://api.test')
+    calls.push(`${init?.method ?? 'GET'} ${url.pathname}`)
 
     if (url.pathname === '/api/v1/services') {
       if (options.servicesError) {
@@ -63,6 +67,13 @@ function stubFetch(options: StubOptions = {}) {
         })
       }
       return new Response(JSON.stringify(SERVICES), { status: 200 })
+    }
+
+    if (url.pathname === '/api/v1/routes/validate' && init?.method === 'POST') {
+      return new Response(
+        JSON.stringify(options.validation ?? { isValid: true, errors: [] }),
+        { status: 200 },
+      )
     }
 
     if (url.pathname === '/api/v1/routes' && init?.method === 'POST') {
@@ -78,7 +89,7 @@ function stubFetch(options: StubOptions = {}) {
     return new Response('{}', { status: 200 })
   })
 
-  return { impl, posts }
+  return { impl, posts, calls }
 }
 
 function renderWizard(fetchImpl: ReturnType<typeof vi.fn>) {
@@ -166,6 +177,77 @@ describe('CreateRouteWizardPage', () => {
     await user.click(screen.getByRole('button', { name: 'Back' }))
     expect(screen.getByLabelText('Host 1')).toHaveValue('localhost')
     expect(screen.getByLabelText('Service')).toHaveValue('svc-users')
+  })
+
+  it('checks the draft with the API before creating it', async () => {
+    const { impl, calls } = stubFetch()
+    renderWizard(impl)
+    const user = userEvent.setup()
+
+    await fillRequiredSteps(user)
+    for (let step = 0; step < 4; step += 1) await next(user)
+
+    await user.click(await screen.findByRole('button', { name: 'Create route' }))
+
+    // The draft is checked first, then the route is created.
+    await waitFor(() => expect(calls).toContain('POST /api/v1/routes/validate'))
+    expect(calls.indexOf('POST /api/v1/routes/validate')).toBeLessThan(
+      calls.indexOf('POST /api/v1/routes'),
+    )
+    expect(await screen.findByText('route detail')).toBeInTheDocument()
+  })
+
+  it('does not create a route the API rejects as a draft', async () => {
+    const { impl, posts } = stubFetch({
+      validation: {
+        isValid: false,
+        errors: [
+          {
+            field: 'downstreamTargets[0]',
+            code: 'INVALID_TARGET',
+            message: 'Downstream target host must not be empty',
+          },
+        ],
+      },
+    })
+    renderWizard(impl)
+    const user = userEvent.setup()
+
+    await fillRequiredSteps(user)
+    for (let step = 0; step < 4; step += 1) await next(user)
+
+    await user.click(await screen.findByRole('button', { name: 'Create route' }))
+
+    expect(await screen.findByText('One problem to fix before saving:')).toBeInTheDocument()
+    // The only POST that happened was the validation call, not a create.
+    expect(posts).toHaveLength(0)
+  })
+
+  it('sends a server error back to the step that owns the field', async () => {
+    const { impl } = stubFetch({
+      validation: {
+        isValid: false,
+        errors: [
+          { field: 'upstreamPath', code: 'INVALID_UPSTREAM_PATH', message: 'Upstream path is taken' },
+        ],
+      },
+    })
+    renderWizard(impl)
+    const user = userEvent.setup()
+
+    await fillRequiredSteps(user)
+    for (let step = 0; step < 4; step += 1) await next(user)
+    await user.click(await screen.findByRole('button', { name: 'Create route' }))
+
+    // The error names the step it belongs to.
+    expect(
+      await screen.findByRole('button', { name: /Upstream path is taken/ }),
+    ).toBeInTheDocument()
+
+    // Following it lands on that step, where the failure is shown.
+    await user.click(screen.getByRole('button', { name: /Upstream path is taken/ }))
+    expect(await screen.findByText('The API rejected this step:')).toBeInTheDocument()
+    expect(screen.getByLabelText('Upstream path')).toHaveValue('/api/users')
   })
 
   it('posts the assembled configuration and moves to the route on success', async () => {

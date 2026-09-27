@@ -126,14 +126,30 @@ public class RouteValidator
             error.Message)));
 
         // 4. Build the Ocelot configuration, so the shape is validated too.
-        var ocelotConfig = _configurationBuilder.BuildConfiguration(
-            new List<RouteConfiguration> { configuration },
-            new MinimalGlobalConfig { BaseUrl = "", RequestIdKey = "" },
-            OcelotVersion.V20_0);
+        //
+        // A value the target version cannot express is reported against its own
+        // field rather than failing the build, so the wizard can send the
+        // operator to the step that can fix it. Publishing still fails, which is
+        // the point: the rule is either expressible or it is refused.
+        OcelotConfiguration ocelotConfig;
+        try
+        {
+            ocelotConfig = _configurationBuilder.BuildConfiguration(
+                new List<RouteConfiguration> { configuration },
+                new MinimalGlobalConfig { BaseUrl = "", RequestIdKey = "" },
+                OcelotVersion.V18_0);
+        }
+        catch (NotExpressibleException ex)
+        {
+            return new RouteValidationResult(
+                false,
+                new[] { new RouteValidationError(ex.Field, "NOT_EXPRESSIBLE", ex.Message) });
+        }
 
         // 5. Every capability in use has to exist for the target Ocelot version.
         var capabilityErrors = _consistencyValidator.ValidateGlobalConfiguration(
-            OcelotVersion.V20_0,
+            // The baseline the configuration was generated for.
+            OcelotVersion.V18_0,
             input.Features);
         errors.AddRange(capabilityErrors.Select(error => new RouteValidationError(
             FieldForCode(error),

@@ -45,7 +45,7 @@ public class PreviewRouteQueryHandler
         var ocelotConfig = _configurationBuilder.BuildConfiguration(
             new List<RouteConfiguration> { routeConfig },
             new DomainGlobalConfig { BaseUrl = "", RequestIdKey = "" },
-            OcelotVersion.V20_0);
+            ConfigurationBuilder.BaselineVersion);
 
         // Canonicalize and return JSON
         var canonicalJson = _canonicalizer.CanonicalizeJson(ocelotConfig);

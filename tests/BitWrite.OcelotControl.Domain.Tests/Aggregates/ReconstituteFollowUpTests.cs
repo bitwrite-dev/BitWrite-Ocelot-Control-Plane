@@ -28,7 +28,7 @@ public class ReconstituteFollowUpTests
 
         var license = License.Reconstitute(
             id, "Enterprise", "PROD", LicenseStatus.Active,
-            Updated.AddYears(1), 10, 100, Created, Updated);
+            Updated.AddYears(1), Created, Updated);
 
         license.Id.Should().Be(id);
     }
@@ -38,8 +38,8 @@ public class ReconstituteFollowUpTests
     {
         var id = LicenseId.New();
 
-        var first = License.Reconstitute(id, "E", "P", LicenseStatus.Active, Updated.AddYears(1), 1, 1, Created, Updated);
-        var second = License.Reconstitute(id, "E", "P", LicenseStatus.Active, Updated.AddYears(1), 1, 1, Created, Updated);
+        var first = License.Reconstitute(id, "E", "P", LicenseStatus.Active, Updated.AddYears(1), Created, Updated);
+        var second = License.Reconstitute(id, "E", "P", LicenseStatus.Active, Updated.AddYears(1), Created, Updated);
 
         first.Id.Should().Be(second.Id);
         first.Id.Should().Be(id);
@@ -50,7 +50,7 @@ public class ReconstituteFollowUpTests
     {
         var license = License.Reconstitute(
             LicenseId.New(), "E", "P", LicenseStatus.Revoked,
-            Updated.AddYears(1), 10, 100, Created, Updated,
+            Updated.AddYears(1), Created, Updated,
             activatedAt: Updated, revokedAt: Updated, revocationReason: "chargeback");
 
         license.Status.Should().Be(LicenseStatus.Revoked);
@@ -68,7 +68,7 @@ public class ReconstituteFollowUpTests
 
         var act = () => License.Reconstitute(
             LicenseId.New(), "Expired", "PROD", LicenseStatus.Expired,
-            past, 1, 1, Created, Updated);
+            past, Created, Updated);
 
         act.Should().NotThrow();
     }
@@ -84,7 +84,7 @@ public class ReconstituteFollowUpTests
 
         var license = License.Reconstitute(
             LicenseId.New(), "E", "P", LicenseStatus.Active,
-            Updated.AddYears(1), 1, 1, Created, Updated, features: features);
+            Updated.AddYears(1), Created, Updated, features: features);
 
         license.Features.Should().HaveCount(2);
         license.Features[0].Key.Should().Be("sso");
@@ -94,7 +94,7 @@ public class ReconstituteFollowUpTests
     [Fact]
     public void LicenseReconstitute_ShouldRaiseNoDomainEvents()
     {
-        License.Reconstitute(LicenseId.New(), "E", "P", LicenseStatus.Active, Updated.AddYears(1), 1, 1, Created, Updated)
+        License.Reconstitute(LicenseId.New(), "E", "P", LicenseStatus.Active, Updated.AddYears(1), Created, Updated)
             .DomainEvents.Should().BeEmpty();
     }
 

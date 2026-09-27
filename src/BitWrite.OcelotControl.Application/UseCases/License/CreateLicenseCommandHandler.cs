@@ -32,8 +32,6 @@ public class CreateLicenseCommandHandler
             command.Name,
             command.ProductCode,
             command.ExpirationDate,
-            command.MaxGateways,
-            command.MaxRoutes,
             null,
             command.Description
         );
@@ -71,8 +69,6 @@ public class CreateLicenseCommandHandler
             license.ActivatedAt,
             license.RevokedAt,
             license.RevocationReason,
-            license.MaxGateways,
-            license.MaxRoutes,
             license.Features.Select(f => f.Key).ToList()
         );
     }

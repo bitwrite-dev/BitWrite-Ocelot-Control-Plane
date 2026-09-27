@@ -32,8 +32,6 @@ public class CreateLicenseCommandHandlerTests
             "Enterprise License",
             "PROD-ENT-001",
             DateTimeOffset.UtcNow.AddYears(1),
-            10,
-            100,
             "test-user");
 
         _mockRepository.Setup(r => r.GetByProductCodeAsync(command.ProductCode, It.IsAny<CancellationToken>()))
@@ -53,8 +51,6 @@ public class CreateLicenseCommandHandlerTests
         result.Name.Should().Be("Enterprise License");
         result.ProductCode.Should().Be("PROD-ENT-001");
         result.Status.Should().Be(LicenseStatus.Pending);
-        result.MaxGateways.Should().Be(10);
-        result.MaxRoutes.Should().Be(100);
 
         _mockRepository.Verify(r => r.AddAsync(It.IsAny<DomainLicense>(), It.IsAny<CancellationToken>()), Times.Once);
         _mockEventDispatcher.Verify(d => d.DispatchAsync(It.Is<DomainEvent>(e => e is LicenseCreated), It.IsAny<CancellationToken>()), Times.Once);

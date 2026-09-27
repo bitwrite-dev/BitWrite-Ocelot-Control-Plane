@@ -11,8 +11,6 @@ public record CreateLicenseRequest(
     [Required][MaxLength(100)] string Name,
     [Required][MaxLength(50)] string ProductCode,
     [Required] DateTimeOffset ExpirationDate,
-    int MaxGateways = 1,
-    int MaxRoutes = 10,
     string InitiatedBy = ""
 );
 

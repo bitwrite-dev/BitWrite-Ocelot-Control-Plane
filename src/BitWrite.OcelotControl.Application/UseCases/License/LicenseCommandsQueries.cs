@@ -7,8 +7,6 @@ public record CreateLicenseCommand(
     string Name,
     string ProductCode,
     DateTimeOffset ExpirationDate,
-    int MaxGateways = 1,
-    int MaxRoutes = 10,
     string? Description = null,
     string InitiatedBy = "",
     string CorrelationId = ""
@@ -36,8 +34,6 @@ public record UpdateLicenseCommand(
     string? Name = null,
     string? Description = null,
     DateTimeOffset? ExpirationDate = null,
-    int? MaxGateways = null,
-    int? MaxRoutes = null,
     string InitiatedBy = "",
     string CorrelationId = ""
 );

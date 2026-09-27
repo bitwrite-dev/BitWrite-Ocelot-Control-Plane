@@ -109,6 +109,40 @@ public class Gateway
     }
 
     /// <summary>
+    /// Marks the gateway for removal.
+    /// </summary>
+    /// <remarks>
+    /// Deletion is refused once a publication has been addressed to this
+    /// gateway, because <c>Publication.GatewayStates</c> is keyed by
+    /// <see cref="GatewayId"/> and the history would refer to a gateway that no
+    /// longer exists. The check is on the caller because the aggregate cannot see
+    /// publications.
+    /// <para>
+    /// The refusal lives here rather than in a use case so there is no other way
+    /// to reach a deletion — this aggregate had no delete at all, and the
+    /// repository method that would have removed one was never called.
+    /// </para>
+    /// </remarks>
+    /// <param name="hasBeenPublishedTo">
+    /// True when any publication has carried this gateway's id.
+    /// </param>
+    /// <exception cref="DomainException">
+    /// When the gateway has already been a publication target.
+    /// </exception>
+    public void Delete(bool hasBeenPublishedTo, string correlationId = "")
+    {
+        if (hasBeenPublishedTo)
+        {
+            throw new DomainException(
+                "A gateway that has been published to cannot be deleted, because publication history refers to it",
+                "GATEWAY_HAS_PUBLICATION_HISTORY");
+        }
+
+        UpdatedAt = DateTimeOffset.UtcNow;
+        AddDomainEvent(new GatewayDeleted(Id, Name));
+    }
+
+    /// <summary>
     /// Checks if gateway is healthy.
     /// </summary>
     public bool IsHealthy => Status.IsHealthy;

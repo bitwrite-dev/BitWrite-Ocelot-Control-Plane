@@ -15,6 +15,7 @@ public abstract record DomainEvent
 public record GatewayRegistered(GatewayId GatewayId, string Name, string? Description) : DomainEvent;
 public record GatewayUpdated(GatewayId GatewayId, string? Name, string? Description) : DomainEvent;
 public record GatewayStatusChanged(GatewayId GatewayId, string OldStatus, string NewStatus) : DomainEvent;
+public record GatewayDeleted(GatewayId GatewayId, string Name) : DomainEvent;
 
 // Route events
 public record RouteCreated(RouteId RouteId, RouteKey RouteKey, ServiceId ServiceId) : DomainEvent;

@@ -650,6 +650,46 @@ function RouteWizard({ mode, routeId }: { mode: 'create' | 'edit'; routeId?: str
 
                 {step.id === 'advanced' ? (
                   <div className="space-y-4">
+                    <div className="space-y-3 border-b pb-4">
+                      <div className="space-y-1.5 max-w-xs">
+                        <Label htmlFor="route-priority">Priority</Label>
+                        <Input
+                          id="route-priority"
+                          type="number"
+                          min={0}
+                          max={1000}
+                          value={draft.priority}
+                          onChange={(event) =>
+                            update(
+                              'priority',
+                              event.target.value === '' ? 0 : Number(event.target.value),
+                            )
+                          }
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Higher is matched first when routes overlap. Routes with
+                          equal priority fall back to their order in the configuration.
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id="route-case-sensitive"
+                          checked={draft.routeIsCaseSensitive}
+                          onCheckedChange={(checked) =>
+                            update('routeIsCaseSensitive', checked === true)
+                          }
+                        />
+                        <Label htmlFor="route-case-sensitive">
+                          Match the path and host case-sensitively
+                        </Label>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Off means <code className="font-mono">/api/Users</code> and{' '}
+                        <code className="font-mono">/api/users</code> are the same route,
+                        and whichever is listed first wins.
+                      </p>
+                    </div>
                     <ToggleField
                       id="cache-enabled"
                       label="Enable response caching"

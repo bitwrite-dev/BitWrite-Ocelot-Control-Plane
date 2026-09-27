@@ -90,6 +90,11 @@ public class ConfigurationBuilder
         {
             UpstreamPathTemplate = route.UpstreamPath.Value,
             UpstreamHttpMethod = new[] { route.Method.Value },
+            // Collected on the route and previously never emitted, so an operator
+            // could set a host and watch it not reach the gateway.
+            UpstreamHost = route.Host,
+            Priority = route.Priority,
+            RouteIsCaseSensitive = route.RouteIsCaseSensitive,
             DownstreamPathTemplate = "/{everything}",
             DownstreamScheme = route.DownstreamTargets.FirstOrDefault()?.Scheme ?? "http",
             DownstreamHostAndPorts = downstreamHostAndPorts,
@@ -190,6 +195,8 @@ public class RouteConfiguration
     public HeaderOptions? HeaderOptions { get; init; }
     public ClaimOptions? ClaimOptions { get; init; }
     public QueryOptions? QueryOptions { get; init; }
+    public int Priority { get; init; }
+    public bool RouteIsCaseSensitive { get; init; }
 }
 
 public class GlobalConfiguration
@@ -208,6 +215,9 @@ public class OcelotRouteConfiguration
 {
     public string UpstreamPathTemplate { get; init; } = string.Empty;
     public string[] UpstreamHttpMethod { get; init; } = Array.Empty<string>();
+    public string? UpstreamHost { get; init; }
+    public int Priority { get; init; }
+    public bool RouteIsCaseSensitive { get; init; }
     public string DownstreamPathTemplate { get; init; } = string.Empty;
     public string DownstreamScheme { get; init; } = "http";
     public List<OcelotHostAndPort>? DownstreamHostAndPorts { get; init; }

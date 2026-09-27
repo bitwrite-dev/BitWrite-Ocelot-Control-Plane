@@ -274,6 +274,8 @@ describe('CreateRouteWizardPage', () => {
       host: null,
       serviceId: 'svc-users',
       downstreamTargets: [{ host: 'localhost', port: 5001, scheme: 'http', path: '/' }],
+      priority: 0,
+      routeIsCaseSensitive: false,
     })
     expect(await screen.findByText('route detail')).toBeInTheDocument()
   })

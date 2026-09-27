@@ -30,6 +30,8 @@ public static class RouteResponseMapper
             route.HeaderOptions,
             route.ClaimOptions,
             route.QueryOptions,
+            route.Priority,
+            route.RouteIsCaseSensitive,
             route.CreatedAt,
             route.UpdatedAt);
 }

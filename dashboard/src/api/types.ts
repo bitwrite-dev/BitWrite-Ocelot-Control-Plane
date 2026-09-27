@@ -219,7 +219,16 @@ export interface RouteResponse {
   key: string
   method: string
   upstreamPath: string
+  /**
+   * The upstream host a route is restricted to.
+   *
+   * The API returned this while nothing ever read or emitted it, so a host set
+   * on a route did nothing. See #485.
+   */
   host: string | null
+  /** Higher is matched first among overlapping routes. */
+  priority: number
+  routeIsCaseSensitive: boolean
   serviceId: string
   isEnabled: boolean
   downstreamTargets: DownstreamTargetResponse[]

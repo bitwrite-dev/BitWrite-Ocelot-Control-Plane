@@ -208,6 +208,24 @@ export function RouteDetailsPage() {
               <Code>{data.upstreamPath}</Code>
             </Row>
             <Row label="Host">{data.host ? <Code>{data.host}</Code> : <Absent />}</Row>
+            <Row label="Priority">
+              <Code>{data.priority}</Code>
+              {data.priority === 0 ? (
+                <span className="ml-2 text-sm text-muted-foreground">
+                  unset — matched by configuration order among equal routes
+                </span>
+              ) : null}
+            </Row>
+            <Row label="Case sensitive">
+              {data.routeIsCaseSensitive ? (
+                <span>Path and host are matched case-sensitively</span>
+              ) : (
+                <span className="text-muted-foreground">
+                  Insensitive — <code className="font-mono">/Api</code> and{' '}
+                  <code className="font-mono">/api</code> are the same route
+                </span>
+              )}
+            </Row>
             <Row label="Service">{serviceName}</Row>
             <Row label="Downstream targets">
               {data.downstreamTargets.length > 0 ? (

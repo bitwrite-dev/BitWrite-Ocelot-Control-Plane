@@ -37,6 +37,24 @@ public class Route
     public ClaimOptions? ClaimOptions { get; private set; }
     public QueryOptions? QueryOptions { get; private set; }
 
+    /// <summary>
+    /// Evaluation order among routes that overlap; higher is matched first.
+    /// </summary>
+    /// <remarks>
+    /// Ocelot orders by file order when this is absent, which is not something
+    /// an operator can reason about once routes overlap.
+    /// </remarks>
+    public int Priority { get; private set; }
+
+    /// <summary>
+    /// Whether the upstream path and host match case-sensitively.
+    /// </summary>
+    /// <remarks>
+    /// Absent means insensitive, so /api/Users and /api/users are the same route
+    /// and one silently shadows the other.
+    /// </remarks>
+    public bool RouteIsCaseSensitive { get; private set; }
+
     public IReadOnlyList<DownstreamTarget> DownstreamTargets => _downstreamTargets.AsReadOnly();
     public IReadOnlyList<DomainEvent> DomainEvents => _domainEvents.AsReadOnly();
 
@@ -101,6 +119,8 @@ public class Route
         DateTimeOffset updatedAt,
         string? key = null,
         string? host = null,
+        int priority = 0,
+        bool routeIsCaseSensitive = false,
         AuthenticationOptions? authenticationOptions = null,
         AuthorizationOptions? authorizationOptions = null,
         RateLimitOptions? rateLimitOptions = null,
@@ -125,6 +145,8 @@ public class Route
             IsEnabled = isEnabled,
             CreatedAt = createdAt,
             UpdatedAt = updatedAt,
+            Priority = priority,
+            RouteIsCaseSensitive = routeIsCaseSensitive,
             // The feature configs used to be dropped here, so a route came back
             // from storage with none of them. They are assigned directly because
             // the setters stamp UpdatedAt, which would overwrite the stored
@@ -333,7 +355,9 @@ public class Route
         AuthorizationOptions? authorizationOptions = null,
         HeaderOptions? headerOptions = null,
         ClaimOptions? claimOptions = null,
-        QueryOptions? queryOptions = null)
+        QueryOptions? queryOptions = null,
+        int priority = 0,
+        bool routeIsCaseSensitive = false)
     {
         if (downstreamTargets == null || downstreamTargets.Count == 0)
             throw new DomainException("Route must have at least one downstream target", "NO_DOWNSTREAM_TARGETS");
@@ -364,6 +388,8 @@ public class Route
         HeaderOptions = headerOptions;
         ClaimOptions = claimOptions;
         QueryOptions = queryOptions;
+        Priority = priority;
+        RouteIsCaseSensitive = routeIsCaseSensitive;
 
         UpdatedAt = DateTimeOffset.UtcNow;
         AddDomainEvent(new RouteUpdated(Id));

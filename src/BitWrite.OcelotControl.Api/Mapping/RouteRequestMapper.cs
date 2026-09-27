@@ -42,14 +42,19 @@ public static class RouteRequestMapper
         ApiDtos.CreateRouteRequest request,
         string initiatedBy)
     {
-        var mapping = MapCommon(request);
+        var mapping = MapCommon(
+            request.Method,
+            request.UpstreamPath,
+            request.ServiceId,
+            request.DownstreamTargets,
+            request.Host);
         if (!mapping.Success) return RouteMappingResult<CreateRouteCommand>.Failed(mapping.Errors);
 
-        var authentication = BuildAuthentication(request, mapping.Errors);
-        var rateLimit = BuildRateLimit(request, mapping.Errors);
-        var qos = BuildQoS(request, mapping.Errors);
-        var cache = BuildCache(request, mapping.Errors);
-        var loadBalancer = BuildLoadBalancer(request, mapping.Errors);
+        var authentication = BuildAuthentication(request.AuthenticationOptions, mapping.Errors);
+        var rateLimit = BuildRateLimit(request.RateLimitOptions, mapping.Errors);
+        var qos = BuildQoS(request.QoSOptions, mapping.Errors);
+        var cache = BuildCache(request.CacheOptions, mapping.Errors);
+        var loadBalancer = BuildLoadBalancer(request.LoadBalancerOptions, mapping.Errors);
 
         if (mapping.Errors.Count > 0)
         {
@@ -72,21 +77,75 @@ public static class RouteRequestMapper
     }
 
     /// <summary>
+    /// Maps a replacement body onto a command that replaces rather than merges.
+    /// </summary>
+    /// <remarks>
+    /// Reuses the create mapping so the two endpoints cannot disagree about what
+    /// a valid route is. Optional blocks come through as null, which the replace
+    /// path treats as "remove this".
+    /// </remarks>
+    public static RouteMappingResult<ReplaceRouteCommand> ToReplaceCommand(
+        ApiDtos.UpdateRouteRequest request,
+        RouteId id,
+        string initiatedBy)
+    {
+        var mapping = MapCommon(
+            request.Method,
+            request.UpstreamPath,
+            request.ServiceId,
+            request.DownstreamTargets,
+            request.Host);
+
+        if (!mapping.Success) return RouteMappingResult<ReplaceRouteCommand>.Failed(mapping.Errors);
+
+        var authentication = BuildAuthentication(request.AuthenticationOptions, mapping.Errors);
+        var rateLimit = BuildRateLimit(request.RateLimitOptions, mapping.Errors);
+        var qos = BuildQoS(request.QoSOptions, mapping.Errors);
+        var cache = BuildCache(request.CacheOptions, mapping.Errors);
+        var loadBalancer = BuildLoadBalancer(request.LoadBalancerOptions, mapping.Errors);
+
+        if (mapping.Errors.Count > 0)
+        {
+            return RouteMappingResult<ReplaceRouteCommand>.Failed(mapping.Errors);
+        }
+
+        return RouteMappingResult<ReplaceRouteCommand>.Ok(new ReplaceRouteCommand(
+            id,
+            mapping.Value!.Method,
+            mapping.Value.UpstreamPath,
+            mapping.Value.ServiceId,
+            mapping.Value.DownstreamTargets,
+            request.Key,
+            request.Host,
+            authentication,
+            rateLimit,
+            qos,
+            cache,
+            loadBalancer,
+            initiatedBy));
+    }
+
+    /// <summary>
     /// Maps a request body onto the shared validator's input, so an unsaved
     /// draft runs the same checks a stored route does.
     /// </summary>
     public static RouteMappingResult<RouteValidationInput> ToValidationInput(
         ApiDtos.CreateRouteRequest request)
     {
-        var mapping = MapCommon(request);
+        var mapping = MapCommon(
+            request.Method,
+            request.UpstreamPath,
+            request.ServiceId,
+            request.DownstreamTargets,
+            request.Host);
         if (!mapping.Success) return RouteMappingResult<RouteValidationInput>.Failed(mapping.Errors);
 
         var features = new List<string>();
-        var authentication = BuildAuthentication(request, mapping.Errors);
-        var rateLimit = BuildRateLimit(request, mapping.Errors);
-        var qos = BuildQoS(request, mapping.Errors);
-        var cache = BuildCache(request, mapping.Errors);
-        var loadBalancer = BuildLoadBalancer(request, mapping.Errors);
+        var authentication = BuildAuthentication(request.AuthenticationOptions, mapping.Errors);
+        var rateLimit = BuildRateLimit(request.RateLimitOptions, mapping.Errors);
+        var qos = BuildQoS(request.QoSOptions, mapping.Errors);
+        var cache = BuildCache(request.CacheOptions, mapping.Errors);
+        var loadBalancer = BuildLoadBalancer(request.LoadBalancerOptions, mapping.Errors);
 
         if (authentication is not null) features.Add("authentication");
         if (rateLimit is not null) features.Add("rate-limiting");
@@ -128,15 +187,19 @@ public static class RouteRequestMapper
     /// The fields both entry points need, mapped once.
     /// </summary>
     private static RouteMappingResult<CommonFields> MapCommon(
-        ApiDtos.CreateRouteRequest request)
+        string method,
+        string upstreamPathValue,
+        string serviceIdValue,
+        IReadOnlyList<ApiDtos.DownstreamTargetRequest>? requestTargets,
+        string? host)
     {
         var errors = new List<RouteValidationError>();
         var targets = new List<DownstreamTarget>();
 
-        DomainHttpMethod? method = null;
+        DomainHttpMethod? parsedMethod = null;
         try
         {
-            method = DomainHttpMethod.Parse(request.Method);
+            parsedMethod = DomainHttpMethod.Parse(method);
         }
         catch (Exception ex)
         {
@@ -146,7 +209,7 @@ public static class RouteRequestMapper
         UpstreamPath? upstreamPath = null;
         try
         {
-            upstreamPath = UpstreamPath.From(request.UpstreamPath);
+            upstreamPath = UpstreamPath.From(upstreamPathValue);
         }
         catch (Exception ex)
         {
@@ -156,16 +219,16 @@ public static class RouteRequestMapper
         ServiceId? serviceId = null;
         try
         {
-            serviceId = ServiceId.From(request.ServiceId);
+            serviceId = ServiceId.From(serviceIdValue);
         }
         catch (Exception ex)
         {
             errors.Add(new RouteValidationError("serviceId", "INVALID_SERVICE_ID", ex.Message));
         }
 
-        for (var index = 0; index < (request.DownstreamTargets?.Count ?? 0); index++)
+        for (var index = 0; index < (requestTargets?.Count ?? 0); index++)
         {
-            var target = request.DownstreamTargets![index];
+            var target = requestTargets![index];
             try
             {
                 targets.Add(DownstreamTarget.Create(target.Scheme, target.Host, target.Port, target.Path));
@@ -183,8 +246,8 @@ public static class RouteRequestMapper
         // Conflicts are detected on the derived signature, not the friendly
         // key: this is the same value Route.RouteKey exposes, so a draft
         // conflicts with exactly the routes a saved one would.
-        var key = method is not null && upstreamPath is not null
-            ? RouteKey.Create(method, upstreamPath, request.Host)
+        var key = parsedMethod is not null && upstreamPath is not null
+            ? RouteKey.Create(parsedMethod, upstreamPath, host)
             : null;
 
         if (key is null)
@@ -195,7 +258,7 @@ public static class RouteRequestMapper
                 "A method and an upstream path are required to identify the route"));
         }
 
-        var fields = new CommonFields(method!, upstreamPath!, serviceId!, key!, targets);
+        var fields = new CommonFields(parsedMethod!, upstreamPath!, serviceId!, key!, targets);
 
         return errors.Count > 0
             ? RouteMappingResult<CommonFields>.Failed(errors)
@@ -203,10 +266,10 @@ public static class RouteRequestMapper
     }
 
     private static AuthenticationOptions? BuildAuthentication(
-        ApiDtos.CreateRouteRequest request,
+        ApiDtos.AuthenticationOptionsRequest? request,
         List<RouteValidationError> errors)
     {
-        if (request.AuthenticationOptions is null) return null;
+        if (request is null) return null;
 
         try
         {
@@ -217,7 +280,7 @@ public static class RouteRequestMapper
                 {
                     ["scopes"] = string.Join(
                         ",",
-                        request.AuthenticationOptions.AllowedScopes ?? new List<string>())
+                        request.AllowedScopes ?? new List<string>())
                 });
         }
         catch (Exception ex)
@@ -231,16 +294,14 @@ public static class RouteRequestMapper
     }
 
     private static RateLimitOptions? BuildRateLimit(
-        ApiDtos.CreateRouteRequest request,
+        ApiDtos.RateLimitOptionsRequest? request,
         List<RouteValidationError> errors)
     {
-        if (request.RateLimitOptions is null) return null;
+        if (request is null) return null;
 
         try
         {
-            return RateLimitOptions.Create(
-                request.RateLimitOptions.Limit,
-                request.RateLimitOptions.Period);
+            return RateLimitOptions.Create(request.Limit, request.Period);
         }
         catch (Exception ex)
         {
@@ -250,16 +311,16 @@ public static class RouteRequestMapper
     }
 
     private static QoSOptions? BuildQoS(
-        ApiDtos.CreateRouteRequest request,
+        ApiDtos.QoSOptionsRequest? request,
         List<RouteValidationError> errors)
     {
-        if (request.QoSOptions is null) return null;
+        if (request is null) return null;
 
         try
         {
             return QoSOptions.Create(
-                request.QoSOptions.TimeoutSeconds,
-                circuitBreakerTimeoutSeconds: request.QoSOptions.CircuitBreakerTimeoutSeconds);
+                request.TimeoutSeconds,
+                circuitBreakerTimeoutSeconds: request.CircuitBreakerTimeoutSeconds);
         }
         catch (Exception ex)
         {
@@ -269,14 +330,14 @@ public static class RouteRequestMapper
     }
 
     private static CacheOptions? BuildCache(
-        ApiDtos.CreateRouteRequest request,
+        ApiDtos.CacheOptionsRequest? request,
         List<RouteValidationError> errors)
     {
-        if (request.CacheOptions is null) return null;
+        if (request is null) return null;
 
         try
         {
-            return CacheOptions.Create(request.CacheOptions.TtlSeconds);
+            return CacheOptions.Create(request.TtlSeconds);
         }
         catch (Exception ex)
         {
@@ -286,14 +347,14 @@ public static class RouteRequestMapper
     }
 
     private static LoadBalancerOptions? BuildLoadBalancer(
-        ApiDtos.CreateRouteRequest request,
+        ApiDtos.LoadBalancerOptionsRequest? request,
         List<RouteValidationError> errors)
     {
-        if (request.LoadBalancerOptions is null) return null;
+        if (request is null) return null;
 
         try
         {
-            return LoadBalancerOptions.Create(request.LoadBalancerOptions.Algorithm);
+            return LoadBalancerOptions.Create(request.Algorithm);
         }
         catch (Exception ex)
         {

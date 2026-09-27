@@ -121,7 +121,7 @@ builder.Services.AddScoped<AppInterfaces.IConfigurationBuilder, ConfigurationBui
 
             // Route UseCase Handlers
             builder.Services.AddScoped<CreateRouteCommandHandler>();
-            builder.Services.AddScoped<UpdateRouteCommandHandler>();
+            builder.Services.AddScoped<ReplaceRouteCommandHandler>();
             builder.Services.AddScoped<DeleteRouteCommandHandler>();
             builder.Services.AddScoped<EnableRouteCommandHandler>();
             builder.Services.AddScoped<DisableRouteCommandHandler>();

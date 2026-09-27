@@ -16,13 +16,22 @@ public record CreateRouteRequest(
     LoadBalancerOptionsRequest? LoadBalancerOptions
 );
 
+/// <summary>
+/// Replaces a route's configuration.
+/// </summary>
+/// <remarks>
+/// A replacement, not a merge: the result holds exactly what this body says.
+/// The identifying fields are therefore required, while everything optional is
+/// nullable and null means "remove it". A null for a required field is rejected
+/// rather than treated as a request to blank the route.
+/// </remarks>
 public record UpdateRouteRequest(
     [MaxLength(100)] string? Key,
-    string? Method,
-    [MaxLength(500)] string? UpstreamPath,
+    [Required] string Method,
+    [Required][MaxLength(500)] string UpstreamPath,
     [MaxLength(100)] string? Host,
-    string? ServiceId,
-    List<DownstreamTargetRequest>? DownstreamTargets,
+    [Required] string ServiceId,
+    [Required] List<DownstreamTargetRequest> DownstreamTargets,
     AuthenticationOptionsRequest? AuthenticationOptions,
     RateLimitOptionsRequest? RateLimitOptions,
     QoSOptionsRequest? QoSOptions,

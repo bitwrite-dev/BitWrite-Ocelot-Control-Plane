@@ -1,0 +1,33 @@
+using BitWrite.OcelotControl.Domain.ValueObjects.Configuration;
+using BitWrite.OcelotControl.Domain.ValueObjects.FeatureConfig;
+using BitWrite.OcelotControl.Domain.ValueObjects.Identity;
+using DomainHttpMethod = BitWrite.OcelotControl.Domain.ValueObjects.Configuration.HttpMethod;
+
+namespace BitWrite.OcelotControl.Application.UseCases.Route;
+
+/// <summary>
+/// Replaces the configuration of an existing route.
+/// </summary>
+/// <remarks>
+/// The identifying fields are non-nullable on purpose: a route cannot exist
+/// without them, so a request that omits one is rejected rather than treated as
+/// "clear it". Everything that is legitimately optional — the host and each
+/// feature block — is nullable, and null means "remove it", which is what makes
+/// clearing possible at all.
+/// </remarks>
+public record ReplaceRouteCommand(
+    RouteId Id,
+    DomainHttpMethod Method,
+    UpstreamPath UpstreamPath,
+    ServiceId ServiceId,
+    IReadOnlyList<DownstreamTarget> DownstreamTargets,
+    string? Key = null,
+    string? Host = null,
+    AuthenticationOptions? AuthenticationOptions = null,
+    RateLimitOptions? RateLimitOptions = null,
+    QoSOptions? QoSOptions = null,
+    CacheOptions? CacheOptions = null,
+    LoadBalancerOptions? LoadBalancerOptions = null,
+    string InitiatedBy = "",
+    string CorrelationId = ""
+);

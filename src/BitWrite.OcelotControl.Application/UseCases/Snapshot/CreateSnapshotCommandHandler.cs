@@ -1,4 +1,5 @@
 using BitWrite.OcelotControl.Application.Interfaces;
+using BitWrite.OcelotControl.Application.UseCases.Route;
 using BitWrite.OcelotControl.Domain.Aggregates.GlobalConfiguration;
 using DomainRoute = BitWrite.OcelotControl.Domain.Aggregates.Route.Route;
 using BitWrite.OcelotControl.Domain.Aggregates.Service;
@@ -66,7 +67,7 @@ public class CreateSnapshotCommandHandler
         var services = await _serviceRepository.GetAllAsync(cancellationToken);
 
         // Convert to RouteConfiguration for ConfigurationBuilder
-        var routeConfigs = routes.Select(MapToRouteConfiguration).ToList();
+        var routeConfigs = routes.Select(RouteConfigurationMapper.Map).ToList();
 
         // 2. Build Ocelot configuration using Domain Service
         var ocelotConfig = _configurationBuilder.BuildConfiguration(
@@ -173,24 +174,6 @@ public class CreateSnapshotCommandHandler
         await _eventDispatcher.DispatchAsync(auditEvent, cancellationToken);
 
         return version;
-    }
-
-    private DomainRouteConfig MapToRouteConfiguration(DomainRoute route)
-    {
-        return new DomainRouteConfig
-        {
-            Id = route.Id,
-            Host = route.Host,
-            Method = route.Method,
-            UpstreamPath = route.UpstreamPath,
-            ServiceId = route.ServiceId,
-            DownstreamTargets = route.DownstreamTargets.Select(t => DomainDownstreamTarget.Create(t.Scheme, t.Host, t.Port, t.Path)).ToList(),
-            AuthenticationOptions = route.AuthenticationOptions,
-            RateLimitOptions = route.RateLimitOptions,
-            QoSOptions = route.QoSOptions,
-            CacheOptions = route.CacheOptions,
-            LoadBalancerOptions = route.LoadBalancerOptions
-        };
     }
 
     private DomainGlobalConfig MapToGlobalConfiguration(BitWrite.OcelotControl.Domain.Aggregates.GlobalConfiguration.GlobalConfiguration globalConfig)

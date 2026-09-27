@@ -5,6 +5,7 @@ import { AppLayout } from '@/components/app-layout'
 import { NotFoundPage, PlaceholderPage } from '@/pages/placeholders'
 import { OverviewPage } from '@/features/overview/overview-page'
 import { RouteDetailsPage } from '@/features/routes/route-details-page'
+import { ServicesPage } from '@/features/services/services-page'
 import { RoutesPage } from '@/features/routes/routes-page'
 import {
   CreateRouteWizardPage,
@@ -26,6 +27,7 @@ const routes = [
       // The first two real pages; the rest are still placeholders.
       { index: true, element: <OverviewPage /> },
       { path: 'routes', element: <RoutesPage /> },
+      { path: 'services', element: <ServicesPage /> },
       { path: 'routes/new', element: <CreateRouteWizardPage /> },
       // Before routes/:id, so the static segment is not read as an id.
       { path: 'routes/:id/edit', element: <EditRouteWizardPage /> },

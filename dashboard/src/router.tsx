@@ -6,7 +6,10 @@ import { NotFoundPage, PlaceholderPage } from '@/pages/placeholders'
 import { OverviewPage } from '@/features/overview/overview-page'
 import { RouteDetailsPage } from '@/features/routes/route-details-page'
 import { RoutesPage } from '@/features/routes/routes-page'
-import { CreateRouteWizardPage } from '@/features/routes-wizard/create-route-wizard'
+import {
+  CreateRouteWizardPage,
+  EditRouteWizardPage,
+} from '@/features/routes-wizard/create-route-wizard'
 import { DYNAMIC_PATHS, PLACEHOLDER_PATHS, assertNavigationIsRoutable } from '@/route-table'
 import type { Role } from '@/navigation'
 
@@ -24,6 +27,8 @@ const routes = [
       { index: true, element: <OverviewPage /> },
       { path: 'routes', element: <RoutesPage /> },
       { path: 'routes/new', element: <CreateRouteWizardPage /> },
+      // Before routes/:id, so the static segment is not read as an id.
+      { path: 'routes/:id/edit', element: <EditRouteWizardPage /> },
       ...PLACEHOLDER_PATHS.filter((path) => path !== '/').map((path) => ({
         path: path.replace(/^\//, ''),
         element: <PlaceholderPage path={path} />,

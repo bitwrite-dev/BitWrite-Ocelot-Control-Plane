@@ -1,9 +1,9 @@
-import { useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Check, CircleAlert } from 'lucide-react'
 
 import { PageHeader } from '@/components/app-layout'
-import { ErrorState, LoadingState } from '@/components/page-state'
+import { EmptyState, ErrorState, LoadingState } from '@/components/page-state'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -12,18 +12,25 @@ import { Separator } from '@/components/ui/separator'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
   HTTP_METHODS,
-  LOAD_BALANCER_ALGORITHMS,
-  PERIODS,
+  loadBalancerOptions,
+  periodOptions,
   UNSUPPORTED_STEPS,
   WIZARD_STEPS,
+  draftFromRoute,
   emptyRouteDraft,
   furthestReachableStep,
   toCreateRequest,
   type RouteDraft,
   type StepId,
 } from './wizard-model'
-import { toRouteError } from '@/features/routes/queries'
-import { useCreateRoute, useValidateRouteDraft, useWizardServices } from './queries'
+import { toRouteError, useRoute } from '@/features/routes/queries'
+import { ApiError } from '@/api'
+import {
+  useCreateRoute,
+  useUpdateRoute,
+  useValidateRouteDraft,
+  useWizardServices,
+} from './queries'
 import { stepForField } from './wizard-model'
 
 function Field({
@@ -54,18 +61,36 @@ function Field({
   )
 }
 
-export function CreateRouteWizardPage() {
+/** Creates a new route, or replaces an existing one, through the same steps. */
+function RouteWizard({ mode, routeId }: { mode: 'create' | 'edit'; routeId?: string }) {
   const [stepIndex, setStepIndex] = useState(0)
   const [draft, setDraft] = useState<RouteDraft>(emptyRouteDraft)
   const [scopeInput, setScopeInput] = useState('')
 
   const services = useWizardServices()
   const createRoute = useCreateRoute()
+  const updateRoute = useUpdateRoute()
   const validateDraft = useValidateRouteDraft()
   // Server errors are held here so a failure can be shown on the step that owns
   // the field, rather than only on Review.
   const [serverErrors, setServerErrors] = useState<Record<number, string[]>>({})
   const navigate = useNavigate()
+
+  // In edit mode the form starts from what is stored, so the steps need the
+  // route before anything is editable.
+  const existing = useRoute(mode === 'edit' ? routeId : undefined)
+  const isEdit = mode === 'edit'
+
+  useEffect(() => {
+    if (existing.data) {
+      setDraft(draftFromRoute(existing.data))
+      setServerErrors({})
+    }
+  }, [existing.data])
+
+  const isSaving = createRoute.isPending || updateRoute.isPending
+  // The save differs by mode, so the error has to come from the one that ran.
+  const saveError = isEdit ? updateRoute.error : createRoute.error
 
   const step = WIZARD_STEPS[stepIndex]
   const isLastStep = stepIndex === WIZARD_STEPS.length - 1
@@ -77,11 +102,45 @@ export function CreateRouteWizardPage() {
 
   const canAdvance = stepErrors.length === 0
 
+  if (isEdit && existing.isPending) {
+    return (
+      <>
+        <PageHeader title="Edit route" />
+        <LoadingState label="Loading route" />
+      </>
+    )
+  }
+
+  if (isEdit && existing.isError) {
+    return (
+      <>
+        <PageHeader title="Edit route" />
+        {isNotFound(existing.error) ? (
+          <EmptyState
+            title="No such route"
+            description="It may have been deleted. Nothing was changed."
+            action={
+              <Button asChild>
+                <Link to="/routes">Back to routes</Link>
+              </Button>
+            }
+          />
+        ) : (
+          <ErrorState {...toRouteError(existing.error)} />
+        )}
+      </>
+    )
+  }
+
   return (
     <>
       <PageHeader
-        title="Create Route"
-        description={`Step ${stepIndex + 1} of ${WIZARD_STEPS.length} — ${step.title}`}
+        title={isEdit ? 'Edit route' : 'Create Route'}
+        description={
+          isEdit && existing.data
+            ? `${existing.data.key} — step ${stepIndex + 1} of ${WIZARD_STEPS.length}, ${step.title}`
+            : `Step ${stepIndex + 1} of ${WIZARD_STEPS.length} — ${step.title}`
+        }
       />
 
       <div className="grid gap-6 lg:grid-cols-[220px_1fr]">
@@ -511,7 +570,7 @@ export function CreateRouteWizardPage() {
                               }))
                             }
                           >
-                            {PERIODS.map((period) => (
+                            {periodOptions(draft.rateLimit.period).map((period) => (
                               <option key={period} value={period}>
                                 {period}
                               </option>
@@ -660,7 +719,7 @@ export function CreateRouteWizardPage() {
                               }))
                             }
                           >
-                            {LOAD_BALANCER_ALGORITHMS.map((algorithm) => (
+                            {loadBalancerOptions(draft.loadBalancer.algorithm).map((algorithm) => (
                               <option key={algorithm} value={algorithm}>
                                 {algorithm}
                               </option>
@@ -729,7 +788,8 @@ export function CreateRouteWizardPage() {
                       />
                     </dl>
 
-                    {createRoute.error ? <ErrorState {...toRouteError(createRoute.error)} /> : null}
+                    {/* Whichever mutation ran: the save path differs by mode. */}
+                    {saveError ? <ErrorState {...toRouteError(saveError)} /> : null}
 
                     {validateDraft.isError ? (
                       <ErrorState
@@ -776,7 +836,9 @@ export function CreateRouteWizardPage() {
 
                     <details className="rounded-md border p-3">
                       <summary className="cursor-pointer text-sm font-medium">
-                        Request payload
+                        {isEdit
+                          ? 'Replacement payload — anything absent is removed'
+                          : 'Request payload'}
                       </summary>
                       <pre className="mt-2 overflow-x-auto text-xs">
                         {JSON.stringify(toCreateRequest(draft), null, 2)}
@@ -790,7 +852,7 @@ export function CreateRouteWizardPage() {
                 <Button
                   variant="outline"
                   onClick={() => setStepIndex((index) => Math.max(0, index - 1))}
-                  disabled={stepIndex === 0 || createRoute.isPending}
+                  disabled={stepIndex === 0 || isSaving}
                 >
                   Back
                 </Button>
@@ -815,19 +877,32 @@ export function CreateRouteWizardPage() {
                           }
 
                           setServerErrors({})
+
+                          if (isEdit && routeId) {
+                            updateRoute.mutate(
+                              { id: routeId, draft },
+                              { onSuccess: (saved) => navigate(`/routes/${saved.id}`) },
+                            )
+                            return
+                          }
+
                           createRoute.mutate(draft, {
                             onSuccess: (created) => navigate(`/routes/${created.id}`),
                           })
                         },
                       })
                     }}
-                    disabled={!canAdvance || createRoute.isPending || validateDraft.isPending}
+                    disabled={!canAdvance || isSaving || validateDraft.isPending}
                   >
                     {validateDraft.isPending
                       ? 'Checking…'
-                      : createRoute.isPending
-                        ? 'Creating…'
-                        : 'Create route'}
+                      : isSaving
+                        ? isEdit
+                          ? 'Saving…'
+                          : 'Creating…'
+                        : isEdit
+                          ? 'Save changes'
+                          : 'Create route'}
                   </Button>
                 ) : (
                   <Button
@@ -844,6 +919,16 @@ export function CreateRouteWizardPage() {
       </div>
     </>
   )
+}
+
+export function CreateRouteWizardPage() {
+  return <RouteWizard mode="create" />
+}
+
+/** Edits a stored route through the same steps. */
+export function EditRouteWizardPage() {
+  const { id } = useParams<{ id: string }>()
+  return <RouteWizard mode="edit" routeId={id} />
 }
 
 /** Step index for a step id, so server errors can point at a step. */
@@ -883,4 +968,9 @@ function ToggleField({
       {checked ? <div className="pl-6">{children}</div> : null}
     </div>
   )
+}
+
+/** A missing route is an expected outcome, not a failure to report as an error. */
+function isNotFound(error: unknown): boolean {
+  return error instanceof ApiError && error.isNotFound
 }

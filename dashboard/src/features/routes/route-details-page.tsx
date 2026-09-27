@@ -120,6 +120,10 @@ export function RouteDetailsPage() {
         description={`${data.method} ${data.upstreamPath}`}
         actions={
           <>
+            <Button asChild>
+              <Link to={`/routes/${data.id}/edit`}>Edit</Link>
+            </Button>
+
             {data.isEnabled ? (
               <Button
                 variant="outline"

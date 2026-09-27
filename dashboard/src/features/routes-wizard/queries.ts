@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { useApi } from '@/app-providers'
+import { routeKeys } from '@/features/routes/queries'
 import { toCreateRequest, type RouteDraft } from './wizard-model'
 import type { RouteValidationResponse } from '@/api'
 
@@ -59,3 +60,28 @@ export function useValidateRouteDraft() {
 }
 
 export type DraftValidation = RouteValidationResponse
+
+/**
+ * Replaces a stored route's configuration.
+ *
+ * The body comes from the same shaping as create, which is now correct for a
+ * replacement: an option block that is switched off is omitted, and the API
+ * reads that as "remove it".
+ */
+export function useUpdateRoute() {
+  const api = useApi()
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, draft }: { id: string; draft: RouteDraft }) =>
+      api.resources.routes.update(id, toCreateRequest(draft)),
+    onSuccess: (_result, { id }) =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['routes'] }),
+        queryClient.invalidateQueries({ queryKey: ['overview'] }),
+        // The effective config and history are derived from the route.
+        queryClient.invalidateQueries({ queryKey: routeKeys.effective(id) }),
+        queryClient.invalidateQueries({ queryKey: routeKeys.history(id) }),
+      ]).then(() => undefined),
+  })
+}

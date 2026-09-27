@@ -15,19 +15,22 @@ public class GatewaysController : BaseApiController
     private readonly AppGateway.ListGatewaysQueryHandler _listGatewaysQueryHandler;
     private readonly AppGateway.UpdateGatewayCommandHandler _updateGatewayCommandHandler;
     private readonly AppGateway.UpdateGatewayStatusCommandHandler _updateGatewayStatusCommandHandler;
+    private readonly AppGateway.DeleteGatewayCommandHandler _deleteGatewayCommandHandler;
 
     public GatewaysController(
         AppGateway.RegisterGatewayCommandHandler registerGatewayCommandHandler,
         AppGateway.GetGatewayQueryHandler getGatewayQueryHandler,
         AppGateway.ListGatewaysQueryHandler listGatewaysQueryHandler,
         AppGateway.UpdateGatewayCommandHandler updateGatewayCommandHandler,
-        AppGateway.UpdateGatewayStatusCommandHandler updateGatewayStatusCommandHandler)
+        AppGateway.UpdateGatewayStatusCommandHandler updateGatewayStatusCommandHandler,
+        AppGateway.DeleteGatewayCommandHandler deleteGatewayCommandHandler)
     {
         _registerGatewayCommandHandler = registerGatewayCommandHandler;
         _getGatewayQueryHandler = getGatewayQueryHandler;
         _listGatewaysQueryHandler = listGatewaysQueryHandler;
         _updateGatewayCommandHandler = updateGatewayCommandHandler;
         _updateGatewayStatusCommandHandler = updateGatewayStatusCommandHandler;
+        _deleteGatewayCommandHandler = deleteGatewayCommandHandler;
     }
 
     [HttpGet]
@@ -108,6 +111,32 @@ public class GatewaysController : BaseApiController
 
             var result = await _updateGatewayCommandHandler.HandleAsync(command);
             return HandleResult(MapToResponse(result));
+        }
+        catch (Exception ex)
+        {
+            return HandleError(ex);
+        }
+    }
+
+    /// <summary>
+    /// Removes a gateway that has never been a publication target.
+    /// </summary>
+    /// <remarks>
+    /// Refused once a publication has been addressed to it, since the publication
+    /// history is keyed by gateway id. The gateway is not deadlocked by then — it
+    /// is simply history, and history is not deletable.
+    /// </remarks>
+    [HttpDelete("{id}")]
+    public async Task<ActionResult> DeleteGateway(string id)
+    {
+        try
+        {
+            var deleted = await _deleteGatewayCommandHandler.HandleAsync(
+                new AppGateway.DeleteGatewayCommand(
+                    GatewayId.From(Guid.Parse(id)),
+                    User.Identity?.Name ?? "system"));
+
+            return deleted ? NoContent() : NotFound();
         }
         catch (Exception ex)
         {

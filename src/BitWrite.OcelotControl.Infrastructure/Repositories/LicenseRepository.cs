@@ -134,8 +134,6 @@ public class RedisLicenseRepository : RedisRepositoryBase, ILicenseRepository
             new("ActivatedAt", license.ActivatedAt?.ToString("O") ?? ""),
             new("RevokedAt", license.RevokedAt?.ToString("O") ?? ""),
             new("RevocationReason", license.RevocationReason ?? ""),
-            new("MaxGateways", license.MaxGateways.ToString()),
-            new("MaxRoutes", license.MaxRoutes.ToString()),
             new("Features", featuresJson)
         };
     }
@@ -160,8 +158,6 @@ public class RedisLicenseRepository : RedisRepositoryBase, ILicenseRepository
             GetEntry(entries, "ProductCode"),
             LicenseStatus.From(GetEntry(entries, "Status")),
             DateTimeOffset.Parse(GetEntry(entries, "ExpirationDate")),
-            int.Parse(GetEntry(entries, "MaxGateways")),
-            int.Parse(GetEntry(entries, "MaxRoutes")),
             DateTimeOffset.Parse(GetEntry(entries, "CreatedAt")),
             DateTimeOffset.Parse(GetEntry(entries, "UpdatedAt")),
             DateTimeOffset.TryParse(GetEntry(entries, "ActivatedAt"), out var act) ? act : null,

@@ -70,6 +70,23 @@ public class RedisPublicationRepository : RedisRepositoryBase, IPublicationRepos
         return await GetAsync(id, cancellationToken);
     }
 
+    /// <summary>
+    /// Whether any publication has ever been addressed to this gateway.
+    /// </summary>
+    /// <remarks>
+    /// Every publication is read, because "ever" is what matters: a gateway that
+    /// was targeted once has history pointing at it even if a later publication
+    /// left it out. A read that throws is treated as "no history" would be the
+    /// dangerous direction, so a failure stops the answer rather than defaulting.
+    /// </remarks>
+    public async Task<bool> HasGatewayBeenPublishedToAsync(
+        GatewayId gatewayId,
+        CancellationToken cancellationToken = default)
+    {
+        var publications = await GetAllAsync(cancellationToken);
+        return publications.Any(publication => publication.GatewayStates.ContainsKey(gatewayId));
+    }
+
     public async Task<List<Publication>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         var publicationIds = await Database.SortedSetRangeByScoreAsync(

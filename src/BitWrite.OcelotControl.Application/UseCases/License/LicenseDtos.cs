@@ -14,8 +14,6 @@ public record LicenseResponse(
     DateTimeOffset? ActivatedAt,
     DateTimeOffset? RevokedAt,
     string? RevocationReason,
-    int MaxGateways,
-    int MaxRoutes,
     IReadOnlyList<string> FeatureKeys
 );
 

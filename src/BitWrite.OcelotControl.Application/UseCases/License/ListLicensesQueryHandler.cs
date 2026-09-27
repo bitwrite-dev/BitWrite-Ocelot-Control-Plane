@@ -89,8 +89,6 @@ public class ListLicensesQueryHandler
             license.ActivatedAt,
             license.RevokedAt,
             license.RevocationReason,
-            license.MaxGateways,
-            license.MaxRoutes,
             license.Features.Select(f => f.Key).ToList()
         );
     }

@@ -88,8 +88,6 @@ public class LicensesController : BaseApiController
                 request.Name,
                 request.ProductCode,
                 request.ExpirationDate,
-                request.MaxGateways,
-                request.MaxRoutes,
                 request.InitiatedBy
             );
 

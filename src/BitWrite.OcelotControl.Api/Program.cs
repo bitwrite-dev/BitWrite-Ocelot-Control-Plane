@@ -188,6 +188,7 @@ builder.Services.AddScoped<AppInterfaces.IConfigurationBuilder, ConfigurationBui
             builder.Services.AddScoped<ListGatewaysQueryHandler>();
             builder.Services.AddScoped<UpdateGatewayCommandHandler>();
             builder.Services.AddScoped<UpdateGatewayStatusCommandHandler>();
+            builder.Services.AddScoped<DeleteGatewayCommandHandler>();
 
             // Domain Event Dispatcher
             builder.Services.AddScoped<AppInterfaces.IDomainEventDispatcher, DomainEventDispatcher>();

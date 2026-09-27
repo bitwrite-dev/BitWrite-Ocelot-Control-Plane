@@ -25,8 +25,6 @@ public class License
     public DateTimeOffset? RevokedAt { get; private set; }
     public string? RevocationReason { get; private set; }
     public string? Description { get; private set; }
-    public int MaxGateways { get; private set; }
-    public int MaxRoutes { get; private set; }
 
     public IReadOnlyList<LicenseFeature> Features => _features.AsReadOnly();
     public IReadOnlyList<DomainEvent> DomainEvents => _domainEvents.AsReadOnly();
@@ -40,8 +38,6 @@ public class License
         string name,
         string productCode,
         DateTimeOffset expirationDate,
-        int maxGateways = 1,
-        int maxRoutes = 10,
         IReadOnlyList<LicenseFeature>? features = null,
         string? description = null,
         string correlationId = "")
@@ -55,12 +51,6 @@ public class License
         if (expirationDate <= DateTimeOffset.UtcNow)
             throw new DomainException("Expiration date must be in the future", "INVALID_EXPIRATION_DATE");
 
-        if (maxGateways <= 0)
-            throw new DomainException("Max gateways must be positive", "INVALID_MAX_GATEWAYS");
-
-        if (maxRoutes <= 0)
-            throw new DomainException("Max routes must be positive", "INVALID_MAX_ROUTES");
-
         var license = new License
         {
             Id = LicenseId.New(),
@@ -70,8 +60,6 @@ public class License
             Status = LicenseStatus.Pending,
             CreatedAt = DateTimeOffset.UtcNow,
             UpdatedAt = DateTimeOffset.UtcNow,
-            MaxGateways = maxGateways,
-            MaxRoutes = maxRoutes,
             Description = description?.Trim()
         };
 
@@ -103,8 +91,6 @@ public class License
         string productCode,
         LicenseStatus status,
         DateTimeOffset expirationDate,
-        int maxGateways,
-        int maxRoutes,
         DateTimeOffset createdAt,
         DateTimeOffset updatedAt,
         DateTimeOffset? activatedAt = null,
@@ -126,8 +112,6 @@ public class License
             ProductCode = productCode.Trim(),
             Status = status,
             ExpirationDate = expirationDate,
-            MaxGateways = maxGateways,
-            MaxRoutes = maxRoutes,
             CreatedAt = createdAt,
             UpdatedAt = updatedAt,
             ActivatedAt = activatedAt,

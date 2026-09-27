@@ -73,7 +73,7 @@ public class CreateSnapshotCommandHandler
         var ocelotConfig = _configurationBuilder.BuildConfiguration(
             routeConfigs,
             MapToGlobalConfiguration(globalConfig),
-            OcelotVersion.V20_0);
+            ConfigurationBuilder.BaselineVersion);
 
         // 3. 5 Validation Layers
         // 3.1 Domain Validation - each aggregate validates itself

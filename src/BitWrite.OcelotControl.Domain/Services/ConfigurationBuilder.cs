@@ -14,6 +14,16 @@ namespace BitWrite.OcelotControl.Domain.Services;
 /// </summary>
 public class ConfigurationBuilder
 {
+    /// <summary>
+    /// The Ocelot version the generated configuration targets.
+    /// </summary>
+    /// <remarks>
+    /// Ocelot 18, the minimum supported version. Emitting the oldest shape is what
+    /// lets one snapshot reach 18, 19 and 20. A later version that needs its own
+    /// shape is a change here, and nowhere else.
+    /// </remarks>
+    public static OcelotVersion BaselineVersion => OcelotVersion.V18_0;
+
     private readonly ConfigurationCanonicalizer _canonicalizer;
 
     public ConfigurationBuilder(ConfigurationCanonicalizer canonicalizer)
@@ -112,10 +122,22 @@ public class ConfigurationBuilder
             FileCacheOptions = route.CacheOptions != null
                 ? new OcelotFileCacheOptions { TtlSeconds = route.CacheOptions.TtlSeconds }
                 : null,
+            // Authorization and the transformation blocks. A value the target
+            // version cannot express throws rather than being dropped, so a
+            // rule an operator configured never silently fails to apply.
+            RouteClaimsRequirement = FeatureOptionEmitter.Authorization(route.AuthorizationOptions),
+            AddClaimsToRequest = FeatureOptionEmitter.AddClaimsToRequest(route.ClaimOptions),
+            UpstreamHeaderTransform = FeatureOptionEmitter.UpstreamHeaderTransform(route.HeaderOptions),
+            DownstreamHeaderTransform = FeatureOptionEmitter.DownstreamHeaderTransform(route.HeaderOptions),
             LoadBalancerOptions = loadBalancerOptions ?? (route.LoadBalancerOptions != null
                 ? new OcelotLoadBalancerOptions { Type = route.LoadBalancerOptions.Algorithm }
                 : null)
         };
+
+        // Query transformation has no 18 counterpart, so this throws when one is
+        // configured. Called last so the blocks that can be expressed are
+        // validated first and the error names the right field.
+        FeatureOptionEmitter.RejectQueryTransformations(route.QueryOptions);
 
         return ocelotRoute;
     }
@@ -195,6 +217,13 @@ public class OcelotRouteConfiguration
     public OcelotQoSOptions? QoSOptions { get; init; }
     public OcelotFileCacheOptions? FileCacheOptions { get; init; }
     public OcelotLoadBalancerOptions? LoadBalancerOptions { get; init; }
+    public OcelotClaimsRequirement? RouteClaimsRequirement { get; init; }
+    public Dictionary<string, string>? AddClaimsToRequest { get; init; }
+    public Dictionary<string, string>? AddHeadersToRequest { get; init; }
+    public Dictionary<string, string>? AddQueriesToRequest { get; init; }
+    public Dictionary<string, string>? ChangeDownstreamPathTemplate { get; init; }
+    public Dictionary<string, string>? UpstreamHeaderTransform { get; init; }
+    public Dictionary<string, string>? DownstreamHeaderTransform { get; init; }
 }
 
 public class OcelotGlobalConfiguration
@@ -235,4 +264,17 @@ public class OcelotFileCacheOptions
 public class OcelotLoadBalancerOptions
 {
     public string Type { get; init; } = "RoundRobin";
+}
+
+/// <summary>
+/// Ocelot 18 route-level authorization, which is a flat set of claim requirements.
+/// </summary>
+/// <remarks>
+/// This is the whole of authorization in 18. There is no policy concept at route
+/// level and no scope, so \`AuthorizationOptions.Policies\` and \`.Scopes\` have
+/// nowhere to go — see the emission guard.
+/// </remarks>
+public class OcelotClaimsRequirement
+{
+    public Dictionary<string, string> Claims { get; init; } = new();
 }

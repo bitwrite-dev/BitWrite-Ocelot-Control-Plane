@@ -1,5 +1,7 @@
+import type { RouteResponse } from '@/api'
+
 /**
- * The 8 steps of the Create Route Wizard that the API can actually store.
+ * The 8 steps of the route wizard that the API can actually store.
  *
  * The spec lists 10. Two are omitted because nothing in the API can accept them:
  * Authorization and Transformations. They are still modelled in the domain, but
@@ -369,4 +371,86 @@ export function stepForField(field: string | null): StepId {
   // A field like `downstreamTargets[0]` points at the step that owns the list.
   const base = field.replace(/\[\d+\]$/, '')
   return FIELD_TO_STEP[field] ?? FIELD_TO_STEP[base] ?? 'review'
+}
+
+/**
+ * The algorithms the select offers, plus whatever a route already stores.
+ *
+ * The API returns the algorithm as a free string, so a route configured with a
+ * value this build does not know about would otherwise show an empty select and
+ * silently be rewritten to the first option on save.
+ */
+export function loadBalancerOptions(stored: string | undefined): string[] {
+  const known = [...LOAD_BALANCER_ALGORITHMS]
+  if (stored && !known.includes(stored as (typeof LOAD_BALANCER_ALGORITHMS)[number])) {
+    return [stored, ...known]
+  }
+  return known
+}
+
+/** The periods the select offers, plus a stored value the build does not know. */
+export function periodOptions(stored: string | undefined): string[] {
+  const known = [...PERIODS]
+  if (stored && !known.includes(stored as Period)) {
+    return [stored, ...known]
+  }
+  return known
+}
+
+/**
+ * Fills a draft from a stored route, so the same wizard can edit it.
+ *
+ * Round-trips every field the API can hold. Authorization and transformations
+ * have no field on the response, so a saved route never reports them and they
+ * cannot be pre-filled — see #466.
+ */
+export function draftFromRoute(route: RouteResponse): RouteDraft {
+  const draft = emptyRouteDraft()
+
+  draft.key = route.key ?? ''
+  draft.method = route.method
+  draft.upstreamPath = route.upstreamPath
+  draft.host = route.host ?? ''
+  draft.serviceId = route.serviceId
+  draft.downstreamTargets =
+    route.downstreamTargets.length > 0
+      ? route.downstreamTargets.map((target) => ({
+          host: target.host,
+          port: target.port,
+          scheme: target.scheme,
+          path: target.path,
+        }))
+      : draft.downstreamTargets
+  draft.allowedScopes = route.authenticationOptions?.allowedScopes ?? []
+
+  if (route.rateLimitOptions?.enableRateLimiting) {
+    draft.rateLimit = {
+      enabled: true,
+      limit: route.rateLimitOptions.limit,
+      // periodOptions guarantees this value is selectable, even if the build
+      // does not otherwise know the period.
+      period: route.rateLimitOptions.period as Period,
+    }
+  }
+
+  if (route.qoSOptions) {
+    draft.qos = {
+      enabled: true,
+      timeoutSeconds: route.qoSOptions.timeoutSeconds,
+      circuitBreakerTimeoutSeconds: route.qoSOptions.circuitBreakerTimeoutSeconds ?? '',
+    }
+  }
+
+  if (route.cacheOptions) {
+    draft.cache = { enabled: true, ttlSeconds: route.cacheOptions.ttlSeconds }
+  }
+
+  if (route.loadBalancerOptions) {
+    draft.loadBalancer = {
+      enabled: true,
+      algorithm: route.loadBalancerOptions.algorithm,
+    }
+  }
+
+  return draft
 }

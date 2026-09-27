@@ -42,24 +42,16 @@ public class ValidateRouteCommandHandler
         return await _validator.ValidateAsync(ToInput(route), cancellationToken);
     }
 
-    /// <summary>Projects a stored route onto the validator's input.</summary>
+    /// <summary>
+    /// Projects a stored route onto the validator's input.
+    /// </summary>
+    /// <remarks>
+    /// This copy was missing authorization and the transformation blocks, so a
+    /// route using them was validated against a configuration that did not
+    /// contain them. It now shares the one mapping.
+    /// </remarks>
     internal static RouteValidationInput ToInput(DomainRoute route) => new(
-        new RouteConfiguration
-        {
-            Id = route.Id,
-            Host = route.Host,
-            Method = route.Method,
-            UpstreamPath = route.UpstreamPath,
-            ServiceId = route.ServiceId,
-            DownstreamTargets = route.DownstreamTargets
-                .Select(t => DownstreamTarget.Create(t.Scheme, t.Host, t.Port, t.Path))
-                .ToList(),
-            AuthenticationOptions = route.AuthenticationOptions,
-            RateLimitOptions = route.RateLimitOptions,
-            QoSOptions = route.QoSOptions,
-            CacheOptions = route.CacheOptions,
-            LoadBalancerOptions = route.LoadBalancerOptions
-        },
+        RouteConfigurationMapper.Map(route),
         route.RouteKey,
         // A stored route must not conflict with itself.
         route.Id,

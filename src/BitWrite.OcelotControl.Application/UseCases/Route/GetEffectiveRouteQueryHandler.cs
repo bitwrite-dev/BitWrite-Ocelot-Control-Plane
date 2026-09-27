@@ -41,7 +41,7 @@ public class GetEffectiveRouteQueryHandler
         }
 
         // Build Ocelot configuration for this single route (effective config includes all validation)
-        var routeConfig = MapToRouteConfiguration(route);
+        var routeConfig = RouteConfigurationMapper.Map(route);
         var ocelotConfig = _configurationBuilder.BuildConfiguration(
             new List<RouteConfiguration> { routeConfig },
             new DomainGlobalConfig { BaseUrl = "", RequestIdKey = "" },
@@ -53,21 +53,4 @@ public class GetEffectiveRouteQueryHandler
         return new GetEffectiveRouteResponse(canonicalJson);
     }
 
-    private static RouteConfiguration MapToRouteConfiguration(DomainRoute route)
-    {
-        return new RouteConfiguration
-        {
-            Id = route.Id,
-            Host = route.Host,
-            Method = route.Method,
-            UpstreamPath = route.UpstreamPath,
-            ServiceId = route.ServiceId,
-            DownstreamTargets = route.DownstreamTargets.Select(t => DownstreamTarget.Create(t.Scheme, t.Host, t.Port, t.Path)).ToList(),
-            AuthenticationOptions = route.AuthenticationOptions,
-            RateLimitOptions = route.RateLimitOptions,
-            QoSOptions = route.QoSOptions,
-            CacheOptions = route.CacheOptions,
-            LoadBalancerOptions = route.LoadBalancerOptions
-        };
-    }
 }

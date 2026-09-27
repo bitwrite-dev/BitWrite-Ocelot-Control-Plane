@@ -84,8 +84,15 @@ public class ConfigurationBuilder
             DownstreamScheme = route.DownstreamTargets.FirstOrDefault()?.Scheme ?? "http",
             DownstreamHostAndPorts = downstreamHostAndPorts,
             Key = route.Key?.ToSignature(),
+            // The scopes a user configured used to be replaced with an empty
+            // list here, so authentication was published with no scopes and the
+            // gateway ignored it. They live in Properties["scopes"] as one
+            // comma-separated value.
             AuthenticationOptions = route.AuthenticationOptions != null
-                ? new OcelotAuthenticationOptions { AllowedScopes = new List<string>() }
+                ? new OcelotAuthenticationOptions
+                {
+                    AllowedScopes = ParseScopes(route.AuthenticationOptions)
+                }
                 : null,
             RateLimitOptions = route.RateLimitOptions != null
                 ? new OcelotRateLimitOptions
@@ -113,6 +120,26 @@ public class ConfigurationBuilder
         return ocelotRoute;
     }
 
+    /// <summary>
+    /// Reads the allowed scopes back out of the stored authentication options.
+    /// </summary>
+    /// <remarks>
+    /// The options hold the scopes as a single comma-separated entry under
+    /// "scopes", which is how the API layer stores them. Splitting happens here
+    /// so the wire shape stays an Ocelot list.
+    /// </remarks>
+    private static List<string> ParseScopes(AuthenticationOptions options)
+    {
+        if (!options.Properties.TryGetValue("scopes", out var raw) || string.IsNullOrWhiteSpace(raw))
+            return new List<string>();
+
+        return raw
+            .Split(',', StringSplitOptions.RemoveEmptyEntries)
+            .Select(scope => scope.Trim())
+            .Where(scope => scope.Length > 0)
+            .ToList();
+    }
+
     private OcelotGlobalConfiguration BuildGlobalConfiguration(GlobalConfiguration globalConfig)
     {
         return new OcelotGlobalConfiguration
@@ -133,10 +160,14 @@ public class RouteConfiguration
     public ServiceId ServiceId { get; init; } = default!;
     public IReadOnlyList<DownstreamTarget> DownstreamTargets { get; init; } = Array.Empty<DownstreamTarget>();
     public AuthenticationOptions? AuthenticationOptions { get; init; }
+    public AuthorizationOptions? AuthorizationOptions { get; init; }
     public RateLimitOptions? RateLimitOptions { get; init; }
     public QoSOptions? QoSOptions { get; init; }
     public CacheOptions? CacheOptions { get; init; }
     public LoadBalancerOptions? LoadBalancerOptions { get; init; }
+    public HeaderOptions? HeaderOptions { get; init; }
+    public ClaimOptions? ClaimOptions { get; init; }
+    public QueryOptions? QueryOptions { get; init; }
 }
 
 public class GlobalConfiguration

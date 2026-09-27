@@ -27,7 +27,7 @@ public class DisableRouteCommandHandler
             return null;
 
         if (!route.IsEnabled)
-            return MapToResponse(route);
+            return RouteResponseMapper.Map(route);
 
         route.Disable(command.CorrelationId);
 
@@ -48,25 +48,11 @@ public class DisableRouteCommandHandler
             command.RouteId.ToString(),
             "Success"), cancellationToken);
 
-        return MapToResponse(route);
+        return RouteResponseMapper.Map(route);
     }
 
     private static RouteResponse MapToResponse(Domain.Aggregates.Route.Route route)
     {
-        return new RouteResponse(
-            route.Id,
-            route.Key ?? "",
-            route.Method,
-            route.UpstreamPath,
-            route.ServiceId,
-            route.IsEnabled,
-            route.DownstreamTargets,
-            route.AuthenticationOptions,
-            route.RateLimitOptions,
-            route.QoSOptions,
-            route.CacheOptions,
-            route.LoadBalancerOptions,
-            route.CreatedAt,
-            route.UpdatedAt);
+        return RouteResponseMapper.Map(route);
     }
 }

@@ -51,10 +51,14 @@ public static class RouteRequestMapper
         if (!mapping.Success) return RouteMappingResult<CreateRouteCommand>.Failed(mapping.Errors);
 
         var authentication = BuildAuthentication(request.AuthenticationOptions, mapping.Errors);
+        var authorization = BuildAuthorization(request.AuthorizationOptions, mapping.Errors);
         var rateLimit = BuildRateLimit(request.RateLimitOptions, mapping.Errors);
         var qos = BuildQoS(request.QoSOptions, mapping.Errors);
         var cache = BuildCache(request.CacheOptions, mapping.Errors);
         var loadBalancer = BuildLoadBalancer(request.LoadBalancerOptions, mapping.Errors);
+        var headers = BuildTransformations(request.HeaderTransformations, "headerTransformations", HeaderTransform.Create, HeaderOptions.Create, mapping.Errors);
+        var claims = BuildTransformations(request.ClaimTransformations, "claimTransformations", ClaimTransform.Create, ClaimOptions.Create, mapping.Errors);
+        var query = BuildTransformations(request.QueryTransformations, "queryTransformations", QueryTransform.Create, QueryOptions.Create, mapping.Errors);
 
         if (mapping.Errors.Count > 0)
         {
@@ -69,10 +73,14 @@ public static class RouteRequestMapper
             mapping.Value.DownstreamTargets,
             request.Host,
             authentication,
+            authorization,
             rateLimit,
             qos,
             cache,
             loadBalancer,
+            headers,
+            claims,
+            query,
             initiatedBy));
     }
 
@@ -99,10 +107,14 @@ public static class RouteRequestMapper
         if (!mapping.Success) return RouteMappingResult<ReplaceRouteCommand>.Failed(mapping.Errors);
 
         var authentication = BuildAuthentication(request.AuthenticationOptions, mapping.Errors);
+        var authorization = BuildAuthorization(request.AuthorizationOptions, mapping.Errors);
         var rateLimit = BuildRateLimit(request.RateLimitOptions, mapping.Errors);
         var qos = BuildQoS(request.QoSOptions, mapping.Errors);
         var cache = BuildCache(request.CacheOptions, mapping.Errors);
         var loadBalancer = BuildLoadBalancer(request.LoadBalancerOptions, mapping.Errors);
+        var headers = BuildTransformations(request.HeaderTransformations, "headerTransformations", HeaderTransform.Create, HeaderOptions.Create, mapping.Errors);
+        var claims = BuildTransformations(request.ClaimTransformations, "claimTransformations", ClaimTransform.Create, ClaimOptions.Create, mapping.Errors);
+        var query = BuildTransformations(request.QueryTransformations, "queryTransformations", QueryTransform.Create, QueryOptions.Create, mapping.Errors);
 
         if (mapping.Errors.Count > 0)
         {
@@ -118,10 +130,14 @@ public static class RouteRequestMapper
             request.Key,
             request.Host,
             authentication,
+            authorization,
             rateLimit,
             qos,
             cache,
             loadBalancer,
+            headers,
+            claims,
+            query,
             initiatedBy));
     }
 
@@ -142,16 +158,24 @@ public static class RouteRequestMapper
 
         var features = new List<string>();
         var authentication = BuildAuthentication(request.AuthenticationOptions, mapping.Errors);
+        var authorization = BuildAuthorization(request.AuthorizationOptions, mapping.Errors);
         var rateLimit = BuildRateLimit(request.RateLimitOptions, mapping.Errors);
         var qos = BuildQoS(request.QoSOptions, mapping.Errors);
         var cache = BuildCache(request.CacheOptions, mapping.Errors);
         var loadBalancer = BuildLoadBalancer(request.LoadBalancerOptions, mapping.Errors);
+        var headers = BuildTransformations(request.HeaderTransformations, "headerTransformations", HeaderTransform.Create, HeaderOptions.Create, mapping.Errors);
+        var claims = BuildTransformations(request.ClaimTransformations, "claimTransformations", ClaimTransform.Create, ClaimOptions.Create, mapping.Errors);
+        var query = BuildTransformations(request.QueryTransformations, "queryTransformations", QueryTransform.Create, QueryOptions.Create, mapping.Errors);
 
         if (authentication is not null) features.Add("authentication");
+        if (authorization is not null) features.Add("authorization");
         if (rateLimit is not null) features.Add("rate-limiting");
         if (qos is not null) features.Add("qos");
         if (cache is not null) features.Add("caching");
         if (loadBalancer is not null) features.Add("load-balancing");
+        if (headers is not null) features.Add("header-transformation");
+        if (claims is not null) features.Add("claim-transformation");
+        if (query is not null) features.Add("query-string-transformation");
 
         if (mapping.Errors.Count > 0)
         {
@@ -359,6 +383,57 @@ public static class RouteRequestMapper
         catch (Exception ex)
         {
             errors.Add(new RouteValidationError("loadBalancerOptions", "INVALID_LOAD_BALANCER", ex.Message));
+            return null;
+        }
+    }
+
+    private static AuthorizationOptions? BuildAuthorization(
+        ApiDtos.AuthorizationOptionsRequest? request,
+        List<RouteValidationError> errors)
+    {
+        if (request is null) return null;
+
+        try
+        {
+            return AuthorizationOptions.Create(request.Policies, request.Scopes, request.Requirements);
+        }
+        catch (Exception ex)
+        {
+            errors.Add(new RouteValidationError("authorizationOptions", "INVALID_AUTHORIZATION", ex.Message));
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Builds one of the three transformation blocks.
+    /// </summary>
+    /// <remarks>
+    /// Headers, claims and query strings share a shape and differ only in the
+    /// domain type they produce, so one implementation serves all three.
+    /// </remarks>
+    private static TOptions? BuildTransformations<TOptions, TTransform>(
+        ApiDtos.TransformationsRequest? request,
+        string field,
+        Func<string, string, TTransform> makeTransform,
+        Func<List<TTransform>?, List<string>?, List<TTransform>?, TOptions> build,
+        List<RouteValidationError> errors)
+        where TOptions : class
+    {
+        if (request is null) return null;
+
+        try
+        {
+            List<TTransform>? Add() =>
+                request.Add?.Select(entry => makeTransform(entry.Key, entry.Value)).ToList();
+
+            List<TTransform>? Transform() =>
+                request.Transform?.Select(entry => makeTransform(entry.Key, entry.Value)).ToList();
+
+            return build(Add(), request.Remove, Transform());
+        }
+        catch (Exception ex)
+        {
+            errors.Add(new RouteValidationError(field, "INVALID_TRANSFORMATIONS", ex.Message));
             return null;
         }
     }

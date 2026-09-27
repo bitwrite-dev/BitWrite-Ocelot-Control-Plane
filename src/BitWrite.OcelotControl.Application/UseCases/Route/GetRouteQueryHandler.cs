@@ -17,26 +17,7 @@ public class GetRouteQueryHandler
     public async Task<RouteResponse?> HandleAsync(GetRouteQuery query, CancellationToken cancellationToken = default)
     {
         var route = await _routeRepository.GetAsync(query.Id, cancellationToken);
-        return route != null ? MapToResponse(route) : null;
+        return route != null ? RouteResponseMapper.Map(route) : null;
     }
 
-    private static RouteResponse MapToResponse(DomainRoute route)
-    {
-        return new RouteResponse(
-            route.Id,
-            route.Key,
-            route.Method,
-            route.UpstreamPath,
-            route.ServiceId,
-            route.IsEnabled,
-            route.DownstreamTargets,
-            route.AuthenticationOptions,
-            route.RateLimitOptions,
-            route.QoSOptions,
-            route.CacheOptions,
-            route.LoadBalancerOptions,
-            route.CreatedAt,
-            route.UpdatedAt
-        );
-    }
 }

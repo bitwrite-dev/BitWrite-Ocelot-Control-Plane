@@ -2,6 +2,37 @@ using System.ComponentModel.DataAnnotations;
 
 namespace BitWrite.OcelotControl.Api.DTOs;
 
+/// <summary>
+/// Authorization rules for a route.
+/// </summary>
+/// <remarks>
+/// Separate from authentication, which says who the caller is. A caller can be
+/// authenticated and still not be allowed on this route, so the two are not
+/// conflated: authenticationOptions.allowedScopes keeps its existing meaning.
+/// </remarks>
+public record AuthorizationOptionsRequest(
+    List<string>? Policies,
+    List<string>? Scopes,
+    Dictionary<string, string>? Requirements
+);
+
+/// <summary>
+/// One key/value transformation, used for headers, claims and query strings.
+/// </summary>
+public record TransformEntryRequest(
+    [Required][MaxLength(200)] string Key,
+    [MaxLength(2000)] string Value
+);
+
+/// <summary>
+/// Transformations to add, to remove, and to rewrite in place.
+/// </summary>
+public record TransformationsRequest(
+    List<TransformEntryRequest>? Add,
+    List<string>? Remove,
+    List<TransformEntryRequest>? Transform
+);
+
 public record CreateRouteRequest(
     [Required][MaxLength(100)] string Key,
     [Required] string Method,
@@ -10,10 +41,14 @@ public record CreateRouteRequest(
     [Required] string ServiceId,
     [Required] List<DownstreamTargetRequest> DownstreamTargets,
     AuthenticationOptionsRequest? AuthenticationOptions,
+    AuthorizationOptionsRequest? AuthorizationOptions,
     RateLimitOptionsRequest? RateLimitOptions,
     QoSOptionsRequest? QoSOptions,
     CacheOptionsRequest? CacheOptions,
-    LoadBalancerOptionsRequest? LoadBalancerOptions
+    LoadBalancerOptionsRequest? LoadBalancerOptions,
+    TransformationsRequest? HeaderTransformations,
+    TransformationsRequest? ClaimTransformations,
+    TransformationsRequest? QueryTransformations
 );
 
 /// <summary>
@@ -33,10 +68,14 @@ public record UpdateRouteRequest(
     [Required] string ServiceId,
     [Required] List<DownstreamTargetRequest> DownstreamTargets,
     AuthenticationOptionsRequest? AuthenticationOptions,
+    AuthorizationOptionsRequest? AuthorizationOptions,
     RateLimitOptionsRequest? RateLimitOptions,
     QoSOptionsRequest? QoSOptions,
     CacheOptionsRequest? CacheOptions,
-    LoadBalancerOptionsRequest? LoadBalancerOptions
+    LoadBalancerOptionsRequest? LoadBalancerOptions,
+    TransformationsRequest? HeaderTransformations,
+    TransformationsRequest? ClaimTransformations,
+    TransformationsRequest? QueryTransformations
 );
 
 public record DownstreamTargetRequest(
@@ -79,12 +118,33 @@ public record RouteResponse(
     bool IsEnabled,
     List<DownstreamTargetResponse> DownstreamTargets,
     AuthenticationOptionsResponse? AuthenticationOptions,
+    AuthorizationOptionsResponse? AuthorizationOptions,
     RateLimitOptionsResponse? RateLimitOptions,
     QoSOptionsResponse? QoSOptions,
     CacheOptionsResponse? CacheOptions,
     LoadBalancerOptionsResponse? LoadBalancerOptions,
+    TransformationsResponse? HeaderTransformations,
+    TransformationsResponse? ClaimTransformations,
+    TransformationsResponse? QueryTransformations,
     DateTimeOffset CreatedAt,
     DateTimeOffset UpdatedAt
+);
+
+/// <summary>Authorization rules as stored on a route.</summary>
+public record AuthorizationOptionsResponse(
+    List<string> Policies,
+    List<string> Scopes,
+    Dictionary<string, string> Requirements
+);
+
+/// <summary>One stored key/value transformation.</summary>
+public record TransformEntryResponse(string Key, string Value);
+
+/// <summary>Transformations as stored on a route.</summary>
+public record TransformationsResponse(
+    List<TransformEntryResponse> Add,
+    List<string> Remove,
+    List<TransformEntryResponse> Transform
 );
 
 public record DownstreamTargetResponse(

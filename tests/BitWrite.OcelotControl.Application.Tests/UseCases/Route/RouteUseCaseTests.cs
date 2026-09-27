@@ -47,7 +47,7 @@ public class CreateRouteCommandHandlerTests
             serviceId,
             targets,
             "localhost",
-            null, null, null, null, null,
+            null, null, null, null, null, null, null, null, null, null,
             "test-user");
 
         _mockServiceRepository.Setup(r => r.GetAsync(serviceId, It.IsAny<CancellationToken>()))
@@ -83,7 +83,7 @@ public class CreateRouteCommandHandlerTests
             DomainUpstreamPath.From("/api/test"),
             serviceId,
             new List<DownstreamTarget> { DownstreamTarget.Create("http", "localhost", 5001) },
-            null, null, null, null, null, null,
+            null, null, null, null, null, null, null, null, null, null,
             "test-user");
 
         _mockServiceRepository.Setup(r => r.GetAsync(serviceId, It.IsAny<CancellationToken>()))
@@ -224,7 +224,7 @@ public class ReplaceRouteCommandHandlerTests
             new List<DownstreamTarget> { DownstreamTarget.Create("http", "localhost", 5002) },
             "updated-route",
             "other.example.com",
-            null, null, null, null, null,
+            null, null, null, null, null, null, null, null, null, null,
             "test-user");
 
         Store(route);

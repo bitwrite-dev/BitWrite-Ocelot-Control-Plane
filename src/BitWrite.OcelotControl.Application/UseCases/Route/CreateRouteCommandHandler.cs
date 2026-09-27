@@ -74,26 +74,7 @@ public class CreateRouteCommandHandler
         );
         await _eventDispatcher.DispatchAsync(auditEvent, cancellationToken);
 
-        return MapToResponse(route);
+        return RouteResponseMapper.Map(route);
     }
 
-    private static RouteResponse MapToResponse(DomainRoute route)
-    {
-        return new RouteResponse(
-            route.Id,
-            route.Key,
-            route.Method,
-            route.UpstreamPath,
-            route.ServiceId,
-            route.IsEnabled,
-            route.DownstreamTargets,
-            route.AuthenticationOptions,
-            route.RateLimitOptions,
-            route.QoSOptions,
-            route.CacheOptions,
-            route.LoadBalancerOptions,
-            route.CreatedAt,
-            route.UpdatedAt
-        );
-    }
 }

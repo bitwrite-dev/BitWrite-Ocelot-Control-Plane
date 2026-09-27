@@ -24,10 +24,14 @@ public record ReplaceRouteCommand(
     string? Key = null,
     string? Host = null,
     AuthenticationOptions? AuthenticationOptions = null,
+    AuthorizationOptions? AuthorizationOptions = null,
     RateLimitOptions? RateLimitOptions = null,
     QoSOptions? QoSOptions = null,
     CacheOptions? CacheOptions = null,
     LoadBalancerOptions? LoadBalancerOptions = null,
+    HeaderOptions? HeaderOptions = null,
+    ClaimOptions? ClaimOptions = null,
+    QueryOptions? QueryOptions = null,
     string InitiatedBy = "",
     string CorrelationId = ""
 );

@@ -49,7 +49,7 @@ public class ListRoutesQueryHandler
             .ToList();
 
         var response = new RouteListResponse(
-            pagedRoutes.Select(MapToResponse).ToList(),
+            pagedRoutes.Select(RouteResponseMapper.Map).ToList(),
             totalCount,
             query.Page,
             query.PageSize
@@ -58,23 +58,4 @@ public class ListRoutesQueryHandler
         return response;
     }
 
-    private static RouteResponse MapToResponse(DomainRoute route)
-    {
-        return new RouteResponse(
-            route.Id,
-            route.Key,
-            route.Method,
-            route.UpstreamPath,
-            route.ServiceId,
-            route.IsEnabled,
-            route.DownstreamTargets,
-            route.AuthenticationOptions,
-            route.RateLimitOptions,
-            route.QoSOptions,
-            route.CacheOptions,
-            route.LoadBalancerOptions,
-            route.CreatedAt,
-            route.UpdatedAt
-        );
-    }
 }

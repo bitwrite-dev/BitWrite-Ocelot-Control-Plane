@@ -8,6 +8,7 @@
     <Project Path="src/BitWrite.OcelotControl.SDK/BitWrite.OcelotControl.SDK.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/BitWrite.OcelotControl.Api.Tests/BitWrite.OcelotControl.Api.Tests.csproj" />
     <Project Path="tests/BitWrite.OcelotControl.Application.Tests/BitWrite.OcelotControl.Application.Tests.csproj" />
     <Project Path="tests/BitWrite.OcelotControl.ArchitectureTests/BitWrite.OcelotControl.ArchitectureTests.csproj" />
     <Project Path="tests/BitWrite.OcelotControl.Domain.Tests/BitWrite.OcelotControl.Domain.Tests.csproj" />

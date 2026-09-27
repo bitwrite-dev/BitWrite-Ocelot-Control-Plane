@@ -3,6 +3,9 @@ using BitWrite.OcelotControl.Api.Mapping;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using AppRoute = BitWrite.OcelotControl.Application.UseCases.Route;
 using DomainRoute = BitWrite.OcelotControl.Domain.Aggregates.Route.Route;
+using DomainHeaderOptions = BitWrite.OcelotControl.Domain.ValueObjects.FeatureConfig.HeaderOptions;
+using DomainClaimOptions = BitWrite.OcelotControl.Domain.ValueObjects.FeatureConfig.ClaimOptions;
+using DomainQueryOptions = BitWrite.OcelotControl.Domain.ValueObjects.FeatureConfig.QueryOptions;
 using DomainHttpMethod = BitWrite.OcelotControl.Domain.ValueObjects.Configuration.HttpMethod;
 using DomainUpstreamPath = BitWrite.OcelotControl.Domain.ValueObjects.Configuration.UpstreamPath;
 using DomainDownstreamTarget = BitWrite.OcelotControl.Domain.ValueObjects.Configuration.DownstreamTarget;
@@ -376,38 +379,112 @@ public class RoutesController : BaseApiController
         return DomainDownstreamTarget.Create(request.Scheme, request.Host, request.Port, request.Path);
     }
 
-    private static ApiDtos.RouteResponse MapToResponse(AppRoute.RouteResponse route)
-    {
-        // Extract host from RouteKey if available
-        var routeKey = route.Key;
-        var host = routeKey.Contains("://") ? "" : ""; // Simplified - route.Key might include host info
-
-        return new ApiDtos.RouteResponse(
+    /// <summary>
+    /// Projects the application response onto the wire shape.
+    /// </summary>
+    /// <remarks>
+    /// The option blocks are passed through as the domain holds them. Rates and
+    /// the like are reported as configured simply by being present, which is why
+    /// EnableRateLimiting is derived here rather than stored.
+    /// </remarks>
+    private static ApiDtos.RouteResponse MapToResponse(AppRoute.RouteResponse route) =>
+        new(
             route.Id.Value.ToString(),
             route.Key,
             route.Method.Value,
             route.UpstreamPath.Value,
-            host, // Route aggregate doesn't expose Host directly in response
+            null,
             route.ServiceId.Value.ToString(),
             route.IsEnabled,
-            route.DownstreamTargets.Select(t => new ApiDtos.DownstreamTargetResponse(t.Host, t.Port, t.Scheme, t.Path)).ToList(),
-            route.AuthenticationOptions != null ? new ApiDtos.AuthenticationOptionsResponse(
-                route.AuthenticationOptions.Properties?.TryGetValue("scopes", out var scopes) == true
-                    ? scopes.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList()
-                    : new List<string>()) : null,
-            route.RateLimitOptions != null ? new ApiDtos.RateLimitOptionsResponse(
-                true, // EnableRateLimiting is true if RateLimitOptions exists
-                route.RateLimitOptions.Period ?? "Second",
-                route.RateLimitOptions.Limit ?? 0) : null,
-            route.QoSOptions != null ? new ApiDtos.QoSOptionsResponse(
-                route.QoSOptions.TimeoutSeconds ?? 0,
-                route.QoSOptions.CircuitBreakerTimeoutSeconds) : null,
-            route.CacheOptions != null ? new ApiDtos.CacheOptionsResponse(route.CacheOptions.TtlSeconds) : null,
-            route.LoadBalancerOptions != null ? new ApiDtos.LoadBalancerOptionsResponse(route.LoadBalancerOptions.Algorithm) : null,
+            route.DownstreamTargets
+                .Select(t => new ApiDtos.DownstreamTargetResponse(t.Host, t.Port, t.Scheme, t.Path))
+                .ToList(),
+            route.AuthenticationOptions != null
+                ? new ApiDtos.AuthenticationOptionsResponse(
+                    route.AuthenticationOptions.Properties?.TryGetValue("scopes", out var scopes) == true
+                        ? scopes.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                            .Select(scope => scope.Trim())
+                            .Where(scope => scope.Length > 0)
+                            .ToList()
+                        : new List<string>())
+                : null,
+            route.AuthorizationOptions != null
+                ? new ApiDtos.AuthorizationOptionsResponse(
+                    route.AuthorizationOptions.Policies,
+                    route.AuthorizationOptions.Scopes,
+                    route.AuthorizationOptions.Requirements)
+                : null,
+            route.RateLimitOptions != null
+                ? new ApiDtos.RateLimitOptionsResponse(
+                    true,
+                    route.RateLimitOptions.Period ?? "Second",
+                    route.RateLimitOptions.Limit ?? 0)
+                : null,
+            route.QoSOptions != null
+                ? new ApiDtos.QoSOptionsResponse(
+                    route.QoSOptions.TimeoutSeconds ?? 0,
+                    route.QoSOptions.CircuitBreakerTimeoutSeconds)
+                : null,
+            route.CacheOptions != null
+                ? new ApiDtos.CacheOptionsResponse(route.CacheOptions.TtlSeconds)
+                : null,
+            route.LoadBalancerOptions != null
+                ? new ApiDtos.LoadBalancerOptionsResponse(route.LoadBalancerOptions.Algorithm)
+                : null,
+            ToTransformationsResponse(route.HeaderOptions),
+            ToTransformationsResponse(route.ClaimOptions),
+            ToTransformationsResponse(route.QueryOptions),
             route.CreatedAt,
-            route.UpdatedAt
-        );
-    }
+            route.UpdatedAt);
+
+    private static ApiDtos.TransformationsResponse? ToTransformationsResponse<TTransform>(
+        IReadOnlyList<TTransform>? add,
+        IReadOnlyList<string>? remove,
+        IReadOnlyList<TTransform>? transform,
+        Func<TTransform, string> key,
+        Func<TTransform, string> value)
+        where TTransform : class =>
+        add == null && remove == null && transform == null
+            ? null
+            : new ApiDtos.TransformationsResponse(
+                add?.Select(t => new ApiDtos.TransformEntryResponse(key(t), value(t))).ToList()
+                    ?? new List<ApiDtos.TransformEntryResponse>(),
+                remove?.ToList() ?? new List<string>(),
+                transform?.Select(t => new ApiDtos.TransformEntryResponse(key(t), value(t))).ToList()
+                    ?? new List<ApiDtos.TransformEntryResponse>());
+
+    private static ApiDtos.TransformationsResponse? ToTransformationsResponse(
+        DomainHeaderOptions? options) =>
+        options == null
+            ? null
+            : ToTransformationsResponse(
+                options.Add,
+                options.Remove,
+                options.Transform,
+                t => t.Key,
+                t => t.Value);
+
+    private static ApiDtos.TransformationsResponse? ToTransformationsResponse(
+        DomainClaimOptions? options) =>
+        options == null
+            ? null
+            : ToTransformationsResponse(
+                options.Add,
+                options.Remove,
+                options.Transform,
+                t => t.Key,
+                t => t.Value);
+
+    private static ApiDtos.TransformationsResponse? ToTransformationsResponse(
+        DomainQueryOptions? options) =>
+        options == null
+            ? null
+            : ToTransformationsResponse(
+                options.Add,
+                options.Remove,
+                options.Transform,
+                t => t.Key,
+                t => t.Value);
 
     private static ApiDtos.RouteHistoryItem MapToHistoryItem(AppRoute.RouteHistoryItem item)
     {

@@ -12,5 +12,7 @@
     <Project Path="tests/BitWrite.OcelotControl.ArchitectureTests/BitWrite.OcelotControl.ArchitectureTests.csproj" />
     <Project Path="tests/BitWrite.OcelotControl.Domain.Tests/BitWrite.OcelotControl.Domain.Tests.csproj" />
     <Project Path="tests/BitWrite.OcelotControl.IntegrationTests/BitWrite.OcelotControl.IntegrationTests.csproj" />
+    <Project Path="tests/BitWrite.OcelotControl.Infrastructure.Tests/BitWrite.OcelotControl.Infrastructure.Tests.csproj" />
+    <Project Path="tests/BitWrite.OcelotControl.SDK.Tests/BitWrite.OcelotControl.SDK.Tests.csproj" />
   </Folder>
 </Solution>

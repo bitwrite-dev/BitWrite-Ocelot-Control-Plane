@@ -24,7 +24,7 @@ public class RoutesController : BaseApiController
     private readonly AppRoute.CreateRouteCommandHandler _createRouteCommandHandler;
     private readonly AppRoute.GetRouteQueryHandler _getRouteQueryHandler;
     private readonly AppRoute.ListRoutesQueryHandler _listRoutesQueryHandler;
-    private readonly AppRoute.UpdateRouteCommandHandler _updateRouteCommandHandler;
+    private readonly AppRoute.ReplaceRouteCommandHandler _replaceRouteCommandHandler;
     private readonly AppRoute.EnableRouteCommandHandler _enableRouteCommandHandler;
     private readonly AppRoute.DisableRouteCommandHandler _disableRouteCommandHandler;
     private readonly AppRoute.DeleteRouteCommandHandler _deleteRouteCommandHandler;
@@ -38,7 +38,7 @@ public class RoutesController : BaseApiController
         AppRoute.CreateRouteCommandHandler createRouteCommandHandler,
         AppRoute.GetRouteQueryHandler getRouteQueryHandler,
         AppRoute.ListRoutesQueryHandler listRoutesQueryHandler,
-        AppRoute.UpdateRouteCommandHandler updateRouteCommandHandler,
+        AppRoute.ReplaceRouteCommandHandler replaceRouteCommandHandler,
         AppRoute.EnableRouteCommandHandler enableRouteCommandHandler,
         AppRoute.DisableRouteCommandHandler disableRouteCommandHandler,
         AppRoute.DeleteRouteCommandHandler deleteRouteCommandHandler,
@@ -51,7 +51,7 @@ public class RoutesController : BaseApiController
         _createRouteCommandHandler = createRouteCommandHandler;
         _getRouteQueryHandler = getRouteQueryHandler;
         _listRoutesQueryHandler = listRoutesQueryHandler;
-        _updateRouteCommandHandler = updateRouteCommandHandler;
+        _replaceRouteCommandHandler = replaceRouteCommandHandler;
         _enableRouteCommandHandler = enableRouteCommandHandler;
         _disableRouteCommandHandler = disableRouteCommandHandler;
         _deleteRouteCommandHandler = deleteRouteCommandHandler;
@@ -150,18 +150,7 @@ public class RoutesController : BaseApiController
 
             if (!mapping.Success)
             {
-                var problem = new ValidationProblemDetails(
-                    ToModelState(mapping.Errors))
-                {
-                    Status = 400,
-                    Title = "One or more validation errors occurred.",
-                };
-
-                // ValidationProblemDetails has no correlation id of its own, so
-                // it is added as an extension property; the dashboard reads it
-                // to show in error reports.
-                problem.Extensions["correlationId"] = CorrelationId;
-                return BadRequest(problem);
+                return BadRequest(FieldErrors(mapping.Errors));
             }
 
             var result = await _createRouteCommandHandler.HandleAsync(mapping.Value!);
@@ -194,6 +183,24 @@ public class RoutesController : BaseApiController
         return state;
     }
 
+    /// <summary>
+    /// A <see cref="ValidationProblemDetails"/> naming the field at fault.
+    /// </summary>
+    private ActionResult FieldErrors(IEnumerable<AppRoute.RouteValidationError> errors)
+    {
+        var problem = new ValidationProblemDetails(ToModelState(errors))
+        {
+            Status = 400,
+            Title = "One or more validation errors occurred.",
+        };
+
+        // ValidationProblemDetails has no correlation id of its own, so it is
+        // added as an extension property; the dashboard reads it to show in
+        // error reports.
+        problem.Extensions["correlationId"] = CorrelationId;
+        return BadRequest(problem);
+    }
+
     private static ApiDtos.RouteValidationResponse ToValidationResponse(
         AppRoute.RouteValidationResult result) =>
         new(
@@ -204,35 +211,37 @@ public class RoutesController : BaseApiController
         AppRoute.RouteValidationError error) =>
         new(error.Field, error.Code, error.Message);
 
+    /// <summary>
+    /// Replaces a route's configuration.
+    /// </summary>
+    /// <remarks>
+    /// The stored route ends up holding exactly what the body says, so an option
+    /// block that is no longer present is removed and a null host is cleared.
+    /// A body that cannot be mapped is rejected against the field at fault.
+    /// </remarks>
     [HttpPut("{id}")]
-    public async Task<ActionResult<ApiDtos.RouteResponse>> UpdateRoute(string id, ApiDtos.UpdateRouteRequest request)
+    public async Task<ActionResult<ApiDtos.RouteResponse>> UpdateRoute(
+        string id,
+        ApiDtos.UpdateRouteRequest request)
     {
         try
         {
-            var command = new AppRoute.UpdateRouteCommand(
-                RouteId.From(Guid.Parse(id)),
-                request.Key,
-                request.Method != null ? DomainHttpMethod.Parse(request.Method) : null,
-                request.UpstreamPath != null ? DomainUpstreamPath.From(request.UpstreamPath) : null,
-                request.ServiceId != null ? ServiceId.From(Guid.Parse(request.ServiceId)) : null,
-                request.DownstreamTargets != null ? request.DownstreamTargets.Select(MapToDownstreamTarget).ToList() : null,
-                request.Host,
-                request.AuthenticationOptions != null ? DomainAuthenticationOptions.Create(
-                    "Bearer",
-                    null,
-                    new Dictionary<string, string> { { "scopes", string.Join(",", request.AuthenticationOptions.AllowedScopes ?? new List<string>()) } }) : null,
-                request.RateLimitOptions != null ? DomainRateLimitOptions.Create(
-                    request.RateLimitOptions.Limit,
-                    request.RateLimitOptions.Period) : null,
-                request.QoSOptions != null ? DomainQoSOptions.Create(
-                    request.QoSOptions.TimeoutSeconds,
-                    circuitBreakerTimeoutSeconds: request.QoSOptions.CircuitBreakerTimeoutSeconds) : null,
-                request.CacheOptions != null ? DomainCacheOptions.Create(request.CacheOptions.TtlSeconds) : null,
-                request.LoadBalancerOptions != null ? DomainLoadBalancerOptions.Create(request.LoadBalancerOptions.Algorithm) : null,
-                User.Identity?.Name ?? "system"
-            );
+            var routeId = RouteId.From(Guid.Parse(id));
 
-            var result = await _updateRouteCommandHandler.HandleAsync(command);
+            var mapping = RouteRequestMapper.ToReplaceCommand(
+                request,
+                routeId,
+                User.Identity?.Name ?? "system");
+
+            if (!mapping.Success)
+            {
+                return BadRequest(FieldErrors(mapping.Errors));
+            }
+
+            var result = await _replaceRouteCommandHandler.HandleAsync(mapping.Value!);
+            if (result == null)
+                return NotFound();
+
             return HandleResult(MapToResponse(result));
         }
         catch (Exception ex)

@@ -172,51 +172,66 @@ public class ListRoutesQueryHandlerTests
     }
 }
 
-public class UpdateRouteCommandHandlerTests
+public class ReplaceRouteCommandHandlerTests
 {
     private readonly Mock<IRouteRepository> _mockRouteRepository;
     private readonly Mock<IServiceRepository> _mockServiceRepository;
     private readonly Mock<IDomainEventDispatcher> _mockEventDispatcher;
-    private readonly UpdateRouteCommandHandler _handler;
+    private readonly ReplaceRouteCommandHandler _handler;
 
-    public UpdateRouteCommandHandlerTests()
+    public ReplaceRouteCommandHandlerTests()
     {
         _mockRouteRepository = new Mock<IRouteRepository>();
         _mockServiceRepository = new Mock<IServiceRepository>();
         _mockEventDispatcher = new Mock<IDomainEventDispatcher>();
-        _handler = new UpdateRouteCommandHandler(_mockRouteRepository.Object, _mockServiceRepository.Object, _mockEventDispatcher.Object);
+        _handler = new ReplaceRouteCommandHandler(
+            _mockRouteRepository.Object,
+            _mockServiceRepository.Object,
+            _mockEventDispatcher.Object);
     }
 
-    [Fact]
-    public async Task HandleAsync_ShouldUpdateRoute()
+    private static DomainRoute StoredRoute()
     {
-        // Arrange
         var serviceId = ServiceId.New();
-        var route = DomainRoute.Create(
+        return DomainRoute.Create(
             DomainHttpMethod.Get,
             DomainUpstreamPath.From("/api/test"),
             serviceId,
             new List<DownstreamTarget> { DownstreamTarget.Create("http", "localhost", 5001) },
-            "original-route");
+            "original-route",
+            "api.example.com");
+    }
 
-        var command = new UpdateRouteCommand(
+    private void Store(DomainRoute route) =>
+        _mockRouteRepository.Setup(r => r.GetAsync(route.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(route);
+
+    private void AllowUpdate() =>
+        _mockRouteRepository.Setup(r => r.UpdateAsync(It.IsAny<DomainRoute>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+    [Fact]
+    public async Task HandleAsync_ShouldReplaceEveryField()
+    {
+        // Arrange
+        var route = StoredRoute();
+        var newService = ServiceId.New();
+        var command = new ReplaceRouteCommand(
             route.Id,
-            "updated-route",
             DomainHttpMethod.Post,
             DomainUpstreamPath.From("/api/updated"),
-            serviceId,
+            newService,
             new List<DownstreamTarget> { DownstreamTarget.Create("http", "localhost", 5002) },
-            "localhost",
+            "updated-route",
+            "other.example.com",
             null, null, null, null, null,
             "test-user");
 
-        _mockRouteRepository.Setup(r => r.GetAsync(route.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(route);
-        _mockRouteRepository.Setup(r => r.UpdateAsync(It.IsAny<DomainRoute>(), It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask);
-        _mockEventDispatcher.Setup(d => d.DispatchAsync(It.Is<DomainEvent>(e => e is RouteUpdated), It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask);
-        _mockEventDispatcher.Setup(d => d.DispatchAsync(It.Is<DomainEvent>(e => e is AuditRecorded), It.IsAny<CancellationToken>()))
+        Store(route);
+        AllowUpdate();
+        _mockServiceRepository.Setup(r => r.GetAsync(newService, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(DomainService.Create("new service"));
+        _mockEventDispatcher.Setup(d => d.DispatchAsync(It.IsAny<DomainEvent>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
         // Act
@@ -224,11 +239,135 @@ public class UpdateRouteCommandHandlerTests
 
         // Assert
         result.Should().NotBeNull();
-        result.Key.Should().Be("updated-route");
 
-        _mockRouteRepository.Verify(r => r.UpdateAsync(It.IsAny<DomainRoute>(), It.IsAny<CancellationToken>()), Times.Once);
+        // Each of these was silently dropped before: method, upstream path,
+        // downstream targets and the service reference.
+        result!.Key.Should().Be("updated-route");
+        result.Method.Should().Be(DomainHttpMethod.Post);
+        result.UpstreamPath.Should().Be(DomainUpstreamPath.From("/api/updated"));
+        result.ServiceId.Should().Be(newService);
+        result.DownstreamTargets.Should().ContainSingle()
+            .Which.Port.Should().Be(5002);
+        route.Host.Should().Be("other.example.com");
+
+        _mockRouteRepository.Verify(r => r.UpdateAsync(route, It.IsAny<CancellationToken>()), Times.Once);
         _mockEventDispatcher.Verify(d => d.DispatchAsync(It.Is<DomainEvent>(e => e is RouteUpdated), It.IsAny<CancellationToken>()), Times.Once);
         _mockEventDispatcher.Verify(d => d.DispatchAsync(It.Is<DomainEvent>(e => e is AuditRecorded), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task HandleAsync_ShouldClearTheHost_WhenItIsNotSupplied()
+    {
+        // A null host means "remove it", which was impossible under the old
+        // merge semantics.
+        var route = StoredRoute();
+        var command = new ReplaceRouteCommand(
+            route.Id,
+            DomainHttpMethod.Get,
+            DomainUpstreamPath.From("/api/test"),
+            route.ServiceId,
+            new List<DownstreamTarget> { DownstreamTarget.Create("http", "localhost", 5001) },
+            "original-route",
+            Host: null);
+
+        Store(route);
+        AllowUpdate();
+        _mockEventDispatcher.Setup(d => d.DispatchAsync(It.IsAny<DomainEvent>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var result = await _handler.HandleAsync(command);
+
+        route.Host.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task HandleAsync_ShouldRemoveAFeatureBlock_WhenItIsNotSupplied()
+    {
+        // Every option block is supplied on the stored route, and the
+        // replacement omits them all.
+        var route = DomainRoute.Create(
+            DomainHttpMethod.Get,
+            DomainUpstreamPath.From("/api/test"),
+            ServiceId.New(),
+            new List<DownstreamTarget> { DownstreamTarget.Create("http", "localhost", 5001) },
+            "key");
+
+        route.SetAuthentication(AuthenticationOptions.Create(
+            "Bearer",
+            null,
+            new Dictionary<string, string> { ["scopes"] = "a,b" }));
+        route.SetRateLimit(RateLimitOptions.Create(10, "Minute"));
+        route.SetQoS(QoSOptions.Create(30));
+        route.SetCache(CacheOptions.Create(60));
+        route.SetLoadBalancer(LoadBalancerOptions.Create("RoundRobin"));
+
+        route.AuthenticationOptions.Should().NotBeNull();
+
+        var command = new ReplaceRouteCommand(
+            route.Id,
+            DomainHttpMethod.Get,
+            DomainUpstreamPath.From("/api/test"),
+            route.ServiceId,
+            new List<DownstreamTarget> { DownstreamTarget.Create("http", "localhost", 5001) },
+            "key");
+
+        Store(route);
+        AllowUpdate();
+        _mockEventDispatcher.Setup(d => d.DispatchAsync(It.IsAny<DomainEvent>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var result = await _handler.HandleAsync(command);
+
+        result!.AuthenticationOptions.Should().BeNull();
+        result.RateLimitOptions.Should().BeNull();
+        result.QoSOptions.Should().BeNull();
+        result.CacheOptions.Should().BeNull();
+        result.LoadBalancerOptions.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task HandleAsync_ShouldNotWrite_WhenTheServiceIsMissing()
+    {
+        var route = StoredRoute();
+        var missing = ServiceId.New();
+        var command = new ReplaceRouteCommand(
+            route.Id,
+            DomainHttpMethod.Get,
+            DomainUpstreamPath.From("/api/test"),
+            missing,
+            new List<DownstreamTarget> { DownstreamTarget.Create("http", "localhost", 5001) });
+
+        Store(route);
+        _mockServiceRepository.Setup(r => r.GetAsync(missing, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((DomainService?)null);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => _handler.HandleAsync(command));
+
+        // The route must be left alone rather than pointed at nothing.
+        _mockRouteRepository.Verify(
+            r => r.UpdateAsync(It.IsAny<DomainRoute>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task HandleAsync_ShouldReturnNull_WhenTheRouteDoesNotExist()
+    {
+        var id = RouteId.New();
+        _mockRouteRepository.Setup(r => r.GetAsync(id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((DomainRoute?)null);
+
+        var result = await _handler.HandleAsync(new ReplaceRouteCommand(
+            id,
+            DomainHttpMethod.Get,
+            DomainUpstreamPath.From("/api/test"),
+            ServiceId.New(),
+            new List<DownstreamTarget> { DownstreamTarget.Create("http", "localhost", 5001) }));
+
+        result.Should().BeNull();
+        _mockRouteRepository.Verify(
+            r => r.UpdateAsync(It.IsAny<DomainRoute>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 }
 

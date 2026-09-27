@@ -284,16 +284,55 @@ public class Route
     }
 
     /// <summary>
-    /// Updates the route configuration.
+    /// Replaces the whole configuration of the route.
     /// </summary>
-    public void Update(HttpMethod method, UpstreamPath? upstreamPath, ServiceId? serviceId, string? key, string? host)
+    /// <remarks>
+    /// A replacement rather than a merge, so every field ends up holding exactly
+    /// what the caller asked for. That is what makes it possible to clear a
+    /// value: under merge semantics a null is indistinguishable from "leave it
+    /// alone", so a host or a rate limit could be set but never removed.
+    /// <para>
+    /// Done as one operation so a validation failure leaves the route untouched,
+    /// and so a single <see cref="RouteUpdated"/> event describes the change.
+    /// </para>
+    /// </remarks>
+    public void Replace(
+        HttpMethod method,
+        UpstreamPath upstreamPath,
+        ServiceId serviceId,
+        IReadOnlyList<DownstreamTarget> downstreamTargets,
+        string? key,
+        string? host,
+        AuthenticationOptions? authenticationOptions,
+        RateLimitOptions? rateLimitOptions,
+        QoSOptions? qosOptions,
+        CacheOptions? cacheOptions,
+        LoadBalancerOptions? loadBalancerOptions)
     {
-        if (method != null) Method = method;
-        if (upstreamPath != null) UpstreamPath = upstreamPath;
-        if (serviceId != null) ServiceId = serviceId;
-        if (key != null) Key = key.Trim();
-        if (host != null) Host = host.ToLowerInvariant().Trim();
-        
+        if (downstreamTargets == null || downstreamTargets.Count == 0)
+            throw new DomainException("Route must have at least one downstream target", "NO_DOWNSTREAM_TARGETS");
+
+        if (downstreamTargets.Count > 10)
+            throw new DomainException("Route cannot have more than 10 downstream targets", "TOO_MANY_DOWNSTREAM_TARGETS");
+
+        if (downstreamTargets.Distinct().Count() != downstreamTargets.Count)
+            throw new DomainException("Downstream targets must be unique", "DUPLICATE_DOWNSTREAM_TARGET");
+
+        Method = method;
+        UpstreamPath = upstreamPath;
+        ServiceId = serviceId;
+        _downstreamTargets.Clear();
+        _downstreamTargets.AddRange(downstreamTargets);
+
+        Key = key?.Trim();
+        Host = host?.ToLowerInvariant().Trim();
+
+        AuthenticationOptions = authenticationOptions;
+        RateLimitOptions = rateLimitOptions;
+        QoSOptions = qosOptions;
+        CacheOptions = cacheOptions;
+        LoadBalancerOptions = loadBalancerOptions;
+
         UpdatedAt = DateTimeOffset.UtcNow;
         AddDomainEvent(new RouteUpdated(Id));
     }

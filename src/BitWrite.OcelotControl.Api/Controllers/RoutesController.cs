@@ -1,4 +1,6 @@
 using ApiDtos = BitWrite.OcelotControl.Api.DTOs;
+using BitWrite.OcelotControl.Api.Mapping;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using AppRoute = BitWrite.OcelotControl.Application.UseCases.Route;
 using DomainRoute = BitWrite.OcelotControl.Domain.Aggregates.Route.Route;
 using DomainHttpMethod = BitWrite.OcelotControl.Domain.ValueObjects.Configuration.HttpMethod;
@@ -27,6 +29,7 @@ public class RoutesController : BaseApiController
     private readonly AppRoute.DisableRouteCommandHandler _disableRouteCommandHandler;
     private readonly AppRoute.DeleteRouteCommandHandler _deleteRouteCommandHandler;
     private readonly AppRoute.ValidateRouteCommandHandler _validateRouteCommandHandler;
+    private readonly AppRoute.ValidateRouteDraftCommandHandler _validateRouteDraftCommandHandler;
     private readonly AppRoute.PreviewRouteQueryHandler _previewRouteQueryHandler;
     private readonly AppRoute.GetEffectiveRouteQueryHandler _getEffectiveRouteQueryHandler;
     private readonly AppRoute.RouteHistoryQueryHandler _routeHistoryQueryHandler;
@@ -40,6 +43,7 @@ public class RoutesController : BaseApiController
         AppRoute.DisableRouteCommandHandler disableRouteCommandHandler,
         AppRoute.DeleteRouteCommandHandler deleteRouteCommandHandler,
         AppRoute.ValidateRouteCommandHandler validateRouteCommandHandler,
+        AppRoute.ValidateRouteDraftCommandHandler validateRouteDraftCommandHandler,
         AppRoute.PreviewRouteQueryHandler previewRouteQueryHandler,
         AppRoute.GetEffectiveRouteQueryHandler getEffectiveRouteQueryHandler,
         AppRoute.RouteHistoryQueryHandler routeHistoryQueryHandler)
@@ -52,6 +56,7 @@ public class RoutesController : BaseApiController
         _disableRouteCommandHandler = disableRouteCommandHandler;
         _deleteRouteCommandHandler = deleteRouteCommandHandler;
         _validateRouteCommandHandler = validateRouteCommandHandler;
+        _validateRouteDraftCommandHandler = validateRouteDraftCommandHandler;
         _previewRouteQueryHandler = previewRouteQueryHandler;
         _getEffectiveRouteQueryHandler = getEffectiveRouteQueryHandler;
         _routeHistoryQueryHandler = routeHistoryQueryHandler;
@@ -104,34 +109,62 @@ public class RoutesController : BaseApiController
         }
     }
 
+    /// <summary>
+    /// Validates a route that has not been saved.
+    /// </summary>
+    /// <remarks>
+    /// Lets the wizard check a draft before offering to save it. A body that
+    /// cannot even be mapped reports the offending field with 200 and
+    /// <c>isValid: false</c>, because a malformed draft is the expected input
+    /// here rather than a client mistake.
+    /// </remarks>
+    [HttpPost("validate")]
+    public async Task<ActionResult<ApiDtos.RouteValidationResponse>> ValidateRouteDraft(
+        [FromBody] ApiDtos.CreateRouteRequest request)
+    {
+        var mapping = RouteRequestMapper.ToValidationInput(request);
+        if (!mapping.Success)
+        {
+            return Ok(new ApiDtos.RouteValidationResponse(
+                false,
+                mapping.Errors.Select(ToValidationErrorResponse).ToList()));
+        }
+
+        var result = await _validateRouteDraftCommandHandler.HandleAsync(
+            new AppRoute.ValidateRouteDraftCommand(
+                mapping.Value!,
+                User.Identity?.Name ?? "system"));
+
+        return Ok(ToValidationResponse(result));
+    }
+
     [HttpPost]
     public async Task<ActionResult<ApiDtos.RouteResponse>> CreateRoute(ApiDtos.CreateRouteRequest request)
     {
         try
         {
-            var command = new AppRoute.CreateRouteCommand(
-                request.Key,
-                DomainHttpMethod.Parse(request.Method),
-                DomainUpstreamPath.From(request.UpstreamPath),
-                ServiceId.From(Guid.Parse(request.ServiceId)),
-                request.DownstreamTargets.Select(MapToDownstreamTarget).ToList(),
-                request.Host,
-                request.AuthenticationOptions != null ? DomainAuthenticationOptions.Create(
-                    "Bearer",
-                    null,
-                    new Dictionary<string, string> { { "scopes", string.Join(",", request.AuthenticationOptions.AllowedScopes ?? new List<string>()) } }) : null,
-                request.RateLimitOptions != null ? DomainRateLimitOptions.Create(
-                    request.RateLimitOptions.Limit,
-                    request.RateLimitOptions.Period) : null,
-                request.QoSOptions != null ? DomainQoSOptions.Create(
-                    request.QoSOptions.TimeoutSeconds,
-                    circuitBreakerTimeoutSeconds: request.QoSOptions.CircuitBreakerTimeoutSeconds) : null,
-                request.CacheOptions != null ? DomainCacheOptions.Create(request.CacheOptions.TtlSeconds) : null,
-                request.LoadBalancerOptions != null ? DomainLoadBalancerOptions.Create(request.LoadBalancerOptions.Algorithm) : null,
-                User.Identity?.Name ?? "system"
-            );
+            // Same mapper the draft endpoint uses, so the two cannot disagree.
+            var mapping = RouteRequestMapper.ToCreateCommand(
+                request,
+                User.Identity?.Name ?? "system");
 
-            var result = await _createRouteCommandHandler.HandleAsync(command);
+            if (!mapping.Success)
+            {
+                var problem = new ValidationProblemDetails(
+                    ToModelState(mapping.Errors))
+                {
+                    Status = 400,
+                    Title = "One or more validation errors occurred.",
+                };
+
+                // ValidationProblemDetails has no correlation id of its own, so
+                // it is added as an extension property; the dashboard reads it
+                // to show in error reports.
+                problem.Extensions["correlationId"] = CorrelationId;
+                return BadRequest(problem);
+            }
+
+            var result = await _createRouteCommandHandler.HandleAsync(mapping.Value!);
             return HandleResult(MapToResponse(result));
         }
         catch (Exception ex)
@@ -139,6 +172,37 @@ public class RoutesController : BaseApiController
             return HandleError(ex);
         }
     }
+
+    /// <summary>
+    /// Turns field-tagged errors into the model state a
+    /// <see cref="ValidationProblemDetails"/> is built from, so the response
+    /// shape stays the framework's rather than a bespoke one.
+    /// </summary>
+    private static ModelStateDictionary ToModelState(IEnumerable<AppRoute.RouteValidationError> errors)
+    {
+        var state = new ModelStateDictionary();
+
+        foreach (var group in errors.GroupBy(error => error.Field ?? string.Empty))
+        {
+            var key = string.IsNullOrEmpty(group.Key) ? "request" : group.Key;
+            foreach (var error in group)
+            {
+                state.AddModelError(key, error.Message);
+            }
+        }
+
+        return state;
+    }
+
+    private static ApiDtos.RouteValidationResponse ToValidationResponse(
+        AppRoute.RouteValidationResult result) =>
+        new(
+            result.IsValid,
+            result.Errors.Select(ToValidationErrorResponse).ToList());
+
+    private static ApiDtos.RouteValidationErrorResponse ToValidationErrorResponse(
+        AppRoute.RouteValidationError error) =>
+        new(error.Field, error.Code, error.Message);
 
     [HttpPut("{id}")]
     public async Task<ActionResult<ApiDtos.RouteResponse>> UpdateRoute(string id, ApiDtos.UpdateRouteRequest request)
@@ -245,7 +309,7 @@ public class RoutesController : BaseApiController
             );
 
             var result = await _validateRouteCommandHandler.HandleAsync(command);
-            return HandleResult(new ApiDtos.RouteValidationResponse(result.IsValid, result.Errors.ToList()));
+            return HandleResult(ToValidationResponse(result));
         }
         catch (Exception ex)
         {

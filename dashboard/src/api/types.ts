@@ -232,9 +232,22 @@ export interface RouteResponse {
   updatedAt: string
 }
 
+/**
+ * One validation failure, tagged with the request field that caused it.
+ *
+ * `field` is null when the problem belongs to the route as a whole, and uses the
+ * API's field names otherwise (`upstreamPath`, `downstreamTargets[0]`, ...), so
+ * a wizard can send the operator back to the step that owns it.
+ */
+export interface RouteValidationError {
+  field: string | null
+  code: string
+  message: string
+}
+
 export interface RouteValidationResponse {
   isValid: boolean
-  errors: string[]
+  errors: RouteValidationError[]
 }
 
 export interface RuntimeGatewaysResponse {

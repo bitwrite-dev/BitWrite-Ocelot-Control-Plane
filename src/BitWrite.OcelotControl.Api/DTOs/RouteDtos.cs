@@ -115,9 +115,25 @@ public record RouteListResponse(
     int PageSize
 );
 
+/// <summary>
+/// A validation failure, tagged with the request field that caused it.
+/// </summary>
+/// <param name="Field">
+/// Null when the problem belongs to the route as a whole rather than one field.
+/// </param>
+public record RouteValidationErrorResponse(
+    string? Field,
+    string Code,
+    string Message
+);
+
+/// <summary>
+/// Field-level validation errors, so a wizard can send the operator back to the
+/// step that owns the offending field instead of showing one flat list.
+/// </summary>
 public record RouteValidationResponse(
     bool IsValid,
-    List<string> Errors
+    List<RouteValidationErrorResponse> Errors
 );
 
 public record RoutePreviewResponse(

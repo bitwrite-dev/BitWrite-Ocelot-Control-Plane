@@ -20,9 +20,11 @@ import {
   furthestReachableStep,
   toCreateRequest,
   type RouteDraft,
+  type StepId,
 } from './wizard-model'
 import { toRouteError } from '@/features/routes/queries'
-import { useCreateRoute, useWizardServices } from './queries'
+import { useCreateRoute, useValidateRouteDraft, useWizardServices } from './queries'
+import { stepForField } from './wizard-model'
 
 function Field({
   label,
@@ -59,6 +61,10 @@ export function CreateRouteWizardPage() {
 
   const services = useWizardServices()
   const createRoute = useCreateRoute()
+  const validateDraft = useValidateRouteDraft()
+  // Server errors are held here so a failure can be shown on the step that owns
+  // the field, rather than only on Review.
+  const [serverErrors, setServerErrors] = useState<Record<number, string[]>>({})
   const navigate = useNavigate()
 
   const step = WIZARD_STEPS[stepIndex]
@@ -160,6 +166,22 @@ export function CreateRouteWizardPage() {
                   <h2 className="font-heading text-lg font-semibold">{step.title}</h2>
                   <p className="text-sm text-muted-foreground">{step.description}</p>
                 </div>
+
+                {/* Problems the API reported for this step's fields. */}
+                {serverErrors[stepIndex]?.length ? (
+                  <div className="space-y-1 rounded-md border border-destructive/40 bg-destructive/5 p-3">
+                    <p className="text-sm font-medium text-destructive">
+                      The API rejected this step:
+                    </p>
+                    <ul className="space-y-0.5">
+                      {serverErrors[stepIndex].map((message) => (
+                        <li key={message} className="text-sm text-destructive">
+                          {message}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
 
                 {step.id === 'basic' ? (
                   <>
@@ -709,6 +731,49 @@ export function CreateRouteWizardPage() {
 
                     {createRoute.error ? <ErrorState {...toRouteError(createRoute.error)} /> : null}
 
+                    {validateDraft.isError ? (
+                      <ErrorState
+                        title="Could not reach the validator"
+                        message={
+                          validateDraft.error instanceof Error
+                            ? validateDraft.error.message
+                            : String(validateDraft.error)
+                        }
+                      />
+                    ) : null}
+
+                    {validateDraft.data && !validateDraft.data.isValid ? (
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium text-destructive">
+                          {validateDraft.data.errors.length === 1
+                            ? 'One problem to fix before saving:'
+                            : `${validateDraft.data.errors.length} problems to fix before saving:`}
+                        </p>
+                        <ul className="space-y-1">
+                          {validateDraft.data.errors.map((error) => (
+                            <li key={`${error.field ?? 'route'}-${error.code}`} className="text-sm">
+                              <button
+                                type="button"
+                                className="text-left underline underline-offset-2"
+                                onClick={() => setStepIndex(stepIndexOf(stepForField(error.field)))}
+                              >
+                                {error.message}
+                              </button>{' '}
+                              <span className="text-muted-foreground">
+                                — {WIZARD_STEPS[stepIndexOf(stepForField(error.field))].title}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : null}
+
+                    {validateDraft.data?.isValid ? (
+                      <p className="text-sm text-muted-foreground">
+                        The API accepts this configuration.
+                      </p>
+                    ) : null}
+
                     <details className="rounded-md border p-3">
                       <summary className="cursor-pointer text-sm font-medium">
                         Request payload
@@ -733,13 +798,36 @@ export function CreateRouteWizardPage() {
                 {isLastStep ? (
                   <Button
                     onClick={() => {
-                      createRoute.mutate(draft, {
-                        onSuccess: (created) => navigate(`/routes/${created.id}`),
+                      // Check the draft first, so a problem is reported against
+                      // the field that caused it rather than after the fact.
+                      validateDraft.mutate(draft, {
+                        onSuccess: (result) => {
+                          if (!result.isValid) {
+                            setServerErrors(
+                              Object.fromEntries(
+                                result.errors.map((error) => [
+                                  stepIndexOf(stepForField(error.field)),
+                                  [error.message],
+                                ]),
+                              ),
+                            )
+                            return
+                          }
+
+                          setServerErrors({})
+                          createRoute.mutate(draft, {
+                            onSuccess: (created) => navigate(`/routes/${created.id}`),
+                          })
+                        },
                       })
                     }}
-                    disabled={!canAdvance || createRoute.isPending}
+                    disabled={!canAdvance || createRoute.isPending || validateDraft.isPending}
                   >
-                    {createRoute.isPending ? 'Creating…' : 'Create route'}
+                    {validateDraft.isPending
+                      ? 'Checking…'
+                      : createRoute.isPending
+                        ? 'Creating…'
+                        : 'Create route'}
                   </Button>
                 ) : (
                   <Button
@@ -756,6 +844,12 @@ export function CreateRouteWizardPage() {
       </div>
     </>
   )
+}
+
+/** Step index for a step id, so server errors can point at a step. */
+function stepIndexOf(id: StepId): number {
+  const index = WIZARD_STEPS.findIndex((step) => step.id === id)
+  return index === -1 ? WIZARD_STEPS.length - 1 : index
 }
 
 function ReviewRow({ label, value }: { label: string; value: string }) {

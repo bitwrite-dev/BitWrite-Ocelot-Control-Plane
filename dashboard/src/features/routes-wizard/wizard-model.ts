@@ -335,3 +335,38 @@ export function toCreateRequest(draft: RouteDraft) {
       : {}),
   }
 }
+
+/**
+ * Maps a server field name to the step that owns it.
+ *
+ * The API reports the field it rejected, so a failure can be sent back to the
+ * step that can fix it rather than shown as one flat list on Review. The field
+ * names here are the request names the API uses, not the draft's field names.
+ */
+const FIELD_TO_STEP: Record<string, StepId> = {
+  key: 'basic',
+  method: 'basic',
+  upstreamPath: 'upstream',
+  host: 'upstream',
+  serviceId: 'downstream',
+  downstreamTargets: 'downstream',
+  authenticationOptions: 'authentication',
+  'authenticationOptions.allowedScopes': 'authentication',
+  rateLimitOptions: 'rate-limiting',
+  qosOptions: 'qos',
+  cacheOptions: 'advanced',
+  loadBalancerOptions: 'advanced',
+}
+
+/**
+ * The step a server error belongs to.
+ *
+ * Falls back to the review step, which shows the whole configuration, so an
+ * unrecognised field still surfaces somewhere the operator can act on it.
+ */
+export function stepForField(field: string | null): StepId {
+  if (field === null) return 'review'
+  // A field like `downstreamTargets[0]` points at the step that owns the list.
+  const base = field.replace(/\[\d+\]$/, '')
+  return FIELD_TO_STEP[field] ?? FIELD_TO_STEP[base] ?? 'review'
+}

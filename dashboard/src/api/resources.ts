@@ -17,6 +17,7 @@ import type {
   RouteEffectiveResponse,
   RouteHistoryResponse,
   RoutePreviewResponse,
+  RouteValidationResponse,
   RouteResponse,
   RuntimeGatewaysResponse,
   RuntimeStatusResponse,
@@ -56,8 +57,11 @@ export function createResources(http: HttpClient) {
     enable: (id: string, o?: Options) => http.patch<RouteResponse>(`/api/v1/routes/${id}/enable`, {}, o),
     disable: (id: string, o?: Options) => http.patch<RouteResponse>(`/api/v1/routes/${id}/disable`, {}, o),
     remove: (id: string, o?: Options) => http.delete<void>(`/api/v1/routes/${id}`, o),
+    /** Validates a route that has not been saved, so a wizard can check a draft. */
+    validateDraft: (body: unknown, o?: Options) =>
+      http.post<RouteValidationResponse>('/api/v1/routes/validate', body, o),
     validate: (id: string, o?: Options) =>
-      http.post<SnapshotValidationResponse>(`/api/v1/routes/${id}/validate`, {}, o),
+      http.post<RouteValidationResponse>(`/api/v1/routes/${id}/validate`, {}, o),
     preview: (id: string, o?: Options) =>
       http.get<RoutePreviewResponse>(`/api/v1/routes/${id}/preview`, o),
     effective: (id: string, o?: Options) =>

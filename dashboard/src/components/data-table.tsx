@@ -44,6 +44,13 @@ export interface DataTableProps<T> {
   isLoading?: boolean
   /** Rendered when there are no rows; receives a reset action for filtered views. */
   emptyState?: ReactNode
+  /**
+   * Called when a row is activated, for tables that lead somewhere.
+   *
+   * The row becomes a button for assistive technology and the keyboard, rather
+   * than only responding to a mouse click.
+   */
+  onRowClick?: (row: T) => void
 }
 
 function SkeletonRows({ columns, pageSize }: { columns: Column<unknown>[]; pageSize: number }) {
@@ -91,6 +98,7 @@ export function DataTable<T>({
   onPageSizeChange,
   isLoading,
   emptyState,
+  onRowClick,
 }: DataTableProps<T>) {
   const pageCount = Math.max(1, Math.ceil(totalCount / pageSize))
   const firstRow = totalCount === 0 ? 0 : (page - 1) * pageSize + 1
@@ -125,7 +133,25 @@ export function DataTable<T>({
               </TableRow>
             ) : (
               rows.map((row) => (
-                <TableRow key={rowKey(row)}>
+                <TableRow
+                  key={rowKey(row)}
+                  onClick={onRowClick ? () => onRowClick(row) : undefined}
+                  className={onRowClick ? 'cursor-pointer' : undefined}
+                  // Announced and reachable by keyboard, so the row is a
+                  // control rather than only a mouse target.
+                  tabIndex={onRowClick ? 0 : undefined}
+                  aria-label={onRowClick ? `Open ${String(rowKey(row))}` : undefined}
+                  onKeyDown={
+                    onRowClick
+                      ? (event) => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault()
+                            onRowClick(row)
+                          }
+                        }
+                      : undefined
+                  }
+                >
                   {columns.map((column) => (
                     <TableCell key={column.key} className={column.className}>
                       {column.cell(row)}
@@ -174,6 +200,9 @@ export function DataTable<T>({
               size="sm"
               onClick={() => onPageChange(page - 1)}
               disabled={page <= 1 || isLoading}
+              // The visible label repeats on every table, so the control needs
+              // a name that says which one.
+              aria-label="Previous page"
             >
               Previous
             </Button>
@@ -202,6 +231,7 @@ export function DataTable<T>({
               size="sm"
               onClick={() => onPageChange(page + 1)}
               disabled={page >= pageCount || isLoading}
+              aria-label="Next page"
             >
               Next
             </Button>

@@ -24,6 +24,9 @@ export interface RouteFilters {
 export const routeKeys = {
   list: (filters: RouteFilters) => ['routes', 'list', filters] as const,
   detail: (id: string) => ['routes', 'detail', id] as const,
+  effective: (id: string) => ['routes', 'effective', id] as const,
+  history: (id: string) => ['routes', 'history', id] as const,
+  serviceRoutes: (id: string) => ['routes', 'service', id] as const,
   services: ['routes', 'services'] as const,
 }
 
@@ -65,29 +68,85 @@ export function useServiceOptions() {
   })
 }
 
+/** The route behind the details page. */
+export function useRoute(id: string | undefined) {
+  const api = useApi()
+
+  return useQuery({
+    queryKey: routeKeys.detail(id ?? ''),
+    queryFn: ({ signal }) => api.resources.routes.get(id!, { signal }),
+    enabled: Boolean(id),
+  })
+}
+
+/**
+ * The effective Ocelot JSON, only fetched while its tab is open.
+ *
+ * This is a server-side projection, so it is fetched on demand rather than
+ * alongside the route: most visits to the page never need it.
+ */
+export function useRouteEffective(id: string | undefined, enabled: boolean) {
+  const api = useApi()
+
+  return useQuery({
+    queryKey: routeKeys.effective(id ?? ''),
+    queryFn: ({ signal }) => api.resources.routes.effective(id!, { signal }),
+    enabled: Boolean(id) && enabled,
+  })
+}
+
+export function useRouteHistory(id: string | undefined, enabled: boolean) {
+  const api = useApi()
+
+  return useQuery({
+    queryKey: routeKeys.history(id ?? ''),
+    queryFn: ({ signal }) => api.resources.routes.history(id!, { signal }),
+    enabled: Boolean(id) && enabled,
+  })
+}
+
+/** Other routes on the same service, for context on the details page. */
+export function useServiceRoutes(serviceId: string | undefined, enabled: boolean) {
+  const api = useApi()
+
+  return useQuery({
+    queryKey: routeKeys.serviceRoutes(serviceId ?? ''),
+    queryFn: ({ signal }) => api.resources.services.routes(serviceId!, { signal }),
+    enabled: Boolean(serviceId) && enabled,
+  })
+}
+
 export function useRouteMutations() {
   const api = useApi()
   const queryClient = useQueryClient()
 
   // Mutations return the cache work, not a value, so onSuccess stays void.
-  const invalidate = () =>
+  const invalidate = (id?: string) =>
     Promise.all([
       queryClient.invalidateQueries({ queryKey: ['routes'] }),
       queryClient.invalidateQueries({ queryKey: ['overview'] }),
+      // The effective config and history are derived from the route, so they
+      // go stale the moment it is enabled, disabled or edited.
+      id
+        ? Promise.all([
+            queryClient.invalidateQueries({ queryKey: routeKeys.effective(id) }),
+            queryClient.invalidateQueries({ queryKey: routeKeys.history(id) }),
+          ])
+        : Promise.resolve(),
     ]).then(() => undefined)
 
   return {
     enable: useMutation({
       mutationFn: (id: string) => api.resources.routes.enable(id),
-      onSuccess: invalidate,
+      onSuccess: (_result, id) => invalidate(id),
     }),
     disable: useMutation({
       mutationFn: (id: string) => api.resources.routes.disable(id),
-      onSuccess: invalidate,
+      onSuccess: (_result, id) => invalidate(id),
     }),
     remove: useMutation({
       mutationFn: (id: string) => api.resources.routes.remove(id),
-      onSuccess: invalidate,
+      onSuccess: () => invalidate(),
     }),
   }
 }

@@ -14,6 +14,9 @@ import type {
   CurrentPublicationResponse,
   ReconcileResponse,
   RouteListResponse,
+  RouteEffectiveResponse,
+  RouteHistoryResponse,
+  RoutePreviewResponse,
   RouteResponse,
   RuntimeGatewaysResponse,
   RuntimeStatusResponse,
@@ -55,9 +58,12 @@ export function createResources(http: HttpClient) {
     remove: (id: string, o?: Options) => http.delete<void>(`/api/v1/routes/${id}`, o),
     validate: (id: string, o?: Options) =>
       http.post<SnapshotValidationResponse>(`/api/v1/routes/${id}/validate`, {}, o),
-    preview: (id: string, o?: Options) => http.get<string>(`/api/v1/routes/${id}/preview`, o),
-    effective: (id: string, o?: Options) => http.get<string>(`/api/v1/routes/${id}/effective`, o),
-    history: (id: string, o?: Options) => http.get<unknown[]>(`/api/v1/routes/${id}/history`, o),
+    preview: (id: string, o?: Options) =>
+      http.get<RoutePreviewResponse>(`/api/v1/routes/${id}/preview`, o),
+    effective: (id: string, o?: Options) =>
+      http.get<RouteEffectiveResponse>(`/api/v1/routes/${id}/effective`, o),
+    history: (id: string, o?: Options) =>
+      http.get<RouteHistoryResponse>(`/api/v1/routes/${id}/history`, o),
   }
 
   const services = {

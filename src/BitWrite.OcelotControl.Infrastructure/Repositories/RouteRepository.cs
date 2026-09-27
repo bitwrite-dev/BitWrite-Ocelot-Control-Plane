@@ -1,5 +1,7 @@
 using BitWrite.OcelotControl.Application.Interfaces;
 using BitWrite.OcelotControl.Domain.Aggregates.Route;
+using BitWrite.OcelotControl.Domain.Exceptions;
+using BitWrite.OcelotControl.Domain.ValueObjects.FeatureConfig;
 using BitWrite.OcelotControl.Domain.ValueObjects.Configuration;
 using BitWrite.OcelotControl.Domain.ValueObjects.Identity;
 using BitWrite.OcelotControl.Infrastructure.Redis;
@@ -56,7 +58,25 @@ public class RedisRouteRepository : RedisRepositoryBase, IRouteRepository
             key: GetEntry(entries, "FriendlyKey") is { Length: > 0 } friendly
                 ? friendly
                 : GetEntry(entries, "Key"),
-            host: GetEntry(entries, "Host"));
+            host: GetEntry(entries, "Host"),
+            authenticationOptions: DeserializeAuthentication(GetEntry(entries, "AuthenticationOptions")),
+            authorizationOptions: DeserializeAuthorization(GetEntry(entries, "AuthorizationOptions")),
+            rateLimitOptions: DeserializeRateLimit(GetEntry(entries, "RateLimitOptions")),
+            qosOptions: DeserializeQoS(GetEntry(entries, "QoSOptions")),
+            cacheOptions: DeserializeCache(GetEntry(entries, "CacheOptions")),
+            loadBalancerOptions: DeserializeLoadBalancer(GetEntry(entries, "LoadBalancerOptions")),
+            headerOptions: DeserializeTransforms<HeaderOptions, HeaderTransform>(
+                GetEntry(entries, "HeaderOptions"),
+                HeaderTransform.Create,
+                HeaderOptions.Create),
+            claimOptions: DeserializeTransforms<ClaimOptions, ClaimTransform>(
+                GetEntry(entries, "ClaimOptions"),
+                ClaimTransform.Create,
+                ClaimOptions.Create),
+            queryOptions: DeserializeTransforms<QueryOptions, QueryTransform>(
+                GetEntry(entries, "QueryOptions"),
+                QueryTransform.Create,
+                QueryOptions.Create));
     }
 
     public async Task<List<Route>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -99,6 +119,19 @@ public class RedisRouteRepository : RedisRepositoryBase, IRouteRepository
             new("ServiceId", route.ServiceId.Value.ToString()),
             new("IsEnabled", route.IsEnabled.ToString()),
             new("DownstreamTargets", RedisSerializer.Serialize(SerializeTargets(route.DownstreamTargets))),
+            // Every feature config is persisted. They were all missing, so a
+            // route came back from storage with nothing configured and the
+            // response that followed a create — built from the in-memory
+            // aggregate — disagreed with the next read. See #476.
+            new("AuthenticationOptions", Serialize(route.AuthenticationOptions, o => new AuthenticationRecord(o.Scheme, o.Provider, o.Properties))),
+            new("AuthorizationOptions", Serialize(route.AuthorizationOptions, o => new AuthorizationRecord(o.Policies, o.Scopes, o.Requirements))),
+            new("RateLimitOptions", Serialize(route.RateLimitOptions, o => new RateLimitRecord(o.Limit, o.Period, o.PeriodSeconds, o.ClientIdHeader, o.Whitelist))),
+            new("QoSOptions", Serialize(route.QoSOptions, o => new QoSRecord(o.TimeoutSeconds, o.RetryCount, o.UseCircuitBreaker, o.CircuitBreakerTimeoutSeconds, o.CircuitBreakerExceptionsAllowedBeforeBreaking))),
+            new("CacheOptions", Serialize(route.CacheOptions, o => new CacheRecord(o.TtlSeconds, o.Key, o.Region, o.HeaderNames))),
+            new("LoadBalancerOptions", Serialize(route.LoadBalancerOptions, o => new LoadBalancerRecord(o.Algorithm, o.Key))),
+            new("HeaderOptions", Serialize(route.HeaderOptions, o => new TransformRecord(ToPairs(o.Add), o.Remove, ToPairs(o.Transform)))),
+            new("ClaimOptions", Serialize(route.ClaimOptions, o => new TransformRecord(ToPairs(o.Add), o.Remove, ToPairs(o.Transform)))),
+            new("QueryOptions", Serialize(route.QueryOptions, o => new TransformRecord(ToPairs(o.Add), o.Remove, ToPairs(o.Transform)))),
             new("CreatedAt", route.CreatedAt.ToString("O")),
             new("UpdatedAt", route.UpdatedAt.ToString("O"))
         };
@@ -162,4 +195,207 @@ public class RedisRouteRepository : RedisRepositoryBase, IRouteRepository
         targets
             .Select(t => new TargetRecord(t.Scheme, t.Host, t.Port, t.Path))
             .ToList();
+
+    // --- Feature config persistence -----------------------------------------
+    //
+    // Each feature config is a domain record with a private constructor and no
+    // serialization attributes, so System.Text.Json cannot rebuild one. They are
+    // persisted as plain records and mapped back through the domain factory,
+    // which is also what re-applies the value's own validation.
+
+    private sealed record AuthenticationRecord(string? Scheme, string? Provider, Dictionary<string, string>? Properties);
+
+    private sealed record AuthorizationRecord(List<string>? Policies, List<string>? Scopes, Dictionary<string, string>? Requirements);
+
+    private sealed record RateLimitRecord(int? Limit, string? Period, int? PeriodSeconds, string? ClientIdHeader, List<string>? Whitelist);
+
+    private sealed record QoSRecord(int? TimeoutSeconds, int? RetryCount, bool? UseCircuitBreaker, int? CircuitBreakerTimeoutSeconds, int? CircuitBreakerExceptionsAllowedBeforeBreaking);
+
+    private sealed record CacheRecord(int TtlSeconds, string? Key, string? Region, List<string>? HeaderNames);
+
+    private sealed record LoadBalancerRecord(string? Algorithm, string? Key);
+
+    private sealed record PairRecord(string Key, string Value);
+
+    /// <summary>
+    /// Projects any of the three transform flavours into the shared pair shape.
+    /// They are distinct types with the same key and value, which is why one
+    /// record serves all of them.
+    /// </summary>
+    private static List<PairRecord>? ToPairs<T>(List<T>? transforms)
+        where T : class
+    {
+        if (transforms == null) return null;
+
+        return transforms
+            .Select(t => new PairRecord(GetValue(t, "Key"), GetValue(t, "Value")))
+            .ToList();
+
+        static string GetValue(object target, string property) =>
+            target.GetType().GetProperty(property)?.GetValue(target) as string ?? string.Empty;
+    }
+
+    private sealed record TransformRecord(List<PairRecord>? Add, List<string>? Remove, List<PairRecord>? Transform);
+
+    /// <summary>
+    /// Serialises a feature config, or stores an empty string for "not
+    /// configured" so the field is absent rather than a null entry.
+    /// </summary>
+    private static string Serialize<TValue, TRecord>(TValue? value, Func<TValue, TRecord> project)
+        where TValue : class
+    {
+        if (value == null) return string.Empty;
+        return RedisSerializer.Serialize(project(value));
+    }
+
+    /// <summary>
+    /// Deserialises a stored record, or null when the field is absent.
+    /// </summary>
+    /// <remarks>
+    /// An unconfigured option is written as an empty string, and handing that to
+    /// System.Text.Json throws rather than returning null — which would fail the
+    /// whole read and empty the route list.
+    /// </remarks>
+    private static TRecord? TryDeserialize<TRecord>(string json)
+        where TRecord : class
+    {
+        if (string.IsNullOrWhiteSpace(json)) return null;
+        return RedisSerializer.Deserialize<TRecord>(json);
+    }
+
+    private static AuthenticationOptions? DeserializeAuthentication(string json)
+    {
+        var record = TryDeserialize<AuthenticationRecord>(json);
+        // A record written before this field existed has no scheme, and the
+        // domain factory rejects an empty one, so there is nothing to restore.
+        if (record == null || string.IsNullOrWhiteSpace(record.Scheme)) return null;
+
+        try
+        {
+            return AuthenticationOptions.Create(
+                record.Scheme,
+                record.Provider,
+                record.Properties);
+        }
+        catch (DomainException)
+        {
+            return null;
+        }
+    }
+
+    private static AuthorizationOptions? DeserializeAuthorization(string json)
+    {
+        var record = TryDeserialize<AuthorizationRecord>(json);
+        if (record == null) return null;
+
+        try
+        {
+            return AuthorizationOptions.Create(record.Policies, record.Scopes, record.Requirements);
+        }
+        catch (DomainException)
+        {
+            return null;
+        }
+    }
+
+    private static RateLimitOptions? DeserializeRateLimit(string json)
+    {
+        var record = TryDeserialize<RateLimitRecord>(json);
+        // Both of these are required by the factory.
+        if (record == null || record.Limit is null || string.IsNullOrWhiteSpace(record.Period)) return null;
+
+        try
+        {
+            return RateLimitOptions.Create(record.Limit.Value, record.Period, record.ClientIdHeader, record.Whitelist);
+        }
+        catch (DomainException)
+        {
+            return null;
+        }
+    }
+
+    private static QoSOptions? DeserializeQoS(string json)
+    {
+        var record = TryDeserialize<QoSRecord>(json);
+        if (record == null) return null;
+
+        try
+        {
+            return QoSOptions.Create(
+                record.TimeoutSeconds,
+                record.RetryCount,
+                record.UseCircuitBreaker,
+                record.CircuitBreakerTimeoutSeconds,
+                record.CircuitBreakerExceptionsAllowedBeforeBreaking);
+        }
+        catch (DomainException)
+        {
+            return null;
+        }
+    }
+
+    private static CacheOptions? DeserializeCache(string json)
+    {
+        var record = TryDeserialize<CacheRecord>(json);
+        if (record == null || record.TtlSeconds <= 0) return null;
+
+        try
+        {
+            return CacheOptions.Create(record.TtlSeconds, record.Key, record.Region, record.HeaderNames);
+        }
+        catch (DomainException)
+        {
+            return null;
+        }
+    }
+
+    private static LoadBalancerOptions? DeserializeLoadBalancer(string json)
+    {
+        var record = TryDeserialize<LoadBalancerRecord>(json);
+        if (record == null || string.IsNullOrWhiteSpace(record.Algorithm)) return null;
+
+        try
+        {
+            return LoadBalancerOptions.Create(record.Algorithm, record.Key);
+        }
+        catch (DomainException)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Rebuilds a transformation block, which shares one shape across headers,
+    /// claims and query strings.
+    /// </summary>
+    /// <param name="makeTransform">
+    /// The domain factory for that flavour of transform; all three take a key
+    /// and a value, but they are distinct types.
+    /// </param>
+    private static TOptions? DeserializeTransforms<TOptions, TTransform>(
+        string json,
+        Func<string, string, TTransform> makeTransform,
+        Func<List<TTransform>?, List<string>?, List<TTransform>?, TOptions> build)
+        where TOptions : class
+    {
+        var record = TryDeserialize<TransformRecord>(json);
+        if (record == null) return null;
+
+        try
+        {
+            List<TTransform>? Add() =>
+                record.Add?.Select(pair => makeTransform(pair.Key, pair.Value)).ToList();
+
+            List<TTransform>? Transform() =>
+                record.Transform?.Select(pair => makeTransform(pair.Key, pair.Value)).ToList();
+
+            return build(Add(), record.Remove, Transform());
+        }
+        catch (DomainException)
+        {
+            // A stored value the domain no longer accepts is dropped rather than
+            // failing the whole read, which would empty the route list.
+            return null;
+        }
+    }
 }

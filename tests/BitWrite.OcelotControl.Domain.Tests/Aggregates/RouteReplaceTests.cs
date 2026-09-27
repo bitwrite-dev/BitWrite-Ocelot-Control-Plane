@@ -142,6 +142,38 @@ public class RouteReplaceTests
     }
 
     [Fact]
+    public void Replace_ShouldKeepOrRemoveEveryFeatureBlock()
+    {
+        // A replacement has to reach the feature configs too, or editing a route
+        // would silently strip its rate limit and cache.
+        var route = CreateTestRoute();
+        route.SetRateLimit(RateLimitOptions.Create(100, "Minute"));
+        route.SetCache(CacheOptions.Create(60));
+        route.SetAuthorization(AuthorizationOptions.Create(new List<string> { "Admin" }));
+        route.SetHeaders(HeaderOptions.Create(null, new List<string> { "X-Debug" }, null));
+
+        // Keeps the rate limit, drops the rest.
+        route.Replace(
+            HttpMethod.Get,
+            UpstreamPath.From("/api/test"),
+            route.ServiceId,
+            OneTarget(),
+            "key",
+            null,
+            authenticationOptions: null,
+            rateLimitOptions: RateLimitOptions.Create(200, "Hour"),
+            qosOptions: null,
+            cacheOptions: null,
+            loadBalancerOptions: null);
+
+        route.RateLimitOptions.Should().NotBeNull();
+        route.RateLimitOptions!.Limit.Should().Be(200);
+        route.CacheOptions.Should().BeNull();
+        route.AuthorizationOptions.Should().BeNull();
+        route.HeaderOptions.Should().BeNull();
+    }
+
+    [Fact]
     public void Replace_ShouldRaiseExactlyOneRouteUpdatedEvent()
     {
         var route = CreateTestRoute();

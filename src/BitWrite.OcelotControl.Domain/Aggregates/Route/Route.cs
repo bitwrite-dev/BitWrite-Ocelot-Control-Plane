@@ -100,7 +100,16 @@ public class Route
         DateTimeOffset createdAt,
         DateTimeOffset updatedAt,
         string? key = null,
-        string? host = null)
+        string? host = null,
+        AuthenticationOptions? authenticationOptions = null,
+        AuthorizationOptions? authorizationOptions = null,
+        RateLimitOptions? rateLimitOptions = null,
+        QoSOptions? qosOptions = null,
+        CacheOptions? cacheOptions = null,
+        LoadBalancerOptions? loadBalancerOptions = null,
+        HeaderOptions? headerOptions = null,
+        ClaimOptions? claimOptions = null,
+        QueryOptions? queryOptions = null)
     {
         if (downstreamTargets is null || downstreamTargets.Count == 0)
             throw new DomainException("Route must have at least one downstream target", "NO_DOWNSTREAM_TARGETS");
@@ -115,7 +124,20 @@ public class Route
             Host = host?.ToLowerInvariant().Trim(),
             IsEnabled = isEnabled,
             CreatedAt = createdAt,
-            UpdatedAt = updatedAt
+            UpdatedAt = updatedAt,
+            // The feature configs used to be dropped here, so a route came back
+            // from storage with none of them. They are assigned directly because
+            // the setters stamp UpdatedAt, which would overwrite the stored
+            // value this method is given.
+            AuthenticationOptions = authenticationOptions,
+            AuthorizationOptions = authorizationOptions,
+            RateLimitOptions = rateLimitOptions,
+            QoSOptions = qosOptions,
+            CacheOptions = cacheOptions,
+            LoadBalancerOptions = loadBalancerOptions,
+            HeaderOptions = headerOptions,
+            ClaimOptions = claimOptions,
+            QueryOptions = queryOptions
         }.WithTargets(downstreamTargets);
     }
 
@@ -307,7 +329,11 @@ public class Route
         RateLimitOptions? rateLimitOptions,
         QoSOptions? qosOptions,
         CacheOptions? cacheOptions,
-        LoadBalancerOptions? loadBalancerOptions)
+        LoadBalancerOptions? loadBalancerOptions,
+        AuthorizationOptions? authorizationOptions = null,
+        HeaderOptions? headerOptions = null,
+        ClaimOptions? claimOptions = null,
+        QueryOptions? queryOptions = null)
     {
         if (downstreamTargets == null || downstreamTargets.Count == 0)
             throw new DomainException("Route must have at least one downstream target", "NO_DOWNSTREAM_TARGETS");
@@ -328,10 +354,16 @@ public class Route
         Host = host?.ToLowerInvariant().Trim();
 
         AuthenticationOptions = authenticationOptions;
+        // A replacement is a replacement: an option block that is not supplied
+        // is removed, which is how a feature gets switched off.
+        AuthorizationOptions = authorizationOptions;
         RateLimitOptions = rateLimitOptions;
         QoSOptions = qosOptions;
         CacheOptions = cacheOptions;
         LoadBalancerOptions = loadBalancerOptions;
+        HeaderOptions = headerOptions;
+        ClaimOptions = claimOptions;
+        QueryOptions = queryOptions;
 
         UpdatedAt = DateTimeOffset.UtcNow;
         AddDomainEvent(new RouteUpdated(Id));

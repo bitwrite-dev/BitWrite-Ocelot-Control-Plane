@@ -229,6 +229,14 @@ export interface GatewayResponse {
   status: string
   createdAt: string
   updatedAt: string
+  /**
+   * When the gateway last reported in, or null if it never has.
+   *
+   * Carried with the status because the status is a label the control plane
+   * records and nothing updates it on its own. A gateway that has not reported
+   * in hours is not the thing its status says.
+   */
+  lastHeartbeat: string | null
 }
 
 export interface GatewayListResponse {

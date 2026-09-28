@@ -8,10 +8,14 @@ namespace BitWrite.OcelotControl.Application.UseCases.Gateway;
 public class ListGatewaysQueryHandler
 {
     private readonly IGatewayRepository _gatewayRepository;
+    private readonly IRuntimeInstanceRepository _runtimeInstanceRepository;
 
-    public ListGatewaysQueryHandler(IGatewayRepository gatewayRepository)
+    public ListGatewaysQueryHandler(
+        IGatewayRepository gatewayRepository,
+        IRuntimeInstanceRepository runtimeInstanceRepository)
     {
         _gatewayRepository = gatewayRepository;
+        _runtimeInstanceRepository = runtimeInstanceRepository;
     }
 
     public async Task<GatewayListResponse> HandleAsync(ListGatewaysQuery query, CancellationToken cancellationToken = default)
@@ -25,8 +29,17 @@ public class ListGatewaysQueryHandler
             .Take(query.PageSize)
             .ToList();
 
+        // Read once for the page rather than per gateway, so the list stays a
+        // fixed number of round trips rather than one per row.
+        var heartbeats = await _runtimeInstanceRepository.GetAllAsync(cancellationToken);
+        var lastSeen = heartbeats.ToDictionary(
+            instance => instance.GatewayId,
+            instance => instance.LastHeartbeat);
+
         var response = new GatewayListResponse(
-            pagedGateways.Select(MapToResponse).ToList(),
+            pagedGateways.Select(gateway => MapToResponse(
+                gateway,
+                lastSeen.TryGetValue(gateway.Id, out var beat) ? beat : null)).ToList(),
             totalCount,
             query.Page,
             query.PageSize
@@ -35,7 +48,7 @@ public class ListGatewaysQueryHandler
         return response;
     }
 
-    private static GatewayResponse MapToResponse(DomainGateway gateway)
+    private static GatewayResponse MapToResponse(DomainGateway gateway, DateTimeOffset? lastHeartbeat)
     {
         return new GatewayResponse(
             gateway.Id,
@@ -43,7 +56,8 @@ public class ListGatewaysQueryHandler
             gateway.Description,
             gateway.Status,
             gateway.CreatedAt,
-            gateway.UpdatedAt
+            gateway.UpdatedAt,
+            lastHeartbeat
         );
     }
 }

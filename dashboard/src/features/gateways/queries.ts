@@ -81,7 +81,15 @@ export function useGatewayMutations() {
 }
 
 /**
- * The statuses the API accepts.
+/**
+ * How stale a report has to be before the status beside it is not evidence.
+ *
+ * A gateway is not answering inside this window is not reachable, whatever the
+ * recorded label says. Used to mark the cell rather than to change any behaviour.
+ */
+export const HEARTBEAT_STALE_AFTER_MINUTES = 10
+
+/** The statuses the API accepts.
  *
  * These are the exact strings `RuntimeStatus.From` accepts; anything else is
  * rejected by the domain, so offering a wider list would only produce a failed

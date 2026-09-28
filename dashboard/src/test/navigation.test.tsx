@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
 import { NAV_PATHS, NAV_SECTIONS, visibleSections } from '@/navigation'
-import { assertNavigationIsRoutable } from '@/route-table'
+import { assertNavigationIsRoutable, pathsClaimedTwice } from '@/route-table'
 import { StatusBadge } from '@/components/status-badge'
 import { toneForStatus } from '@/lib/status-tone'
 
@@ -37,6 +37,22 @@ describe('navigation model', () => {
 
   it('has every nav path registered as a route', () => {
     expect(() => assertNavigationIsRoutable()).not.toThrow()
+  })
+
+  it('never lists a path as both implemented and a placeholder', () => {
+    // The router renders a real page while the placeholder list still claims the
+    // path is unbuilt. Both statements are then true and neither can be trusted.
+    expect(pathsClaimedTwice()).toEqual([])
+  })
+
+  it('accepts a nav path that is a real page rather than a placeholder', () => {
+    // The check used to know only the placeholder list, so removing a built page
+    // from it would have satisfied the check with the wrong source.
+    expect(() => assertNavigationIsRoutable(['/settings', '/routes/:id'])).not.toThrow()
+  })
+
+  it('still rejects a nav path that is in neither list', () => {
+    expect(() => assertNavigationIsRoutable(['/not-real'])).toThrow(/\/not-real/)
   })
 
   it('fails loudly when a nav entry has no route', () => {

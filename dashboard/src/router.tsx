@@ -6,12 +6,18 @@ import { NotFoundPage, PlaceholderPage } from '@/pages/placeholders'
 import { OverviewPage } from '@/features/overview/overview-page'
 import { RouteDetailsPage } from '@/features/routes/route-details-page'
 import { ServicesPage } from '@/features/services/services-page'
+import { SettingsPage } from '@/features/settings/settings-page'
 import { RoutesPage } from '@/features/routes/routes-page'
 import {
   CreateRouteWizardPage,
   EditRouteWizardPage,
 } from '@/features/routes-wizard/create-route-wizard'
-import { DYNAMIC_PATHS, PLACEHOLDER_PATHS, assertNavigationIsRoutable } from '@/route-table'
+import {
+  DYNAMIC_PATHS,
+  PLACEHOLDER_PATHS,
+  assertNavigationIsRoutable,
+  pathsClaimedTwice,
+} from '@/route-table'
 import type { Role } from '@/navigation'
 
 // `/routes/new` is listed before `/routes/:id` so the wizard is not swallowed by
@@ -28,10 +34,11 @@ const routes = [
       { index: true, element: <OverviewPage /> },
       { path: 'routes', element: <RoutesPage /> },
       { path: 'services', element: <ServicesPage /> },
+      { path: 'settings', element: <SettingsPage /> },
       { path: 'routes/new', element: <CreateRouteWizardPage /> },
       // Before routes/:id, so the static segment is not read as an id.
       { path: 'routes/:id/edit', element: <EditRouteWizardPage /> },
-      ...PLACEHOLDER_PATHS.filter((path) => path !== '/').map((path) => ({
+      ...PLACEHOLDER_PATHS.map((path) => ({
         path: path.replace(/^\//, ''),
         element: <PlaceholderPage path={path} />,
       })),
@@ -46,8 +53,17 @@ const routes = [
   },
 ]
 
-// Fail fast at module load if the sidebar and the route table disagree.
+// Fail fast at module load if the sidebar and the route table disagree, or if a
+// path is claimed by both the real and the placeholder list.
 assertNavigationIsRoutable()
+
+const claimedTwice = pathsClaimedTwice()
+if (claimedTwice.length > 0) {
+  throw new Error(
+    `Paths are listed as both implemented and placeholder: ${claimedTwice.join(', ')}. ` +
+      'A path belongs to exactly one, or neither list can be trusted.',
+  )
+}
 
 export function AppRouter({ roles }: { roles?: Role[] } = {}) {
   // `key` forces a remount when the resolved roles change, so the sidebar

@@ -214,6 +214,27 @@ export interface RoutePreviewResponse {
   ocelotJson: string
 }
 
+export interface TransformEntryResponse {
+  key: string
+  value: string
+}
+
+/** Add becomes DownstreamHeaderTransform, transform becomes UpstreamHeaderTransform. */
+export interface TransformationsResponse {
+  add: TransformEntryResponse[] | null
+  transform: TransformEntryResponse[] | null
+}
+
+/** How the gateway's HTTP client behaves when calling downstream. */
+export interface HttpClientOptionsResponse {
+  allowAutoRedirect: boolean
+  maxConnectionsPerServer: number
+  pooledConnectionLifetimeSeconds: number
+  useCookieContainer: boolean
+  useProxy: boolean
+  useTracing: boolean
+}
+
 export interface RouteResponse {
   id: string
   key: string
@@ -229,6 +250,32 @@ export interface RouteResponse {
   /** Higher is matched first among overlapping routes. */
   priority: number
   routeIsCaseSensitive: boolean
+  /**
+   * The verb the request is rewritten to on the way downstream.
+   *
+   * Null keeps the upstream verb. Ocelot takes a single string here, not a
+   * list, unlike the upstream verb. See #485.
+   */
+  downstreamMethod: string | null
+  /** "1.0", "1.1" or "2.0". Null leaves the framework default in place. */
+  downstreamHttpVersion: string | null
+  /** How strictly the version is asked for. Needs a version to apply to. */
+  downstreamHttpVersionPolicy: string | null
+  /**
+   * Accepts any downstream TLS certificate.
+   *
+   * Ocelot's own documentation calls this a security risk. For self-signed
+   * certificates in local development only.
+   */
+  dangerousAcceptAnyServerCertificateValidator: boolean
+  /** Handlers registered in the gateway. An unknown name stops it starting. */
+  delegatingHandlers: string[]
+  httpClientOptions: HttpClientOptionsResponse | null
+  /** Seconds to wait for a downstream response, separate from the QoS timeout. */
+  timeoutSeconds: number | null
+  /** The path the request is rewritten to, or null to forward it unchanged. */
+  downstreamPathTemplate: string | null
+  headerTransformations: TransformationsResponse | null
   serviceId: string
   isEnabled: boolean
   downstreamTargets: DownstreamTargetResponse[]

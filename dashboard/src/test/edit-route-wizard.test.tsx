@@ -20,6 +20,17 @@ const STORED = {
   isEnabled: true,
   priority: 30,
   routeIsCaseSensitive: true,
+        downstreamPathTemplate: null,
+
+        headerTransformations: null,
+
+        downstreamMethod: null,
+        downstreamHttpVersion: null,
+        downstreamHttpVersionPolicy: null,
+        dangerousAcceptAnyServerCertificateValidator: false,
+        delegatingHandlers: [],
+        httpClientOptions: null,
+        timeoutSeconds: null,
   downstreamTargets: [{ host: 'localhost', port: 5001, scheme: 'http', path: '/' }],
   authenticationOptions: { allowedScopes: ['users.read'] },
   rateLimitOptions: { enableRateLimiting: true, period: 'Hour', limit: 250 },
@@ -197,6 +208,12 @@ describe('EditRouteWizardPage', () => {
       // feature blocks that are omitted when switched off.
       priority: 30,
       routeIsCaseSensitive: true,
+      downstreamMethod: null,
+      downstreamHttpVersion: null,
+      downstreamHttpVersionPolicy: null,
+      acceptAnyServerCertificate: false,
+      downstreamPathTemplate: null,
+      timeoutSeconds: null,
     })
   })
 
@@ -330,6 +347,8 @@ describe('the shaping is the same for create and replace', () => {
       qos: { enabled: false, timeoutSeconds: 1, circuitBreakerTimeoutSeconds: '' },
       cache: { enabled: false, ttlSeconds: 1 },
       loadBalancer: { enabled: false, algorithm: 'RoundRobin' },
+      // A draft without a transport block is the case this covers: it has to
+      // shape to the same defaults rather than throwing.
     }
 
     expect(toCreateRequest(draft)).not.toHaveProperty('cacheOptions')

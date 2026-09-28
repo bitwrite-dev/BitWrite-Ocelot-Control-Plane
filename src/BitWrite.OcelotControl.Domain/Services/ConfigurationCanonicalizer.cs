@@ -113,6 +113,54 @@ public class ConfigurationCanonicalizer
             sb.AppendLine($"    LoadBalancerOptions: Type={route.LoadBalancerOptions.Type}");
         }
 
+        // These change what the gateway does, so leaving them out would let two
+        // different configurations hash to the same value and a snapshot
+        // integrity check would pass on a mismatch.
+        sb.AppendLine($"    Priority: {route.Priority}");
+        sb.AppendLine($"    RouteIsCaseSensitive: {route.RouteIsCaseSensitive}");
+
+        if (route.DownstreamHttpMethod != null)
+        {
+            sb.AppendLine($"    DownstreamHttpMethod: {route.DownstreamHttpMethod}");
+        }
+
+        if (route.DownstreamHttpVersion != null)
+        {
+            sb.AppendLine($"    DownstreamHttpVersion: {route.DownstreamHttpVersion}");
+        }
+
+        if (route.DownstreamHttpVersionPolicy != null)
+        {
+            sb.AppendLine($"    DownstreamHttpVersionPolicy: {route.DownstreamHttpVersionPolicy}");
+        }
+
+        if (route.DangerousAcceptAnyServerCertificateValidator)
+        {
+            sb.AppendLine("    DangerousAcceptAnyServerCertificateValidator: True");
+        }
+
+        if (route.DelegatingHandlers?.Length > 0)
+        {
+            // Sorted, because a reordered list is the same configuration.
+            sb.AppendLine($"    DelegatingHandlers: [{string.Join(",", route.DelegatingHandlers.OrderBy(h => h))}]");
+        }
+
+        if (route.HttpHandlerOptions != null)
+        {
+            sb.AppendLine(
+                $"    HttpHandlerOptions: AllowAutoRedirect={route.HttpHandlerOptions.AllowAutoRedirect}, " +
+                $"MaxConnectionsPerServer={route.HttpHandlerOptions.MaxConnectionsPerServer}, " +
+                $"PooledConnectionLifetime={route.HttpHandlerOptions.PooledConnectionLifetime}, " +
+                $"UseCookieContainer={route.HttpHandlerOptions.UseCookieContainer}, " +
+                $"UseProxy={route.HttpHandlerOptions.UseProxy}, " +
+                $"UseTracing={route.HttpHandlerOptions.UseTracing}");
+        }
+
+        if (route.Timeout != null)
+        {
+            sb.AppendLine($"    Timeout: {route.Timeout}");
+        }
+
         return sb.ToString();
     }
 
@@ -153,7 +201,27 @@ public class ConfigurationCanonicalizer
                 : null,
             loadBalancerOptions = route.LoadBalancerOptions != null
                 ? new { type = route.LoadBalancerOptions.Type }
-                : null
+                : null,
+            priority = route.Priority,
+            routeIsCaseSensitive = route.RouteIsCaseSensitive,
+            downstreamHttpMethod = route.DownstreamHttpMethod,
+            downstreamHttpVersion = route.DownstreamHttpVersion,
+            downstreamHttpVersionPolicy = route.DownstreamHttpVersionPolicy,
+            dangerousAcceptAnyServerCertificateValidator =
+                route.DangerousAcceptAnyServerCertificateValidator,
+            delegatingHandlers = route.DelegatingHandlers?.OrderBy(h => h).ToArray(),
+            httpHandlerOptions = route.HttpHandlerOptions != null
+                ? new
+                {
+                    allowAutoRedirect = route.HttpHandlerOptions.AllowAutoRedirect,
+                    maxConnectionsPerServer = route.HttpHandlerOptions.MaxConnectionsPerServer,
+                    pooledConnectionLifetime = route.HttpHandlerOptions.PooledConnectionLifetime,
+                    useCookieContainer = route.HttpHandlerOptions.UseCookieContainer,
+                    useProxy = route.HttpHandlerOptions.UseProxy,
+                    useTracing = route.HttpHandlerOptions.UseTracing
+                }
+                : null,
+            timeout = route.Timeout
         };
     }
 }

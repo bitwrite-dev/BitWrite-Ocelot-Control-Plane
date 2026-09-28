@@ -21,6 +21,7 @@ public static class RouteConfigurationMapper
         {
             Id = route.Id,
             Host = route.Host,
+            FriendlyKey = route.Key,
             Method = route.Method,
             UpstreamPath = route.UpstreamPath,
             ServiceId = route.ServiceId,
@@ -37,6 +38,15 @@ public static class RouteConfigurationMapper
             ClaimOptions = route.ClaimOptions,
             QueryOptions = route.QueryOptions,
             Priority = route.Priority,
-            RouteIsCaseSensitive = route.RouteIsCaseSensitive
+            RouteIsCaseSensitive = route.RouteIsCaseSensitive,
+            DownstreamTemplate = route.DownstreamTemplate,
+            DownstreamMethod = route.DownstreamMethod,
+            DownstreamHttpVersion = route.DownstreamHttpVersion,
+            DownstreamHttpVersionPolicy = route.DownstreamHttpVersionPolicy,
+            DangerousAcceptAnyServerCertificateValidator =
+                route.DangerousAcceptAnyServerCertificateValidator,
+            DelegatingHandlers = route.DelegatingHandlers.ToList(),
+            HttpClientOptions = route.HttpClientOptions,
+            TimeoutSeconds = route.TimeoutSeconds
         };
 }

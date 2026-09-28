@@ -436,6 +436,22 @@ public class RoutesController : BaseApiController
             ToTransformationsResponse(route.QueryOptions),
             route.Priority,
             route.RouteIsCaseSensitive,
+            route.DownstreamMethod?.Value,
+            route.DownstreamTemplate?.Value,
+            route.DownstreamHttpVersion,
+            route.DownstreamHttpVersionPolicy,
+            route.DangerousAcceptAnyServerCertificateValidator,
+            route.DelegatingHandlers.ToList(),
+            route.HttpClientOptions == null
+                ? null
+                : new ApiDtos.HttpClientOptionsResponse(
+                    route.HttpClientOptions.AllowAutoRedirect,
+                    route.HttpClientOptions.MaxConnectionsPerServer,
+                    route.HttpClientOptions.PooledConnectionLifetimeSeconds,
+                    route.HttpClientOptions.UseCookieContainer,
+                    route.HttpClientOptions.UseProxy,
+                    route.HttpClientOptions.UseTracing),
+            route.TimeoutSeconds,
             route.CreatedAt,
             route.UpdatedAt);
 

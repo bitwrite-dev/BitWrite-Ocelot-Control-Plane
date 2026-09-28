@@ -11,6 +11,8 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
+  DOWNSTREAM_HTTP_VERSIONS,
+  DOWNSTREAM_HTTP_VERSION_POLICIES,
   HTTP_METHODS,
   loadBalancerOptions,
   periodOptions,
@@ -18,6 +20,7 @@ import {
   WIZARD_STEPS,
   draftFromRoute,
   emptyRouteDraft,
+  emptyTransportDraft,
   furthestReachableStep,
   toCreateRequest,
   type RouteDraft,
@@ -32,6 +35,27 @@ import {
   useWizardServices,
 } from './queries'
 import { stepForField } from './wizard-model'
+
+/** The names a header block sets, for the review row. */
+function summariseRules(block: string): string {
+  const names = block
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line !== '')
+    .map((line) => line.split(':')[0].trim())
+  return names.join(', ')
+}
+
+/** The HTTP client switches, typed so the draft cannot drift from the form. */
+const clientToggles: ReadonlyArray<{
+  field: 'allowAutoRedirect' | 'useCookieContainer' | 'useProxy' | 'useTracing'
+  label: string
+}> = [
+  { field: 'allowAutoRedirect', label: 'Follow redirects' },
+  { field: 'useCookieContainer', label: 'Share a cookie container across routes' },
+  { field: 'useProxy', label: 'Use the configured proxy' },
+  { field: 'useTracing', label: 'Add tracing headers to the request' },
+]
 
 function Field({
   label,
@@ -66,6 +90,11 @@ function RouteWizard({ mode, routeId }: { mode: 'create' | 'edit'; routeId?: str
   const [stepIndex, setStepIndex] = useState(0)
   const [draft, setDraft] = useState<RouteDraft>(emptyRouteDraft)
   const [scopeInput, setScopeInput] = useState('')
+  // The field is optional so a hand-built partial draft still type-checks, but
+  // a draft held in state always comes from emptyRouteDraft or draftFromRoute,
+  // so it is complete.
+  const transport = draft.transport ?? emptyTransportDraft()
+  const headers = draft.headers ?? { add: '', transform: '' }
 
   const services = useWizardServices()
   const createRoute = useCreateRoute()
@@ -768,6 +797,352 @@ function RouteWizard({ mode, routeId }: { mode: 'create' | 'edit'; routeId?: str
                         </Field>
                       ) : null}
                     </ToggleField>
+                    <div className="space-y-4 border-t pt-4">
+                      <div>
+                        <h3 className="text-sm font-medium">Downstream request</h3>
+                        <p className="text-xs text-muted-foreground">
+                          How the gateway calls the service: which verb it uses, which
+                          protocol version it asks for, and how it checks the
+                          certificate.
+                        </p>
+                      </div>
+
+                      <Field
+                        label="Downstream method"
+                        htmlFor="transport-downstream-method"
+                        hint="Rewrites the verb on the way to the service. Leave empty to keep the upstream verb. Ocelot takes a single verb here, not a list."
+                      >
+                        <select
+                          id="transport-downstream-method"
+                          className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm"
+                          value={transport.downstreamMethod}
+                          onChange={(event) =>
+                            setDraft((current) => ({
+                              ...current,
+                              transport: {
+                                ...transport,
+                                downstreamMethod: event.target.value,
+                              },
+                            }))
+                          }
+                        >
+                          <option value="">Keep {draft.method}</option>
+                          {HTTP_METHODS.map((method) => (
+                            <option key={method} value={method}>
+                              {method}
+                            </option>
+                          ))}
+                        </select>
+                      </Field>
+
+                      <Field
+                        label="Downstream path template"
+                        htmlFor="transport-downstream-path"
+                        hint="Rewrite the path on the way to the service. Leave empty to forward it unchanged. A placeholder is filled from the upstream path, so it has to appear there too."
+                      >
+                        <Input
+                          id="transport-downstream-path"
+                          placeholder="/{everything}"
+                          value={transport.downstreamTemplate}
+                          onChange={(event) =>
+                            setDraft((current) => ({
+                              ...current,
+                              transport: {
+                                ...transport,
+                                downstreamTemplate: event.target.value,
+                              },
+                            }))
+                          }
+                        />
+                      </Field>
+
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <Field
+                          label="HTTP version"
+                          htmlFor="transport-http-version"
+                          error={stepErrors.find((e) => e.startsWith('Downstream HTTP version'))}
+                          hint="Empty leaves the framework default, which is not the same as asking for 1.1."
+                        >
+                          <select
+                            id="transport-http-version"
+                            className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm"
+                            value={transport.downstreamHttpVersion}
+                            onChange={(event) =>
+                              setDraft((current) => ({
+                                ...current,
+                                transport: {
+                                  ...transport,
+                                  downstreamHttpVersion: event.target.value,
+                                },
+                              }))
+                            }
+                          >
+                            <option value="">Framework default</option>
+                            {DOWNSTREAM_HTTP_VERSIONS.map((version) => (
+                              <option key={version} value={version}>
+                                {version}
+                              </option>
+                            ))}
+                          </select>
+                        </Field>
+
+                        <Field
+                          label="Version policy"
+                          htmlFor="transport-version-policy"
+                          error={stepErrors.find(
+                            (e) => e.startsWith('HTTP version policy') || e.startsWith('An HTTP version policy'),
+                          )}
+                          hint="Without a policy, asking for 2.0 over plain HTTP negotiates down to 1.1 and the gateway logs a protocol error."
+                        >
+                          <select
+                            id="transport-version-policy"
+                            className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm"
+                            value={transport.downstreamHttpVersionPolicy}
+                            onChange={(event) =>
+                              setDraft((current) => ({
+                                ...current,
+                                transport: {
+                                  ...transport,
+                                  downstreamHttpVersionPolicy: event.target.value,
+                                },
+                              }))
+                            }
+                          >
+                            <option value="">None</option>
+                            {DOWNSTREAM_HTTP_VERSION_POLICIES.map((policy) => (
+                              <option key={policy} value={policy}>
+                                {policy}
+                              </option>
+                            ))}
+                          </select>
+                        </Field>
+                      </div>
+
+                      <Field
+                        label="Timeout (seconds)"
+                        htmlFor="transport-timeout"
+                        error={stepErrors.find((e) => e.startsWith('Timeout'))}
+                        hint="Bounds the whole downstream call. Separate from the QoS timeout, which is the retry policy."
+                      >
+                        <Input
+                          id="transport-timeout"
+                          type="number"
+                          min={1}
+                          max={86400}
+                          value={transport.timeoutSeconds}
+                          onChange={(event) =>
+                            setDraft((current) => ({
+                              ...current,
+                              transport: {
+                                ...transport,
+                                timeoutSeconds: event.target.value,
+                              },
+                            }))
+                          }
+                        />
+                      </Field>
+
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id="transport-accept-any-cert"
+                          checked={transport.acceptAnyServerCertificate}
+                          onCheckedChange={(checked) =>
+                            setDraft((current) => ({
+                              ...current,
+                              transport: {
+                                ...transport,
+                                acceptAnyServerCertificate: checked === true,
+                              },
+                            }))
+                          }
+                        />
+                        <Label htmlFor="transport-accept-any-cert">
+                          Accept any TLS certificate
+                        </Label>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Ocelot&rsquo;s own documentation calls this a security risk. Use
+                        it for self-signed certificates in local development only.
+                      </p>
+
+                      <Field
+                        label="Delegating handlers"
+                        htmlFor="transport-handlers"
+                        error={stepErrors.find((e) => e.includes('elegating handler'))}
+                        hint="One per line. Each is registered in the gateway, so a name that is not registered stops it from starting."
+                      >
+                        <textarea
+                          id="transport-handlers"
+                          rows={3}
+                          className="w-full rounded-md border border-input bg-transparent px-3 py-2 font-mono text-sm"
+                          value={transport.delegatingHandlers.join('\n')}
+                          onChange={(event) =>
+                            setDraft((current) => ({
+                              ...current,
+                              transport: {
+                                ...transport,
+                                delegatingHandlers: event.target.value.split('\n'),
+                              },
+                            }))
+                          }
+                        />
+                      </Field>
+
+                      <ToggleField
+                        id="transport-http-client"
+                        label="Configure the HTTP client"
+                        checked={transport.httpClient.enabled}
+                        onChange={(checked) =>
+                          setDraft((current) => ({
+                            ...current,
+                            transport: {
+                              ...transport,
+                              httpClient: { ...transport.httpClient, enabled: checked },
+                            },
+                          }))
+                        }
+                      >
+                        <div className="space-y-3">
+                          <div className="grid gap-4 sm:grid-cols-2">
+                            <Field
+                              label="Max connections per server"
+                              htmlFor="transport-max-connections"
+                              error={stepErrors.find((e) =>
+                                e.startsWith('Max connections per server'),
+                              )}
+                              hint="Empty leaves the framework default."
+                            >
+                              <Input
+                                id="transport-max-connections"
+                                type="number"
+                                min={1}
+                                value={transport.httpClient.maxConnectionsPerServer}
+                                onChange={(event) =>
+                                  setDraft((current) => ({
+                                    ...current,
+                                    transport: {
+                                      ...transport,
+                                      httpClient: {
+                                        ...transport.httpClient,
+                                        maxConnectionsPerServer: event.target.value,
+                                      },
+                                    },
+                                  }))
+                                }
+                              />
+                            </Field>
+
+                            <Field
+                              label="Pooled connection lifetime (seconds)"
+                              htmlFor="transport-connection-lifetime"
+                              error={stepErrors.find((e) =>
+                                e.startsWith('Pooled connection lifetime'),
+                              )}
+                              hint="Empty leaves the framework default."
+                            >
+                              <Input
+                                id="transport-connection-lifetime"
+                                type="number"
+                                min={1}
+                                value={transport.httpClient.pooledConnectionLifetimeSeconds}
+                                onChange={(event) =>
+                                  setDraft((current) => ({
+                                    ...current,
+                                    transport: {
+                                      ...transport,
+                                      httpClient: {
+                                        ...transport.httpClient,
+                                        pooledConnectionLifetimeSeconds: event.target.value,
+                                      },
+                                    },
+                                  }))
+                                }
+                              />
+                            </Field>
+                          </div>
+
+                          {clientToggles.map(({ field, label }) => (
+                            <div key={field} className="flex items-center gap-2">
+                              <Checkbox
+                                id={`transport-${field}`}
+                                checked={transport.httpClient[field]}
+                                onCheckedChange={(checked) =>
+                                  setDraft((current) => ({
+                                    ...current,
+                                    transport: {
+                                      ...transport,
+                                      httpClient: {
+                                        ...transport.httpClient,
+                                        [field]: checked === true,
+                                      },
+                                    },
+                                  }))
+                                }
+                              />
+                              <Label htmlFor={`transport-${field}`}>{label}</Label>
+                            </div>
+                          ))}
+                        </div>
+                      </ToggleField>
+
+                      <div className="space-y-4 border-t pt-4">
+                        <div>
+                          <h3 className="text-sm font-medium">Header transformations</h3>
+                          <p className="text-xs text-muted-foreground">
+                            One rule per line, as <code className="font-mono">name: value</code>.
+                            A value may contain Ocelot placeholders such as{' '}
+                            <code className="font-mono">{'{UpstreamHost}'}</code> or{' '}
+                            <code className="font-mono">{'{RemoteIpAddress}'}</code>, which are
+                            filled per request. Anything after the first colon is the
+                            value, so a URL is fine.
+                          </p>
+                        </div>
+
+                        <Field
+                          label="Rewrite on the way in (upstream)"
+                          htmlFor="headers-transform"
+                          error={stepErrors.find(
+                            (e) => e.startsWith('Upstream header rule') || e.startsWith('Header'),
+                          )}
+                          hint="Rewrites a header the caller sent. Sent as Ocelot's UpstreamHeaderTransform."
+                        >
+                          <textarea
+                            id="headers-transform"
+                            rows={3}
+                            className="w-full rounded-md border border-input bg-transparent px-3 py-2 font-mono text-sm"
+                            placeholder={'X-Original-Host: {UpstreamHost}\nX-Forwarded-For: {RemoteIpAddress}'}
+                            value={headers.transform}
+                            onChange={(event) =>
+                              setDraft((current) => ({
+                                ...current,
+                                headers: { ...headers, transform: event.target.value },
+                              }))
+                            }
+                          />
+                        </Field>
+
+                        <Field
+                          label="Add on the way out (downstream)"
+                          htmlFor="headers-add"
+                          error={stepErrors.find((e) => e.startsWith('Downstream header rule'))}
+                          hint="Sent as Ocelot's DownstreamHeaderTransform."
+                        >
+                          <textarea
+                            id="headers-add"
+                            rows={3}
+                            className="w-full rounded-md border border-input bg-transparent px-3 py-2 font-mono text-sm"
+                            placeholder={'X-Downstream-Service: orders'}
+                            value={headers.add}
+                            onChange={(event) =>
+                              setDraft((current) => ({
+                                ...current,
+                                headers: { ...headers, add: event.target.value },
+                              }))
+                            }
+                          />
+                        </Field>
+                      </div>
+                    </div>
                   </div>
                 ) : null}
 
@@ -825,6 +1200,56 @@ function RouteWizard({ mode, routeId }: { mode: 'create' | 'edit'; routeId?: str
                       <ReviewRow
                         label="Load balancing"
                         value={draft.loadBalancer.enabled ? draft.loadBalancer.algorithm : '—'}
+                      />
+                      <ReviewRow
+                        label="Downstream method"
+                        value={transport.downstreamMethod || `Keep ${draft.method}`}
+                      />
+                      <ReviewRow
+                        label="Downstream path"
+                        value={transport.downstreamTemplate || 'Forwarded unchanged'}
+                      />
+                      <ReviewRow
+                        label="Upstream headers"
+                        value={summariseRules(headers.transform) || '—'}
+                      />
+                      <ReviewRow
+                        label="Downstream headers"
+                        value={summariseRules(headers.add) || '—'}
+                      />
+                      <ReviewRow
+                        label="HTTP version"
+                        value={
+                          transport.downstreamHttpVersion
+                            ? `${transport.downstreamHttpVersion}${
+                                transport.downstreamHttpVersionPolicy
+                                  ? `, ${transport.downstreamHttpVersionPolicy}`
+                                  : ''
+                              }`
+                            : 'Framework default'
+                        }
+                      />
+                      <ReviewRow
+                        label="Timeout"
+                        value={transport.timeoutSeconds ? `${transport.timeoutSeconds}s` : '—'}
+                      />
+                      <ReviewRow
+                        label="TLS check"
+                        value={
+                          transport.acceptAnyServerCertificate
+                            ? 'Any certificate accepted'
+                            : 'Verified'
+                        }
+                      />
+                      <ReviewRow
+                        label="Delegating handlers"
+                        value={
+                          transport.delegatingHandlers.filter((h) => h.trim() !== '').join(', ') || '—'
+                        }
+                      />
+                      <ReviewRow
+                        label="HTTP client"
+                        value={transport.httpClient.enabled ? 'Custom' : '—'}
                       />
                     </dl>
 

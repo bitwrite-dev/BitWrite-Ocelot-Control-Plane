@@ -57,6 +57,9 @@ public static class RouteRequestMapper
         var cache = BuildCache(request.CacheOptions, mapping.Errors);
         var loadBalancer = BuildLoadBalancer(request.LoadBalancerOptions, mapping.Errors);
         var headers = BuildTransformations(request.HeaderTransformations, "headerTransformations", HeaderTransform.Create, HeaderOptions.Create, mapping.Errors);
+        var downstreamMethod = BuildDownstreamMethod(request.DownstreamMethod, mapping.Errors);
+        var downstreamTemplate = BuildDownstreamTemplate(request.DownstreamPathTemplate, mapping.Errors);
+        var httpClientOptions = BuildHttpClientOptions(request.HttpClientOptions, mapping.Errors);
         var claims = BuildTransformations(request.ClaimTransformations, "claimTransformations", ClaimTransform.Create, ClaimOptions.Create, mapping.Errors);
         var query = BuildTransformations(request.QueryTransformations, "queryTransformations", QueryTransform.Create, QueryOptions.Create, mapping.Errors);
 
@@ -83,7 +86,15 @@ public static class RouteRequestMapper
             query,
             request.Priority,
             request.RouteIsCaseSensitive,
-            initiatedBy));
+            initiatedBy,
+            downstreamTemplate,
+            downstreamMethod,
+            request.DownstreamHttpVersion,
+            request.DownstreamHttpVersionPolicy,
+            request.AcceptAnyServerCertificate,
+            request.DelegatingHandlers,
+            httpClientOptions,
+            request.TimeoutSeconds));
     }
 
     /// <summary>
@@ -115,6 +126,9 @@ public static class RouteRequestMapper
         var cache = BuildCache(request.CacheOptions, mapping.Errors);
         var loadBalancer = BuildLoadBalancer(request.LoadBalancerOptions, mapping.Errors);
         var headers = BuildTransformations(request.HeaderTransformations, "headerTransformations", HeaderTransform.Create, HeaderOptions.Create, mapping.Errors);
+        var downstreamMethod = BuildDownstreamMethod(request.DownstreamMethod, mapping.Errors);
+        var downstreamTemplate = BuildDownstreamTemplate(request.DownstreamPathTemplate, mapping.Errors);
+        var httpClientOptions = BuildHttpClientOptions(request.HttpClientOptions, mapping.Errors);
         var claims = BuildTransformations(request.ClaimTransformations, "claimTransformations", ClaimTransform.Create, ClaimOptions.Create, mapping.Errors);
         var query = BuildTransformations(request.QueryTransformations, "queryTransformations", QueryTransform.Create, QueryOptions.Create, mapping.Errors);
 
@@ -142,7 +156,15 @@ public static class RouteRequestMapper
             query,
             request.Priority,
             request.RouteIsCaseSensitive,
-            initiatedBy));
+            initiatedBy,
+            downstreamTemplate,
+            downstreamMethod,
+            request.DownstreamHttpVersion,
+            request.DownstreamHttpVersionPolicy,
+            request.AcceptAnyServerCertificate,
+            request.DelegatingHandlers,
+            httpClientOptions,
+            request.TimeoutSeconds));
     }
 
     /// <summary>
@@ -387,6 +409,77 @@ public static class RouteRequestMapper
         catch (Exception ex)
         {
             errors.Add(new RouteValidationError("loadBalancerOptions", "INVALID_LOAD_BALANCER", ex.Message));
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Parses the downstream path template, which arrives as a string.
+    /// </summary>
+    /// <remarks>
+    /// A malformed placeholder is a field error here rather than a thrown
+    /// exception, so the wizard can send the operator back to the field.
+    /// </remarks>
+    private static DownstreamPathTemplate? BuildDownstreamTemplate(
+        string? value,
+        List<RouteValidationError> errors)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return null;
+
+        try
+        {
+            return DownstreamPathTemplate.From(value);
+        }
+        catch (Exception ex)
+        {
+            errors.Add(new RouteValidationError("downstreamPathTemplate", "INVALID_DOWNSTREAM_PATH_TEMPLATE", ex.Message));
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Parses the downstream verb, which arrives as a string.
+    /// </summary>
+    /// <remarks>
+    /// Ocelot models the downstream verb as one string rather than a list, the
+    /// opposite of the upstream one, so a list is refused rather than collapsed.
+    /// </remarks>
+    private static DomainHttpMethod? BuildDownstreamMethod(
+        string? value,
+        List<RouteValidationError> errors)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return null;
+
+        try
+        {
+            return DomainHttpMethod.Parse(value);
+        }
+        catch (Exception ex)
+        {
+            errors.Add(new RouteValidationError("downstreamMethod", "INVALID_METHOD", ex.Message));
+            return null;
+        }
+    }
+
+    private static HttpClientOptions? BuildHttpClientOptions(
+        ApiDtos.HttpClientOptionsRequest? request,
+        List<RouteValidationError> errors)
+    {
+        if (request is null) return null;
+
+        try
+        {
+            return HttpClientOptions.Create(
+                request.AllowAutoRedirect,
+                request.MaxConnectionsPerServer,
+                request.PooledConnectionLifetimeSeconds,
+                request.UseCookieContainer,
+                request.UseProxy,
+                request.UseTracing);
+        }
+        catch (Exception ex)
+        {
+            errors.Add(new RouteValidationError("httpClientOptions", "INVALID_HTTP_CLIENT_OPTIONS", ex.Message));
             return null;
         }
     }

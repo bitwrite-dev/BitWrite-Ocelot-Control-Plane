@@ -16,6 +16,7 @@ public class GatewaysController : BaseApiController
     private readonly AppGateway.UpdateGatewayCommandHandler _updateGatewayCommandHandler;
     private readonly AppGateway.UpdateGatewayStatusCommandHandler _updateGatewayStatusCommandHandler;
     private readonly AppGateway.DeleteGatewayCommandHandler _deleteGatewayCommandHandler;
+    private readonly AppGateway.GetGatewayDeletionEligibilityQueryHandler _deletionEligibilityQueryHandler;
 
     public GatewaysController(
         AppGateway.RegisterGatewayCommandHandler registerGatewayCommandHandler,
@@ -23,7 +24,8 @@ public class GatewaysController : BaseApiController
         AppGateway.ListGatewaysQueryHandler listGatewaysQueryHandler,
         AppGateway.UpdateGatewayCommandHandler updateGatewayCommandHandler,
         AppGateway.UpdateGatewayStatusCommandHandler updateGatewayStatusCommandHandler,
-        AppGateway.DeleteGatewayCommandHandler deleteGatewayCommandHandler)
+        AppGateway.DeleteGatewayCommandHandler deleteGatewayCommandHandler,
+        AppGateway.GetGatewayDeletionEligibilityQueryHandler deletionEligibilityQueryHandler)
     {
         _registerGatewayCommandHandler = registerGatewayCommandHandler;
         _getGatewayQueryHandler = getGatewayQueryHandler;
@@ -31,6 +33,7 @@ public class GatewaysController : BaseApiController
         _updateGatewayCommandHandler = updateGatewayCommandHandler;
         _updateGatewayStatusCommandHandler = updateGatewayStatusCommandHandler;
         _deleteGatewayCommandHandler = deleteGatewayCommandHandler;
+        _deletionEligibilityQueryHandler = deletionEligibilityQueryHandler;
     }
 
     [HttpGet]
@@ -137,6 +140,32 @@ public class GatewaysController : BaseApiController
                     User.Identity?.Name ?? "system"));
 
             return deleted ? NoContent() : NotFound();
+        }
+        catch (Exception ex)
+        {
+            return HandleError(ex);
+        }
+    }
+
+    /// <summary>
+    /// Whether this gateway can be deleted, and why not if it cannot.
+    /// </summary>
+    /// <remarks>
+    /// Deletion is refused once a publication has been addressed to the gateway.
+    /// Reporting that up front means the operator is told the rule before
+    /// confirming a deletion, rather than by the refusal afterwards.
+    /// </remarks>
+    [HttpGet("{id}/deletion-eligibility")]
+    [ProducesResponseType(typeof(AppGateway.GatewayDeletionEligibilityResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<AppGateway.GatewayDeletionEligibilityResponse>> GetDeletionEligibility(string id)
+    {
+        try
+        {
+            return Ok(await _deletionEligibilityQueryHandler.HandleAsync(
+                new AppGateway.GetGatewayDeletionEligibilityQuery(
+                    GatewayId.From(Guid.Parse(id)),
+                    User.Identity?.Name ?? "system")));
         }
         catch (Exception ex)
         {

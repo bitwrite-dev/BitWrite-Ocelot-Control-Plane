@@ -5,6 +5,8 @@ import type {
   GatewayListResponse,
   GatewayResponse,
   GlobalConfigurationResponse,
+  GatewayDeletionEligibility,
+  GatewayRequest,
   LicenseListResponse,
   LicenseResponse,
   PluginListResponse,
@@ -89,11 +91,19 @@ export function createResources(http: HttpClient) {
     list: ({ signal, ...query }: PageParams = {}) =>
       http.get<GatewayListResponse>('/api/v1/gateways', { query, signal }),
     get: (id: string, o?: Options) => http.get<GatewayResponse>(`/api/v1/gateways/${id}`, o),
-    create: (body: unknown, o?: Options) => http.post<GatewayResponse>('/api/v1/gateways', body, o),
-    update: (id: string, body: unknown, o?: Options) =>
+    create: (body: GatewayRequest, o?: Options) =>
+      http.post<GatewayResponse>('/api/v1/gateways', body, o),
+    update: (id: string, body: GatewayRequest, o?: Options) =>
       http.put<GatewayResponse>(`/api/v1/gateways/${id}`, body, o),
-    updateStatus: (id: string, body: unknown, o?: Options) =>
-      http.patch<GatewayResponse>(`/api/v1/gateways/${id}/status`, body, o),
+    remove: (id: string, o?: Options) => http.delete<unknown>(`/api/v1/gateways/${id}`, o),
+    updateStatus: (id: string, status: string, o?: Options) =>
+      http.patch<GatewayResponse>(`/api/v1/gateways/${id}/status`, { status }, o),
+    /**
+     * Asked before a delete is confirmed, so the operator learns the
+     * never-published rule up front rather than from the refusal afterwards.
+     */
+    deletionEligibility: (id: string, o?: Options) =>
+      http.get<GatewayDeletionEligibility>(`/api/v1/gateways/${id}/deletion-eligibility`, o),
   }
 
   const snapshots = {

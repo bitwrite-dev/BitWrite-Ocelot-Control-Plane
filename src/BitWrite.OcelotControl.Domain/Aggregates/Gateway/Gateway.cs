@@ -48,6 +48,41 @@ public class Gateway
     }
 
     /// <summary>
+    /// Restores a gateway from storage, preserving its identity and timestamps.
+    /// </summary>
+    /// <remarks>
+    /// Adapters must use this rather than <see cref="Register"/>. Register mints a
+    /// new id and stamps fresh timestamps, so a read followed by a write wrote the
+    /// row under a different key — and the next read of the original key found
+    /// nothing, which surfaced as "gateway not found" on a save that had in fact
+    /// appeared to succeed. Each save also left a duplicate row behind.
+    /// <para>
+    /// No event is raised: nothing happened, the row already existed.
+    /// </para>
+    /// </remarks>
+    public static Gateway Reconstitute(
+        GatewayId id,
+        string name,
+        string? description,
+        RuntimeStatus status,
+        DateTimeOffset createdAt,
+        DateTimeOffset updatedAt)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            throw new DomainException("Gateway name cannot be empty", "INVALID_GATEWAY_NAME");
+
+        return new Gateway
+        {
+            Id = id,
+            Name = name.Trim(),
+            Description = description,
+            Status = status,
+            CreatedAt = createdAt,
+            UpdatedAt = updatedAt
+        };
+    }
+
+    /// <summary>
     /// Updates gateway metadata.
     /// </summary>
     public void UpdateMetadata(string key, string value)

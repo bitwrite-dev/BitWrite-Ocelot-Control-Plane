@@ -7,6 +7,7 @@ import { OverviewPage } from '@/features/overview/overview-page'
 import { RouteDetailsPage } from '@/features/routes/route-details-page'
 import { ServicesPage } from '@/features/services/services-page'
 import { SettingsPage } from '@/features/settings/settings-page'
+import { GatewaysPage } from '@/features/gateways/gateways-page'
 import { RoutesPage } from '@/features/routes/routes-page'
 import {
   CreateRouteWizardPage,
@@ -35,6 +36,7 @@ const routes = [
       { path: 'routes', element: <RoutesPage /> },
       { path: 'services', element: <ServicesPage /> },
       { path: 'settings', element: <SettingsPage /> },
+      { path: 'gateways', element: <GatewaysPage /> },
       { path: 'routes/new', element: <CreateRouteWizardPage /> },
       // Before routes/:id, so the static segment is not read as an id.
       { path: 'routes/:id/edit', element: <EditRouteWizardPage /> },

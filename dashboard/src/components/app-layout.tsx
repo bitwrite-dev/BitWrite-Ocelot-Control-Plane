@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom'
 
 import { Sidebar, MobileSidebar } from '@/components/sidebar'
 import { LoadingState } from '@/components/page-state'
+import { ThemeProvider } from '@/features/theme/theme-provider'
 import type { Role } from '@/navigation'
 
 /**
@@ -10,7 +11,20 @@ import type { Role } from '@/navigation'
  * content region. The responsive collapse lives in #434's sidebar; the
  * navigation model is in `navigation.ts`.
  */
+/**
+ * The shell owns the theme provider rather than the router, so anything that
+ * renders the shell directly — a test, an embed — gets a working theme instead
+ * of a sidebar whose toggle throws.
+ */
 export function AppLayout({ roles }: { roles?: Role[] }) {
+  return (
+    <ThemeProvider>
+      <LayoutBody roles={roles} />
+    </ThemeProvider>
+  )
+}
+
+function LayoutBody({ roles }: { roles?: Role[] }) {
   return (
     <div className="flex min-h-screen bg-background">
       <Sidebar roles={roles} />

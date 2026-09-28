@@ -29,6 +29,9 @@ import type {
   SnapshotListResponse,
   SnapshotResponse,
   SnapshotValidationResponse,
+  SystemSettingsResponse,
+  CompleteFirstRunRequest,
+  UpdateSystemSettingsRequest,
 } from './types'
 
 /** Shared paging parameters accepted by the list endpoints. */
@@ -162,6 +165,18 @@ export function createResources(http: HttpClient) {
       http.post<ReconcileResponse>('/api/v1/runtime/reconcile', body, o),
   }
 
+  const settings = {
+    get: (o?: Options) => http.get<SystemSettingsResponse>('/api/v1/settings', o),
+    /**
+     * The one-time choice of Ocelot version. Separate from `update` because it
+     * is the only request that can set it, and the API treats them differently.
+     */
+    completeFirstRun: (body: CompleteFirstRunRequest, o?: Options) =>
+      http.post<SystemSettingsResponse>('/api/v1/settings/first-run', body, o),
+    update: (body: UpdateSystemSettingsRequest, o?: Options) =>
+      http.put<SystemSettingsResponse>('/api/v1/settings', body, o),
+  }
+
   const globalConfiguration = {
     get: (o?: Options) => http.get<GlobalConfigurationResponse>('/api/v1/global-configuration', o),
     update: (body: unknown, o?: Options) =>
@@ -179,6 +194,7 @@ export function createResources(http: HttpClient) {
     audit,
     runtime,
     globalConfiguration,
+    settings,
   }
 }
 

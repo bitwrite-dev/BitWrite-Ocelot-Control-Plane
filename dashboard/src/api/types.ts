@@ -214,6 +214,55 @@ export interface RoutePreviewResponse {
   ocelotJson: string
 }
 
+/**
+ * The system settings, and what a first-run screen needs to render itself.
+ */
+export interface SystemSettingsResponse {
+  id: string
+  /** Null until a version is chosen, which is the first-run state. */
+  ocelotVersion: string | null
+  ocelotVersionSelectedAt: string | null
+  ocelotVersionSelectedBy: string | null
+  pollIntervalSeconds: number
+  auditLogRetentionDays: number
+  snapshotRetentionCount: number
+  /** True once a version has been chosen and setup is complete. */
+  isInitialised: boolean
+  /**
+   * Versions that can be chosen, newest first.
+   *
+   * Derived from what the API can actually emit, not from what Ocelot has
+   * released. Offering a version the builder cannot shape would produce a file
+   * no gateway could read.
+   */
+  availableOcelotVersions: string[]
+  createdAt: string
+  updatedAt: string
+}
+
+/**
+ * The first-run request. The version is required here and has no update path.
+ */
+export interface CompleteFirstRunRequest {
+  ocelotVersion: string
+  pollIntervalSeconds?: number | null
+  auditLogRetentionDays?: number | null
+  snapshotRetentionCount?: number | null
+}
+
+/**
+ * The settings that can change after setup.
+ *
+ * There is no `ocelotVersion` field, and that is deliberate: the version is
+ * permanent, so this request must not offer a way to reach it.
+ */
+export interface UpdateSystemSettingsRequest {
+  /** `null` clears the field. Omitting the key would leave it unchanged. */
+  pollIntervalSeconds?: number | null
+  auditLogRetentionDays?: number | null
+  snapshotRetentionCount?: number | null
+}
+
 export interface AuthorizationOptionsResponse {
   policies: string[] | null
   scopes: string[] | null

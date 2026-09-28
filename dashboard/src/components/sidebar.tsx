@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
+import { ThemeToggle } from '@/components/theme-toggle'
 import { NAV_SECTIONS, type Role } from '@/navigation'
 
 /**
@@ -88,6 +89,7 @@ export function Sidebar({ roles }: { roles?: Role[] }) {
       <Brand />
       <Separator />
       <NavLinks roles={roles} />
+      <ThemeToggle />
     </aside>
   )
 }

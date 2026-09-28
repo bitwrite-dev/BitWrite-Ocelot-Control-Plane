@@ -34,3 +34,17 @@ if (!Element.prototype.scrollIntoView) {
     // here, so there is nothing to scroll.
   }
 }
+
+/**
+ * jsdom has no ResizeObserver, and Radix's dialog and popover primitives
+ * construct one while mounting. Without this, any component that opens a dialog
+ * throws during render rather than on interaction, which makes the failure look
+ * unrelated to whatever the test was actually about.
+ */
+if (typeof globalThis.ResizeObserver === 'undefined') {
+  globalThis.ResizeObserver = class ResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+}

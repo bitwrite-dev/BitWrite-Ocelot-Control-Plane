@@ -442,6 +442,48 @@ export interface ServiceDiscoveryConfigResponse {
   configuration: Record<string, string>
 }
 
+/**
+ * The request shapes for the global configuration.
+ *
+ * Distinct from the response shapes on purpose: a request needs to express
+ * "clear this", which is `null`, while a response only ever reports a value or
+ * its absence.
+ */
+export interface RateLimitConfigRequest {
+  enableRateLimiting: boolean
+  httpStatusCode: string | null
+}
+
+export interface QoSConfigRequest {
+  timeoutValue: number
+  durationOfBreak: number
+}
+
+export interface HttpHandlerConfigRequest {
+  useProxy: boolean
+  expect100Continue: boolean
+  maxConnectionsPerServer: number | null
+}
+
+export interface ServiceDiscoveryConfigRequest {
+  provider: string | null
+  host: string | null
+  port: number | null
+  type: string | null
+  configuration: Record<string, string>
+}
+
+export interface GlobalConfigurationRequest {
+  baseUrl: string | null
+  requestIdKey: string | null
+  downstreamScheme: string | null
+  timeout: number | null
+  rateLimit: RateLimitConfigRequest | null
+  qoS: QoSConfigRequest | null
+  httpHandler: HttpHandlerConfigRequest | null
+  serviceDiscovery: ServiceDiscoveryConfigRequest | null
+}
+
 export interface ServiceListResponse {
   services: ServiceResponse[]
   totalCount: number

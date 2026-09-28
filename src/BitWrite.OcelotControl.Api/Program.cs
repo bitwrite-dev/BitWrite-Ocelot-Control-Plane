@@ -155,6 +155,7 @@ builder.Services.AddScoped<AppInterfaces.IConfigurationBuilder, ConfigurationBui
             // Snapshot UseCase Handlers
             builder.Services.AddScoped<ListSnapshotsQueryHandler>();
             builder.Services.AddScoped<GetSnapshotQueryHandler>();
+            builder.Services.AddScoped<PreviewSnapshotCommandHandler>();
             builder.Services.AddScoped<ValidateSnapshotCommandHandler>();
             builder.Services.AddScoped<CompareSnapshotsQueryHandler>();
             builder.Services.AddScoped<CloneSnapshotCommandHandler>();

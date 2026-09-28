@@ -22,6 +22,42 @@ public record ValidationResult(
     string? Message
 );
 
+/// <summary>
+/// What a snapshot would contain, resolved but not stored.
+/// </summary>
+public record PreviewSnapshotResponse(
+    /// <summary>
+    /// The canonical artifact, or null when the state could not be built into
+    /// one. Null is reported rather than an empty document, because an empty
+    /// document would look like a valid artifact with nothing in it.
+    /// </summary>
+    string? Content,
+    /// <summary>
+    /// The hash this artifact would carry, computed over the exact string that
+    /// would be stored, or null when there is no content to hash.
+    /// </summary>
+    string? Hash,
+    SnapshotCompositionSummary Composition,
+    IReadOnlyList<ValidationResult> ValidationResults,
+    bool IsValid,
+    string OcelotVersion,
+    /// <summary>
+    /// The version this snapshot would take. Reported, not consumed: the numbers
+    /// are what a rollback names, so a preview must not spend one.
+    /// </summary>
+    int NextVersion
+);
+
+/// <summary>
+/// How many routes and services the artifact carries, and which plugin versions
+/// it pins.
+/// </summary>
+public record SnapshotCompositionSummary(
+    int RouteCount,
+    int ServiceCount,
+    IReadOnlyList<string> PluginVersions
+);
+
 public record SnapshotListResponse(
     IReadOnlyList<SnapshotResponse> Snapshots,
     int TotalCount,

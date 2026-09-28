@@ -5,6 +5,7 @@ import type {
   GatewayListResponse,
   GatewayResponse,
   GlobalConfigurationResponse,
+  GlobalConfigurationRequest,
   GatewayDeletionEligibility,
   GatewayRequest,
   LicenseListResponse,
@@ -189,7 +190,9 @@ export function createResources(http: HttpClient) {
 
   const globalConfiguration = {
     get: (o?: Options) => http.get<GlobalConfigurationResponse>('/api/v1/global-configuration', o),
-    update: (body: unknown, o?: Options) =>
+    // Typed rather than `unknown`, so a field the API stopped accepting is a
+    // compile error instead of a 400 at save time.
+    update: (body: GlobalConfigurationRequest, o?: Options) =>
       http.put<GlobalConfigurationResponse>('/api/v1/global-configuration', body, o),
   }
 

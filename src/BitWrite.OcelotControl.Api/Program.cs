@@ -4,6 +4,7 @@ using AppInterfaces = BitWrite.OcelotControl.Application.Interfaces;
 using BitWrite.OcelotControl.Application.UseCases.Snapshot;
 using BitWrite.OcelotControl.Application.UseCases.Publication;
 using BitWrite.OcelotControl.Application.UseCases.Route;
+using BitWrite.OcelotControl.Application.UseCases.SystemSettings;
 using BitWrite.OcelotControl.Application.UseCases.Service;
 using BitWrite.OcelotControl.Application.UseCases.GlobalConfiguration;
 using BitWrite.OcelotControl.Application.UseCases.Gateway;
@@ -88,6 +89,7 @@ builder.Services.AddScoped<AppInterfaces.IConfigurationBuilder, ConfigurationBui
             builder.Services.AddScoped<AppInterfaces.ISnapshotRepository, RedisSnapshotRepository>();
             builder.Services.AddScoped<AppInterfaces.IPublicationRepository, RedisPublicationRepository>();
             builder.Services.AddScoped<AppInterfaces.IGlobalConfigurationRepository, RedisGlobalConfigurationRepository>();
+            builder.Services.AddScoped<AppInterfaces.ISystemSettingsRepository, RedisSystemSettingsRepository>();
             builder.Services.AddScoped<AppInterfaces.IRuntimeInstanceRepository, RuntimeInstanceRepositoryAdapter>();
             builder.Services.AddScoped<AppInterfaces.IPluginRepository, PluginRepositoryAdapter>();
             builder.Services.AddScoped<AppInterfaces.ILicenseRepository, RedisLicenseRepository>();
@@ -113,6 +115,9 @@ builder.Services.AddScoped<AppInterfaces.IConfigurationBuilder, ConfigurationBui
             builder.Services.AddSingleton<JsonEventSerializer>();
             builder.Services.AddSingleton<IEventSerializer, JsonEventSerializer>();
             builder.Services.AddScoped<AppInterfaces.IEventSerializer, EventSerializerAdapter>();
+
+            // System Settings Handlers
+            builder.Services.AddScoped<SystemSettingsCommandHandler>();
 
             // UseCase Handlers (Commands) - EXISTING
             builder.Services.AddScoped<CreateSnapshotCommandHandler>();

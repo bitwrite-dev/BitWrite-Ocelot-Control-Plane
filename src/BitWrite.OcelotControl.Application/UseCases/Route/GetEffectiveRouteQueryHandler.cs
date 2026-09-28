@@ -14,17 +14,20 @@ public class GetEffectiveRouteQueryHandler
     private readonly IServiceRepository _serviceRepository;
     private readonly IConfigurationBuilder _configurationBuilder;
     private readonly IConfigurationCanonicalizer _canonicalizer;
+    private readonly ISystemSettingsRepository _systemSettings;
 
     public GetEffectiveRouteQueryHandler(
         IRouteRepository routeRepository,
         IServiceRepository serviceRepository,
         IConfigurationBuilder configurationBuilder,
-        IConfigurationCanonicalizer canonicalizer)
+        IConfigurationCanonicalizer canonicalizer,
+        ISystemSettingsRepository systemSettings)
     {
         _routeRepository = routeRepository;
         _serviceRepository = serviceRepository;
         _configurationBuilder = configurationBuilder;
         _canonicalizer = canonicalizer;
+        _systemSettings = systemSettings;
     }
 
     public async Task<GetEffectiveRouteResponse?> HandleAsync(GetEffectiveRouteQuery query, CancellationToken cancellationToken = default)
@@ -45,7 +48,7 @@ public class GetEffectiveRouteQueryHandler
         var ocelotConfig = _configurationBuilder.BuildConfiguration(
             new List<RouteConfiguration> { routeConfig },
             new DomainGlobalConfig { BaseUrl = "", RequestIdKey = "" },
-            ConfigurationBuilder.BaselineVersion);
+            (await _systemSettings.GetAsync(cancellationToken)).OcelotVersion);
 
         // Canonicalize and return JSON
         var canonicalJson = _canonicalizer.CanonicalizeJson(ocelotConfig);

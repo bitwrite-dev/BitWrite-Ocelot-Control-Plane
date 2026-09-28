@@ -27,6 +27,7 @@ public class CreateSnapshotCommandHandler
     private readonly IConfigurationConsistencyValidator _consistencyValidator;
     private readonly IOcelotCapabilityResolver _ocelotCapabilityResolver;
     private readonly IConfigurationCanonicalizer _canonicalizer;
+    private readonly ISystemSettingsRepository _systemSettings;
     private readonly ISnapshotIntegrityVerifier _integrityVerifier;
     private readonly ISnapshotVersionAllocator _versionAllocator;
     private readonly IDomainEventDispatcher _eventDispatcher;
@@ -41,6 +42,7 @@ public class CreateSnapshotCommandHandler
         IConfigurationConsistencyValidator consistencyValidator,
         IOcelotCapabilityResolver ocelotCapabilityResolver,
         IConfigurationCanonicalizer canonicalizer,
+        ISystemSettingsRepository systemSettings,
         ISnapshotIntegrityVerifier integrityVerifier,
         ISnapshotVersionAllocator versionAllocator,
         IDomainEventDispatcher eventDispatcher)
@@ -54,6 +56,7 @@ public class CreateSnapshotCommandHandler
         _consistencyValidator = consistencyValidator;
         _ocelotCapabilityResolver = ocelotCapabilityResolver;
         _canonicalizer = canonicalizer;
+        _systemSettings = systemSettings;
         _integrityVerifier = integrityVerifier;
         _versionAllocator = versionAllocator;
         _eventDispatcher = eventDispatcher;
@@ -73,7 +76,7 @@ public class CreateSnapshotCommandHandler
         var ocelotConfig = _configurationBuilder.BuildConfiguration(
             routeConfigs,
             MapToGlobalConfiguration(globalConfig),
-            ConfigurationBuilder.BaselineVersion);
+            (await _systemSettings.GetAsync(cancellationToken)).OcelotVersion);
 
         // 3. 5 Validation Layers
         // 3.1 Domain Validation - each aggregate validates itself

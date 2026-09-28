@@ -92,6 +92,19 @@ public abstract class RedisRepositoryBase
         return await Database.StringSetAsync(key, value, expiry);
     }
 
+    /// <summary>
+    /// Writes only when the key is absent, in one round trip.
+    /// </summary>
+    /// <remarks>
+    /// Check-then-write would leave a window in which two first-run attempts both
+    /// see an empty key and both apply their choice. Redis decides the winner
+    /// atomically, and the loser is told so.
+    /// </remarks>
+    protected async Task<bool> StringSetIfNotExistsAsync(string key, string value)
+    {
+        return await Database.StringSetAsync(key, value, null, false, When.NotExists);
+    }
+
     protected static string GetEntry(HashEntry[] entries, string name)
     {
         var entry = entries.FirstOrDefault(e => e.Name == name);

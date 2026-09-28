@@ -14,17 +14,20 @@ public class PreviewRouteQueryHandler
     private readonly IServiceRepository _serviceRepository;
     private readonly IConfigurationBuilder _configurationBuilder;
     private readonly IConfigurationCanonicalizer _canonicalizer;
+    private readonly ISystemSettingsRepository _systemSettings;
 
     public PreviewRouteQueryHandler(
         IRouteRepository routeRepository,
         IServiceRepository serviceRepository,
         IConfigurationBuilder configurationBuilder,
-        IConfigurationCanonicalizer canonicalizer)
+        IConfigurationCanonicalizer canonicalizer,
+        ISystemSettingsRepository systemSettings)
     {
         _routeRepository = routeRepository;
         _serviceRepository = serviceRepository;
         _configurationBuilder = configurationBuilder;
         _canonicalizer = canonicalizer;
+        _systemSettings = systemSettings;
     }
 
     public async Task<PreviewRouteResponse?> HandleAsync(PreviewRouteQuery query, CancellationToken cancellationToken = default)
@@ -45,7 +48,7 @@ public class PreviewRouteQueryHandler
         var ocelotConfig = _configurationBuilder.BuildConfiguration(
             new List<RouteConfiguration> { routeConfig },
             new DomainGlobalConfig { BaseUrl = "", RequestIdKey = "" },
-            ConfigurationBuilder.BaselineVersion);
+            (await _systemSettings.GetAsync(cancellationToken)).OcelotVersion);
 
         // Canonicalize and return JSON
         var canonicalJson = _canonicalizer.CanonicalizeJson(ocelotConfig);

@@ -89,10 +89,19 @@ public class PreviewSnapshotCommandHandler
 
         try
         {
+            // Until first-run has chosen a version there is no shape to emit, and
+            // `BuildConfiguration` takes a non-nullable one. Reporting the gap
+            // keeps the reason on the page; passing null through would be a null
+            // reference with nothing to say about it.
+            var version = ocelotVersion
+                ?? throw new InvalidOperationException(
+                    "No Ocelot version has been chosen yet. Complete first-run setup before " +
+                    "creating a snapshot.");
+
             ocelotConfig = _configurationBuilder.BuildConfiguration(
                 routeConfigs,
                 MapToGlobalConfiguration(globalConfig),
-                ocelotVersion);
+                version);
 
             // Canonicalise once and hash the exact string that would be stored, so
             // the hash shown here is the hash the snapshot would carry. Hashing the
@@ -143,7 +152,10 @@ public class PreviewSnapshotCommandHandler
             composition,
             results,
             blocking.All(result => result.IsValid),
-            ocelotVersion.ToString(),
+            // Null until first-run. Calling ToString on it was the null reference
+            // the create page surfaced, and it happened after every rule had run —
+            // so a preview that reported everything else could not be shown at all.
+            ocelotVersion?.ToString() ?? "not chosen",
             nextVersion);
     }
 
@@ -199,6 +211,10 @@ public class PreviewSnapshotCommandHandler
         IReadOnlyList<DomainRoute> routes,
         OcelotVersion ocelotVersion)
     {
+        // Only reached once something was built, which cannot happen without a
+        // version: the builder refuses first. So this is never null here, and a
+        // guard here would be a branch nothing can reach.
+        //
         // Checked against the configured version rather than a hard-coded one, so
         // a feature that the chosen version cannot express is caught here instead
         // of by a gateway refusing to start.

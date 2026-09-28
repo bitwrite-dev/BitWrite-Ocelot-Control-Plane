@@ -55,6 +55,80 @@ public class Route
     /// </remarks>
     public bool RouteIsCaseSensitive { get; private set; }
 
+    /// <summary>
+    /// The path the request is rewritten to on the way downstream.
+    /// </summary>
+    /// <remarks>
+    /// Null forwards the upstream path unchanged, which is Ocelot's
+    /// <c>/{everything}</c>. Setting it is what allows a service to live under a
+    /// different prefix than the route the caller uses.
+    /// </remarks>
+    public DownstreamPathTemplate? DownstreamTemplate { get; private set; }
+
+    /// <summary>
+    /// The verb the request is rewritten to on the way downstream.
+    /// </summary>
+    /// <remarks>
+    /// Null keeps the upstream verb. Ocelot models this as a single string
+    /// rather than a list, unlike <c>UpstreamHttpMethod</c> which is a list.
+    /// </remarks>
+    public HttpMethod? DownstreamMethod { get; private set; }
+
+    /// <summary>
+    /// The HTTP version used for the downstream request.
+    /// </summary>
+    /// <remarks>
+    /// Ocelot accepts "1.0", "1.1" or "2.0". Null leaves the framework's
+    /// default in place, which is not the same as asking for 1.1.
+    /// </remarks>
+    public string? DownstreamHttpVersion { get; private set; }
+
+    /// <summary>
+    /// How strictly the version is requested: exact, or at least / at most.
+    /// </summary>
+    /// <remarks>
+    /// Without a policy, asking for 2.0 over plain HTTP negotiates down to 1.1
+    /// and the gateway logs a protocol error. The two settings are only useful
+    /// together.
+    /// </remarks>
+    public string? DownstreamHttpVersionPolicy { get; private set; }
+
+    /// <summary>
+    /// Accepts any TLS certificate from the downstream service.
+    /// </summary>
+    /// <remarks>
+    /// For self-signed certificates in local development only. Ocelot's own
+    /// documentation calls it a security risk on 20.0 and later, and the route
+    /// schema says so in its own comment.
+    /// </remarks>
+    public bool DangerousAcceptAnyServerCertificateValidator { get; private set; }
+
+    /// <summary>
+    /// Names of Ocelot delegating handlers to run for this route.
+    /// </summary>
+    /// <remarks>
+    /// The handlers are registered in the gateway, not here. A name that is not
+    /// registered makes the gateway fail to start, so the list cannot be
+    /// validated from the control plane alone.
+    /// </remarks>
+    public IReadOnlyList<string> DelegatingHandlers => _delegatingHandlers.AsReadOnly();
+    private readonly List<string> _delegatingHandlers = new();
+
+    /// <summary>
+    /// How the gateway's HTTP client behaves when calling downstream.
+    /// </summary>
+    public HttpClientOptions? HttpClientOptions { get; private set; }
+
+    /// <summary>
+    /// Seconds the gateway waits for a downstream response, or null for the
+    /// framework default.
+    /// </summary>
+    /// <remarks>
+    /// A zero or negative value is treated as "no timeout" by Ocelot, which is
+    /// a good way to forget about it, so the aggregate rejects it.
+    /// </remarks>
+    public int? TimeoutSeconds { get; private set; }
+
     public IReadOnlyList<DownstreamTarget> DownstreamTargets => _downstreamTargets.AsReadOnly();
     public IReadOnlyList<DomainEvent> DomainEvents => _domainEvents.AsReadOnly();
 
@@ -72,7 +146,15 @@ public class Route
         IReadOnlyList<DownstreamTarget> downstreamTargets,
         string? key = null,
         string? host = null,
-        string correlationId = "")
+        string correlationId = "",
+        DownstreamPathTemplate? downstreamTemplate = null,
+        HttpMethod? downstreamMethod = null,
+        string? downstreamHttpVersion = null,
+        string? downstreamHttpVersionPolicy = null,
+        bool acceptAnyServerCertificate = false,
+        IReadOnlyList<string>? delegatingHandlers = null,
+        HttpClientOptions? httpClientOptions = null,
+        int? timeoutSeconds = null)
     {
         if (downstreamTargets == null || downstreamTargets.Count == 0)
             throw new DomainException("Route must have at least one downstream target", "NO_DOWNSTREAM_TARGETS");
@@ -94,6 +176,14 @@ public class Route
         };
 
         route._downstreamTargets.AddRange(downstreamTargets);
+
+        route.SetDownstreamTemplate(downstreamTemplate);
+        route.SetDownstreamMethod(downstreamMethod);
+        route.SetDownstreamHttpVersion(downstreamHttpVersion, downstreamHttpVersionPolicy);
+        route.SetAcceptAnyServerCertificate(acceptAnyServerCertificate);
+        route.SetDelegatingHandlers(delegatingHandlers);
+        route.SetHttpClientOptions(httpClientOptions);
+        route.SetTimeout(timeoutSeconds);
 
         route.AddDomainEvent(new RouteCreated(route.Id, route.RouteKey, route.ServiceId));
         return route;
@@ -121,6 +211,14 @@ public class Route
         string? host = null,
         int priority = 0,
         bool routeIsCaseSensitive = false,
+        DownstreamPathTemplate? downstreamTemplate = null,
+        HttpMethod? downstreamMethod = null,
+        string? downstreamHttpVersion = null,
+        string? downstreamHttpVersionPolicy = null,
+        bool acceptAnyServerCertificate = false,
+        IReadOnlyList<string>? delegatingHandlers = null,
+        HttpClientOptions? httpClientOptions = null,
+        int? timeoutSeconds = null,
         AuthenticationOptions? authenticationOptions = null,
         AuthorizationOptions? authorizationOptions = null,
         RateLimitOptions? rateLimitOptions = null,
@@ -134,7 +232,7 @@ public class Route
         if (downstreamTargets is null || downstreamTargets.Count == 0)
             throw new DomainException("Route must have at least one downstream target", "NO_DOWNSTREAM_TARGETS");
 
-        return new Route
+        var instance = new Route
         {
             Id = id,
             Method = method,
@@ -147,6 +245,13 @@ public class Route
             UpdatedAt = updatedAt,
             Priority = priority,
             RouteIsCaseSensitive = routeIsCaseSensitive,
+            DownstreamTemplate = downstreamTemplate,
+            DownstreamMethod = downstreamMethod,
+            DownstreamHttpVersion = downstreamHttpVersion,
+            DownstreamHttpVersionPolicy = downstreamHttpVersionPolicy,
+            DangerousAcceptAnyServerCertificateValidator = acceptAnyServerCertificate,
+            HttpClientOptions = httpClientOptions,
+            TimeoutSeconds = timeoutSeconds,
             // The feature configs used to be dropped here, so a route came back
             // from storage with none of them. They are assigned directly because
             // the setters stamp UpdatedAt, which would overwrite the stored
@@ -161,6 +266,16 @@ public class Route
             ClaimOptions = claimOptions,
             QueryOptions = queryOptions
         }.WithTargets(downstreamTargets);
+
+        if (delegatingHandlers != null)
+        {
+            foreach (var handler in delegatingHandlers)
+            {
+                instance._delegatingHandlers.Add(handler);
+            }
+        }
+
+        return instance;
     }
 
     /// <summary>
@@ -357,7 +472,15 @@ public class Route
         ClaimOptions? claimOptions = null,
         QueryOptions? queryOptions = null,
         int priority = 0,
-        bool routeIsCaseSensitive = false)
+        bool routeIsCaseSensitive = false,
+        DownstreamPathTemplate? downstreamTemplate = null,
+        HttpMethod? downstreamMethod = null,
+        string? downstreamHttpVersion = null,
+        string? downstreamHttpVersionPolicy = null,
+        bool acceptAnyServerCertificate = false,
+        IReadOnlyList<string>? delegatingHandlers = null,
+        HttpClientOptions? httpClientOptions = null,
+        int? timeoutSeconds = null)
     {
         if (downstreamTargets == null || downstreamTargets.Count == 0)
             throw new DomainException("Route must have at least one downstream target", "NO_DOWNSTREAM_TARGETS");
@@ -391,6 +514,16 @@ public class Route
         Priority = priority;
         RouteIsCaseSensitive = routeIsCaseSensitive;
 
+        // Applied through the setters so the same validation runs, then folded
+        // into the single event this operation raises.
+        SetDownstreamTemplate(downstreamTemplate);
+        SetDownstreamMethod(downstreamMethod);
+        SetDownstreamHttpVersion(downstreamHttpVersion, downstreamHttpVersionPolicy);
+        SetAcceptAnyServerCertificate(acceptAnyServerCertificate);
+        SetDelegatingHandlers(delegatingHandlers);
+        SetHttpClientOptions(httpClientOptions);
+        SetTimeout(timeoutSeconds);
+
         UpdatedAt = DateTimeOffset.UtcNow;
         AddDomainEvent(new RouteUpdated(Id));
     }
@@ -401,6 +534,151 @@ public class Route
     public void Delete()
     {
         AddDomainEvent(new RouteDeleted(Id));
+    }
+
+    /// <summary>
+    /// Sets the path the request is rewritten to downstream.
+    /// </summary>
+    /// <remarks>
+    /// A placeholder the upstream path cannot fill arrives empty at the
+    /// service, so it is refused here rather than discovered as a puzzling 404
+    /// later. <c>{everything}</c> is always available because it is Ocelot's own
+    /// catch-all.
+    /// </remarks>
+    public void SetDownstreamTemplate(DownstreamPathTemplate? template, string correlationId = "")
+    {
+        if (template != null)
+        {
+            var available = UpstreamPath.Placeholders()
+                .Concat(new[] { "everything" })
+                .ToHashSet(StringComparer.Ordinal);
+
+            var unknown = template.Placeholders()
+                .Where(name => !available.Contains(name))
+                .ToList();
+
+            if (unknown.Count > 0)
+            {
+                throw new DomainException(
+                    $"Downstream path uses placeholders the upstream path cannot fill: {string.Join(", ", unknown.Select(n => "{" + n + "}"))}",
+                    "DOWNSTREAM_PLACEHOLDER_NOT_IN_UPSTREAM");
+            }
+        }
+
+        DownstreamTemplate = template;
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
+    /// <summary>
+    /// Sets the verb the request is rewritten to downstream.
+    /// </summary>
+    public void SetDownstreamMethod(HttpMethod? method, string correlationId = "")
+    {
+        DownstreamMethod = method;
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
+    /// <summary>
+    /// Sets the downstream HTTP version and how strictly it is requested.
+    /// </summary>
+    /// <remarks>
+    /// The two are validated together. Ocelot accepts "1.0", "1.1" and "2.0",
+    /// and the policy has to be one of its three named values — an unknown one
+    /// would bind to nothing and the gateway would quietly fall back.
+    /// </remarks>
+    public void SetDownstreamHttpVersion(
+        string? version,
+        string? policy = null,
+        string correlationId = "")
+    {
+        var validVersions = new[] { "1.0", "1.1", "2.0" };
+        var validPolicies = new[] { "RequestVersionExact", "RequestVersionOrHigher", "RequestVersionOrLower" };
+
+        if (version is not null && !validVersions.Contains(version))
+        {
+            throw new DomainException(
+                $"Invalid downstream HTTP version: {version}. Valid: {string.Join(", ", validVersions)}",
+                "INVALID_HTTP_VERSION");
+        }
+
+        if (policy is not null && !validPolicies.Contains(policy))
+        {
+            throw new DomainException(
+                $"Invalid HTTP version policy: {policy}. Valid: {string.Join(", ", validPolicies)}",
+                "INVALID_HTTP_VERSION_POLICY");
+        }
+
+        if (policy is not null && version is null)
+        {
+            // A policy with nothing to apply it to would read as configured
+            // while changing nothing.
+            throw new DomainException(
+                "An HTTP version policy needs a version to apply to",
+                "HTTP_VERSION_POLICY_WITHOUT_VERSION");
+        }
+
+        DownstreamHttpVersion = version;
+        DownstreamHttpVersionPolicy = policy;
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
+    /// <summary>
+    /// Whether the downstream certificate is accepted without validation.
+    /// </summary>
+    public void SetAcceptAnyServerCertificate(bool accept, string correlationId = "")
+    {
+        DangerousAcceptAnyServerCertificateValidator = accept;
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
+    /// <summary>
+    /// Replaces the delegating handlers run for this route.
+    /// </summary>
+    public void SetDelegatingHandlers(IReadOnlyList<string>? handlers, string correlationId = "")
+    {
+        _delegatingHandlers.Clear();
+        if (handlers != null)
+        {
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var handler in handlers)
+            {
+                if (string.IsNullOrWhiteSpace(handler))
+                    throw new DomainException("A delegating handler name cannot be empty", "INVALID_DELEGATING_HANDLER");
+
+                var name = handler.Trim();
+                if (!seen.Add(name))
+                {
+                    // Ocelot would register the same handler twice.
+                    throw new DomainException($"Delegating handler '{name}' is listed twice", "DUPLICATE_DELEGATING_HANDLER");
+                }
+
+                _delegatingHandlers.Add(name);
+            }
+        }
+
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
+    public void SetHttpClientOptions(HttpClientOptions? options, string correlationId = "")
+    {
+        HttpClientOptions = options;
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
+    /// <summary>
+    /// Sets how long the gateway waits for a downstream response.
+    /// </summary>
+    public void SetTimeout(int? seconds, string correlationId = "")
+    {
+        if (seconds is <= 0)
+        {
+            // Ocelot reads zero or less as "no timeout", which is a good way to
+            // end up waiting forever.
+            throw new DomainException("Timeout must be positive", "INVALID_TIMEOUT");
+        }
+
+        TimeoutSeconds = seconds;
+        UpdatedAt = DateTimeOffset.UtcNow;
     }
 
     private void AddDomainEvent(DomainEvent domainEvent)

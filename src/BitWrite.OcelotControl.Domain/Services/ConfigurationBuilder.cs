@@ -95,10 +95,16 @@ public class ConfigurationBuilder
             UpstreamHost = route.Host,
             Priority = route.Priority,
             RouteIsCaseSensitive = route.RouteIsCaseSensitive,
-            DownstreamPathTemplate = "/{everything}",
+            // Was hardcoded, so every route forwarded the upstream path and a
+            // service under a different prefix could not be reached.
+            DownstreamPathTemplate = route.DownstreamTemplate?.Value ?? "/{everything}",
             DownstreamScheme = route.DownstreamTargets.FirstOrDefault()?.Scheme ?? "http",
             DownstreamHostAndPorts = downstreamHostAndPorts,
-            Key = route.Key?.ToSignature(),
+            // The operator's own name, not the recomputed "Method:Path"
+            // signature. The signature was published instead, so a route saved
+            // as "header-transformation" reached the gateway as
+            // "GET:/api/orders/{orderId}" and lost its name.
+            Key = route.FriendlyKey,
             // The scopes a user configured used to be replaced with an empty
             // list here, so authentication was published with no scopes and the
             // gateway ignored it. They live in Properties["scopes"] as one
@@ -136,7 +142,30 @@ public class ConfigurationBuilder
             DownstreamHeaderTransform = FeatureOptionEmitter.DownstreamHeaderTransform(route.HeaderOptions),
             LoadBalancerOptions = loadBalancerOptions ?? (route.LoadBalancerOptions != null
                 ? new OcelotLoadBalancerOptions { Type = route.LoadBalancerOptions.Algorithm }
-                : null)
+                : null),
+            // Transport and client behaviour. Ocelot's route-level `Timeout` is
+            // separate from `QoSOptions.TimeoutValue`, which configures the
+            // retry policy, so setting one never quietly changes the other.
+            DownstreamHttpMethod = route.DownstreamMethod?.Value,
+            DownstreamHttpVersion = route.DownstreamHttpVersion,
+            DownstreamHttpVersionPolicy = route.DownstreamHttpVersionPolicy,
+            DangerousAcceptAnyServerCertificateValidator =
+                route.DangerousAcceptAnyServerCertificateValidator,
+            DelegatingHandlers = route.DelegatingHandlers.Count > 0
+                ? route.DelegatingHandlers.ToArray()
+                : null,
+            HttpHandlerOptions = route.HttpClientOptions != null
+                ? new OcelotHttpHandlerOptions
+                {
+                    AllowAutoRedirect = route.HttpClientOptions.AllowAutoRedirect,
+                    MaxConnectionsPerServer = route.HttpClientOptions.MaxConnectionsPerServer,
+                    PooledConnectionLifetime = route.HttpClientOptions.PooledConnectionLifetimeSeconds,
+                    UseCookieContainer = route.HttpClientOptions.UseCookieContainer,
+                    UseProxy = route.HttpClientOptions.UseProxy,
+                    UseTracing = route.HttpClientOptions.UseTracing
+                }
+                : null,
+            Timeout = route.TimeoutSeconds
         };
 
         // Query transformation has no 18 counterpart, so this throws when one is
@@ -181,6 +210,13 @@ public class RouteConfiguration
 {
     public RouteId Id { get; init; } = default!;
     public RouteKey Key => RouteKey.Create(Method, UpstreamPath, Host);
+    /// <summary>
+    /// The name the operator gave the route, as distinct from the computed
+    /// <see cref="Key"/> signature. Ocelot publishes this one, so a route saved
+    /// as "orders" is recognisable in logs instead of appearing as
+    /// "GET:/api/orders".
+    /// </summary>
+    public string? FriendlyKey { get; init; }
     public string? Host { get; init; }
     public HttpMethod Method { get; init; } = default!;
     public UpstreamPath UpstreamPath { get; init; } = default!;
@@ -197,6 +233,14 @@ public class RouteConfiguration
     public QueryOptions? QueryOptions { get; init; }
     public int Priority { get; init; }
     public bool RouteIsCaseSensitive { get; init; }
+    public DownstreamPathTemplate? DownstreamTemplate { get; init; }
+    public HttpMethod? DownstreamMethod { get; init; }
+    public string? DownstreamHttpVersion { get; init; }
+    public string? DownstreamHttpVersionPolicy { get; init; }
+    public bool DangerousAcceptAnyServerCertificateValidator { get; init; }
+    public IReadOnlyList<string> DelegatingHandlers { get; init; } = Array.Empty<string>();
+    public HttpClientOptions? HttpClientOptions { get; init; }
+    public int? TimeoutSeconds { get; init; }
 }
 
 public class GlobalConfiguration
@@ -218,6 +262,15 @@ public class OcelotRouteConfiguration
     public string? UpstreamHost { get; init; }
     public int Priority { get; init; }
     public bool RouteIsCaseSensitive { get; init; }
+    /// <summary>
+    /// A single verb, unlike <see cref="UpstreamHttpMethod"/> which is a list.
+    /// </summary>
+    public string? DownstreamHttpMethod { get; init; }
+
+    public string? DownstreamHttpVersion { get; init; }
+
+    public string? DownstreamHttpVersionPolicy { get; init; }
+
     public string DownstreamPathTemplate { get; init; } = string.Empty;
     public string DownstreamScheme { get; init; } = "http";
     public List<OcelotHostAndPort>? DownstreamHostAndPorts { get; init; }
@@ -234,6 +287,24 @@ public class OcelotRouteConfiguration
     public Dictionary<string, string>? ChangeDownstreamPathTemplate { get; init; }
     public Dictionary<string, string>? UpstreamHeaderTransform { get; init; }
     public Dictionary<string, string>? DownstreamHeaderTransform { get; init; }
+    public string[]? DelegatingHandlers { get; init; }
+    public OcelotHttpHandlerOptions? HttpHandlerOptions { get; init; }
+    public bool DangerousAcceptAnyServerCertificateValidator { get; init; }
+    public int? Timeout { get; init; }
+}
+
+/// <summary>
+/// Ocelot calls these <c>HttpHandlerOptions</c> even though they configure the
+/// client that makes the downstream call.
+/// </summary>
+public class OcelotHttpHandlerOptions
+{
+    public bool AllowAutoRedirect { get; init; }
+    public int MaxConnectionsPerServer { get; init; }
+    public int PooledConnectionLifetime { get; init; }
+    public bool UseCookieContainer { get; init; }
+    public bool UseProxy { get; init; }
+    public bool UseTracing { get; init; }
 }
 
 public class OcelotGlobalConfiguration

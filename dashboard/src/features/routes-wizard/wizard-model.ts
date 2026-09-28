@@ -1,4 +1,4 @@
-import type { RouteResponse } from '@/api'
+import type { RouteResponse, TransformEntryResponse } from '@/api'
 
 /**
  * The 8 steps of the route wizard that the API can actually store.
@@ -43,6 +43,55 @@ export interface LoadBalancerDraft {
   algorithm: string
 }
 
+/**
+ * One header rule.
+ *
+ * `add` becomes DownstreamHeaderTransform and `transform` becomes
+ * UpstreamHeaderTransform, which is the only split Ocelot 18 offers.
+ * `remove` has no equivalent there and is refused on save.
+ */
+export interface HeaderRuleDraft {
+  name: string
+  value: string
+}
+
+export interface HeaderTransformsDraft {
+  /** Rule: header: value */
+  add: string
+  /** Rewrite: header: value */
+  transform: string
+}
+
+export interface HttpClientOptionsDraft {
+  enabled: boolean
+  allowAutoRedirect: boolean
+  maxConnectionsPerServer: string
+  pooledConnectionLifetimeSeconds: string
+  useCookieContainer: boolean
+  useProxy: boolean
+  useTracing: boolean
+}
+
+/**
+ * How the request is made downstream: the verb, the protocol version, the TLS
+ * check, the handlers, and the client behind it.
+ */
+export interface TransportDraft {
+  /** Empty keeps the upstream verb. Ocelot takes one verb, not a list. */
+  downstreamMethod: string
+  /** Empty forwards the path unchanged, which is Ocelot's "/{everything}". */
+  downstreamTemplate: string
+  /** '' leaves the framework default, which is not the same as asking for 1.1. */
+  downstreamHttpVersion: string
+  /** Only meaningful together with a version. */
+  downstreamHttpVersionPolicy: string
+  acceptAnyServerCertificate: boolean
+  delegatingHandlers: string[]
+  httpClient: HttpClientOptionsDraft
+  /** '' means the framework default rather than no timeout. */
+  timeoutSeconds: string
+}
+
 export interface RouteDraft {
   key: string
   method: string
@@ -59,6 +108,13 @@ export interface RouteDraft {
   qos: QosDraft
   cache: CacheDraft
   loadBalancer: LoadBalancerDraft
+  headers?: HeaderTransformsDraft
+  /**
+   * Optional so a caller that builds a partial draft by hand still type-checks.
+   * `toCreateRequest` and the validator both read a missing block as the
+   * defaults rather than throwing.
+   */
+  transport?: TransportDraft
 }
 
 export type StepId =
@@ -87,6 +143,25 @@ export const PERIODS: Period[] = ['Second', 'Minute', 'Hour', 'Day']
 
 export const LOAD_BALANCER_ALGORITHMS = ['RoundRobin', 'LeastConnection', 'Random', 'First'] as const
 
+export const emptyTransportDraft = (): TransportDraft => ({
+  downstreamMethod: '',
+  downstreamTemplate: '',
+  downstreamHttpVersion: '',
+  downstreamHttpVersionPolicy: '',
+  acceptAnyServerCertificate: false,
+  delegatingHandlers: [],
+  httpClient: {
+    enabled: false,
+    allowAutoRedirect: false,
+    maxConnectionsPerServer: '',
+    pooledConnectionLifetimeSeconds: '',
+    useCookieContainer: false,
+    useProxy: false,
+    useTracing: false,
+  },
+  timeoutSeconds: '',
+})
+
 export const emptyRouteDraft = (): RouteDraft => ({
   key: '',
   method: 'GET',
@@ -102,9 +177,99 @@ export const emptyRouteDraft = (): RouteDraft => ({
   qos: { enabled: false, timeoutSeconds: 90, circuitBreakerTimeoutSeconds: 30 },
   cache: { enabled: false, ttlSeconds: 300 },
   loadBalancer: { enabled: false, algorithm: 'RoundRobin' },
+  transport: emptyTransportDraft(),
+  headers: { add: '', transform: '' },
 })
 
+/** The versions Ocelot accepts for a downstream request. */
+export const DOWNSTREAM_HTTP_VERSIONS = ['1.0', '1.1', '2.0'] as const
+
+/** How strictly that version is asked for. Ocelot names all three. */
+export const DOWNSTREAM_HTTP_VERSION_POLICIES = [
+  'RequestVersionExact',
+  'RequestVersionOrHigher',
+  'RequestVersionOrLower',
+] as const
+
 const isBlank = (value: string) => value.trim().length === 0
+
+/**
+ * A blank numeric field means "leave the framework default alone". Sending 0
+ * instead would fail the API's own range validation.
+ */
+function numberOrOmit(value: string): number | undefined {
+  const trimmed = value.trim()
+  if (trimmed === '') return undefined
+  const parsed = Number(trimmed)
+  return Number.isFinite(parsed) ? parsed : undefined
+}
+
+/**
+ * Ocelot's own placeholders, offered so an operator does not have to remember
+ * the spelling. A value containing one is a rewrite of that value, not a
+ * literal, which is the distinction that matters.
+ */
+export const HEADER_PLACEHOLDERS = [
+  'UpstreamHost',
+  'BaseUrl',
+  'RemoteIpAddress',
+  'UpstreamMethod',
+  'DownstreamPath',
+  'RequestId',
+] as const
+
+/**
+ * Parses a "header: value" block, one rule per line.
+ *
+ * A line with no colon is a rule with no value, which is legal: it sets the
+ * header to empty. Anything after the first colon is the value, so a value may
+ * itself contain colons — a URL, for instance.
+ */
+/** Renders stored rules back into the editable "header: value" block. */
+function toHeaderBlock(entries: TransformEntryResponse[] | null | undefined): string {
+  if (!entries || entries.length === 0) return ''
+  return entries.map((entry) => `${entry.key}: ${entry.value}`).join('\n')
+}
+
+function parseHeaderRules(block: string): TransformEntryDraft[] {
+  return block
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line !== '')
+    .map((line) => {
+      const separator = line.indexOf(':')
+      return separator === -1
+        ? { key: line, value: '' }
+        : { key: line.slice(0, separator).trim(), value: line.slice(separator + 1).trim() }
+    })
+    .filter((entry) => entry.key !== '')
+}
+
+export interface TransformEntryDraft {
+  key: string
+  value: string
+}
+
+/** Drops keys whose value is undefined, so absence is real absence. */
+/**
+ * Emits a transformation block only when it has rules. A request carrying an
+ * empty list is not the same as one carrying none: the API treats the first as
+ * "the operator cleared this", and an absent block as "leave what is there".
+ */
+function headerBlock(headers: HeaderTransformsDraft | undefined): Record<string, unknown> {
+  const add = parseHeaderRules(headers?.add ?? '')
+  const transform = parseHeaderRules(headers?.transform ?? '')
+  if (add.length === 0 && transform.length === 0) return {}
+  // One block with both halves: the API takes a single transformations object
+  // per kind, so they cannot be sent as two.
+  return { headerTransformations: { add, transform } }
+}
+
+function compact<T extends object>(value: T): Partial<T> {
+  return Object.fromEntries(
+    Object.entries(value).filter(([, entry]) => entry !== undefined),
+  ) as Partial<T>
+}
 
 /** A port is valid when it is a number in 1–65535; mirrors the API's Range. */
 function portError(port: number | ''): string | null {
@@ -123,6 +288,20 @@ function inRangeError(
   if (value === '') return `${label} is required`
   if (value < min || value > max) return `${label} must be between ${min} and ${max}`
   return null
+}
+
+/**
+ * The same check for an optional numeric field, where blank means "leave the
+ * framework default alone" rather than "a value is missing".
+ */
+function optionalInRangeError(
+  label: string,
+  value: string,
+  min: number,
+  max: number,
+): string | null {
+  if (value.trim() === '') return null
+  return inRangeError(label, Number(value), min, max)
 }
 
 const basic: WizardStep = {
@@ -254,8 +433,113 @@ const advanced: WizardStep = {
     if (draft.loadBalancer.enabled && isBlank(draft.loadBalancer.algorithm)) {
       errors.push('A load balancing algorithm must be selected')
     }
+    errors.push(...transportErrors(draft))
+    errors.push(...headerErrors(draft))
     return errors
   },
+}
+
+/**
+ * The transport rules, checked where they are entered.
+ *
+ * Each of these has a counterpart in the domain, but a wizard that only finds
+ * out on save makes the operator guess which field was wrong.
+ */
+/**
+ * Header rules are checked where they are entered, because a malformed one is
+ * only reported by the API as a field error the operator then has to locate.
+ */
+function headerErrors(draft: RouteDraft): string[] {
+  const errors: string[] = []
+  const headers = draft.headers
+
+  for (const [field, label] of [
+    ['add', 'Downstream header rule'],
+    ['transform', 'Upstream header rule'],
+  ] as const) {
+    const seen = new Set<string>()
+    for (const entry of parseHeaderRules(headers?.[field] ?? '')) {
+      if (!/^[A-Za-z0-9!#$%&'*+.^_`|~-]+$/.test(entry.key)) {
+        errors.push(`${label} '${entry.key}' is not a valid header name`)
+        continue
+      }
+      const key = entry.key.toLowerCase()
+      if (seen.has(key)) {
+        // The later rule would win silently.
+        errors.push(`Header '${entry.key}' is set twice in the same block`)
+      }
+      seen.add(key)
+    }
+  }
+
+  return errors
+}
+
+function transportErrors(draft: RouteDraft): string[] {
+  const errors: string[] = []
+  const transport = draft.transport ?? emptyTransportDraft()
+
+  if (!isBlank(transport.downstreamMethod) && !HTTP_METHODS.includes(transport.downstreamMethod as never)) {
+    errors.push(`Downstream method must be one of ${HTTP_METHODS.join(', ')}`)
+  }
+
+  if (!isBlank(transport.downstreamHttpVersion) && !DOWNSTREAM_HTTP_VERSIONS.includes(transport.downstreamHttpVersion as never)) {
+    errors.push(`Downstream HTTP version must be one of ${DOWNSTREAM_HTTP_VERSIONS.join(', ')}`)
+  }
+
+  // A policy with nothing to apply it to would read as configured while
+  // changing nothing.
+  if (!isBlank(transport.downstreamHttpVersionPolicy)) {
+    if (isBlank(transport.downstreamHttpVersion)) {
+      errors.push('An HTTP version policy needs a version to apply to')
+    } else if (!DOWNSTREAM_HTTP_VERSION_POLICIES.includes(transport.downstreamHttpVersionPolicy as never)) {
+      errors.push(
+        `HTTP version policy must be one of ${DOWNSTREAM_HTTP_VERSION_POLICIES.join(', ')}`,
+      )
+    }
+  }
+
+  const seen = new Set<string>()
+  for (const handler of transport.delegatingHandlers) {
+    const name = handler.trim()
+    if (name === '') {
+      errors.push('A delegating handler name cannot be empty')
+      continue
+    }
+    const key = name.toLowerCase()
+    if (seen.has(key)) {
+      // Ocelot would register the same handler twice.
+      errors.push(`Delegating handler '${name}' is listed twice`)
+    }
+    seen.add(key)
+  }
+
+  if (transport.httpClient.enabled) {
+    const connections = optionalInRangeError(
+      'Max connections per server',
+      transport.httpClient.maxConnectionsPerServer,
+      1,
+      Number.MAX_SAFE_INTEGER,
+    )
+    if (connections) errors.push(connections)
+
+    const lifetime = optionalInRangeError(
+      'Pooled connection lifetime (seconds)',
+      transport.httpClient.pooledConnectionLifetimeSeconds,
+      1,
+      Number.MAX_SAFE_INTEGER,
+    )
+    if (lifetime) errors.push(lifetime)
+  }
+
+  if (!isBlank(transport.timeoutSeconds)) {
+    // Ocelot reads zero or less as "no timeout", which is a quiet way to wait
+    // forever.
+    const timeout = optionalInRangeError('Timeout (seconds)', transport.timeoutSeconds, 1, 86400)
+    if (timeout) errors.push(timeout)
+  }
+
+  return errors
 }
 
 const review: WizardStep = {
@@ -303,7 +587,42 @@ export function furthestReachableStep(draft: RouteDraft): number {
  * Sending a disabled block as a zero-valued object would fail the API's own
  * range validation, so absence has to mean absence rather than "empty".
  */
-export function toCreateRequest(draft: RouteDraft) {
+/**
+ * The wire shape, declared so a caller can read a field that is only present
+ * when the operator set it. Inferred types hid the optional blocks entirely.
+ */
+export interface CreateRouteRequestBody {
+  key: string
+  method: string
+  upstreamPath: string
+  host: string | null
+  serviceId: string
+  downstreamTargets: Array<{ host: string; port: number; scheme: string; path: string }>
+  priority: number
+  routeIsCaseSensitive: boolean
+  downstreamMethod: string | null
+  downstreamPathTemplate: string | null
+  downstreamHttpVersion: string | null
+  downstreamHttpVersionPolicy: string | null
+  acceptAnyServerCertificate: boolean
+  timeoutSeconds: number | null
+  /** Only when the operator configured the block. */
+  headerTransformations?: {
+    add: Array<{ key: string; value: string }>
+    transform: Array<{ key: string; value: string }>
+  }
+  delegatingHandlers?: string[]
+  httpClientOptions?: Record<string, unknown>
+  [key: string]: unknown
+}
+
+export function toCreateRequest(draft: RouteDraft): CreateRouteRequestBody {
+  // A draft built as a partial literal has no transport block. Reading it as
+  // the defaults is better than throwing part-way through assembling the
+  // request, and narrowing once keeps every use below non-optional.
+  const transport = draft.transport ?? emptyTransportDraft()
+  const headers = draft.headers ?? emptyRouteDraft().headers!
+
   return {
     key: draft.key.trim(),
     method: draft.method,
@@ -313,6 +632,43 @@ export function toCreateRequest(draft: RouteDraft) {
     // blocks that are omitted when switched off.
     priority: draft.priority,
     routeIsCaseSensitive: draft.routeIsCaseSensitive,
+    downstreamMethod:
+      transport.downstreamMethod.trim() === '' ? null : transport.downstreamMethod.trim(),
+    downstreamPathTemplate:
+      transport.downstreamTemplate.trim() === '' ? null : transport.downstreamTemplate.trim(),
+    downstreamHttpVersion:
+      transport.downstreamHttpVersion.trim() === ''
+        ? null
+        : transport.downstreamHttpVersion.trim(),
+    downstreamHttpVersionPolicy:
+      transport.downstreamHttpVersionPolicy.trim() === ''
+        ? null
+        : transport.downstreamHttpVersionPolicy.trim(),
+    acceptAnyServerCertificate: transport.acceptAnyServerCertificate,
+    ...headerBlock(headers),
+    ...(transport.delegatingHandlers.length > 0
+      ? { delegatingHandlers: transport.delegatingHandlers.map((h) => h.trim()).filter(Boolean) }
+      : {}),
+    ...(transport.httpClient.enabled
+      ? {
+          httpClientOptions: compact({
+            allowAutoRedirect: transport.httpClient.allowAutoRedirect,
+            maxConnectionsPerServer: numberOrOmit(
+              transport.httpClient.maxConnectionsPerServer,
+            ),
+            pooledConnectionLifetimeSeconds: numberOrOmit(
+              transport.httpClient.pooledConnectionLifetimeSeconds,
+            ),
+            useCookieContainer: transport.httpClient.useCookieContainer,
+            useProxy: transport.httpClient.useProxy,
+            useTracing: transport.httpClient.useTracing,
+          }),
+        }
+      : {}),
+    // Null means the framework default. Zero would mean "no timeout", which is
+    // a good way to end up waiting forever.
+    timeoutSeconds:
+      transport.timeoutSeconds.trim() === '' ? null : Number(transport.timeoutSeconds.trim()),
     serviceId: draft.serviceId,
     downstreamTargets: draft.downstreamTargets.map((target) => ({
       host: target.host.trim(),
@@ -437,6 +793,42 @@ export function draftFromRoute(route: RouteResponse): RouteDraft {
         }))
       : draft.downstreamTargets
   draft.allowedScopes = route.authenticationOptions?.allowedScopes ?? []
+  draft.headers = {
+    add: toHeaderBlock(route.headerTransformations?.add),
+    transform: toHeaderBlock(route.headerTransformations?.transform),
+  }
+
+  draft.transport = {
+    downstreamMethod: route.downstreamMethod ?? '',
+    downstreamTemplate: route.downstreamPathTemplate ?? '',
+    downstreamHttpVersion: route.downstreamHttpVersion ?? '',
+    downstreamHttpVersionPolicy: route.downstreamHttpVersionPolicy ?? '',
+    acceptAnyServerCertificate: route.dangerousAcceptAnyServerCertificateValidator ?? false,
+    delegatingHandlers: [...(route.delegatingHandlers ?? [])],
+    httpClient: route.httpClientOptions
+      ? {
+          enabled: true,
+          allowAutoRedirect: route.httpClientOptions.allowAutoRedirect,
+          // int.MaxValue is what an unset limit resolves to, so it is shown as
+          // blank rather than as a number nobody chose.
+          maxConnectionsPerServer:
+            route.httpClientOptions.maxConnectionsPerServer >= Number.MAX_SAFE_INTEGER
+              ? ''
+              : String(route.httpClientOptions.maxConnectionsPerServer),
+          pooledConnectionLifetimeSeconds:
+            route.httpClientOptions.pooledConnectionLifetimeSeconds >= Number.MAX_SAFE_INTEGER
+              ? ''
+              : String(route.httpClientOptions.pooledConnectionLifetimeSeconds),
+          useCookieContainer: route.httpClientOptions.useCookieContainer,
+          useProxy: route.httpClientOptions.useProxy,
+          useTracing: route.httpClientOptions.useTracing,
+        }
+      : emptyTransportDraft().httpClient,
+    timeoutSeconds:
+      route.timeoutSeconds === null || route.timeoutSeconds === undefined
+        ? ''
+        : String(route.timeoutSeconds),
+  }
 
   if (route.rateLimitOptions?.enableRateLimiting) {
     draft.rateLimit = {

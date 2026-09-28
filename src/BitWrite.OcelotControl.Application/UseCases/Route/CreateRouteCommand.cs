@@ -24,5 +24,13 @@ public record CreateRouteCommand(
     int priority = 0,
     bool routeIsCaseSensitive = false,
     string InitiatedBy = "",
+    DownstreamPathTemplate? DownstreamTemplate = null,
+    DomainHttpMethod? DownstreamMethod = null,
+    string? DownstreamHttpVersion = null,
+    string? DownstreamHttpVersionPolicy = null,
+    bool AcceptAnyServerCertificate = false,
+    IReadOnlyList<string>? DelegatingHandlers = null,
+    HttpClientOptions? HttpClientOptions = null,
+    int? TimeoutSeconds = null,
     string CorrelationId = ""
 );

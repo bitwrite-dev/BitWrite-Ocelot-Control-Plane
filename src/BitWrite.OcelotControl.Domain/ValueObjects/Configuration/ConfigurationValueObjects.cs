@@ -139,6 +139,20 @@ public record UpstreamPath : ValueObject
     private static string StripPlaceholders(string path) =>
         PlaceholderPattern.Replace(path, "x");
 
+    /// <summary>Every placeholder name in the path, in order of first appearance.</summary>
+    public IReadOnlyList<string> Placeholders()
+    {
+        var names = new List<string>();
+        foreach (Match match in PlaceholderPattern.Matches(Value))
+        {
+            var name = match.Value[1..^1];
+            if (!names.Contains(name))
+                names.Add(name);
+        }
+
+        return names;
+    }
+
     public UpstreamPath Append(string segment)
     {
         var newValue = Value.TrimEnd('/') + "/" + segment.TrimStart('/');
@@ -378,5 +392,63 @@ public record OcelotVersion : ValueObject, IComparable<OcelotVersion>
     {
         var version = $"{Major}.{Minor}.{Patch}";
         return PreRelease != null ? $"{version}-{PreRelease}" : version;
+    }
+}
+
+/// <summary>
+/// The path a request is rewritten to before it is sent downstream.
+/// </summary>
+/// <remarks>
+/// This used to be hardcoded to <c>/{everything}</c>, which forwards the
+/// upstream path unchanged. A route whose service lives under a different
+/// prefix — <c>/api/orders/{orderId}</c> in, <c>/internal/orders/{orderId}</c>
+/// out — could not be expressed, and the service answered 404.
+/// <para>
+/// The placeholders are the upstream ones: a name that appears here is filled
+/// from the matching segment of the request. A name that appears only here has
+/// nothing to match and arrives empty, so the two templates are validated
+/// against each other.
+/// </para>
+/// </remarks>
+public record DownstreamPathTemplate : ValueObject
+{
+    public string Value { get; init; }
+
+    private DownstreamPathTemplate(string value)
+    {
+        Value = value;
+    }
+
+    public static DownstreamPathTemplate From(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            throw new DomainException("DownstreamPathTemplate cannot be empty", "INVALID_DOWNSTREAM_PATH_TEMPLATE");
+
+        var normalized = value.Trim();
+        if (!normalized.StartsWith("/"))
+            normalized = "/" + normalized;
+
+        UpstreamPath.From(normalized); // Rejects the same malformed shapes.
+
+        return new DownstreamPathTemplate(normalized);
+    }
+
+    /// <summary>Every placeholder name in the template, in order of appearance.</summary>
+    public IReadOnlyList<string> Placeholders()
+    {
+        var names = new List<string>();
+        foreach (System.Text.RegularExpressions.Match m in
+                 System.Text.RegularExpressions.Regex.Matches(Value, @"\{[A-Za-z_][A-Za-z0-9_]*\}"))
+        {
+            if (!names.Contains(m.Value[1..^1]))
+                names.Add(m.Value[1..^1]);
+        }
+
+        return names;
+    }
+
+    protected override IEnumerable<object> GetEqualityComponents()
+    {
+        yield return Value;
     }
 }

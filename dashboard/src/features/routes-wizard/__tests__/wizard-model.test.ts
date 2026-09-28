@@ -117,6 +117,11 @@ describe('toCreateRequest', () => {
   it('sends only the required fields for a minimal route', () => {
     const body = toCreateRequest(validDraft())
     expect(Object.keys(body).sort()).toEqual([
+      'acceptAnyServerCertificate',
+      'downstreamHttpVersion',
+      'downstreamHttpVersionPolicy',
+      'downstreamMethod',
+      'downstreamPathTemplate',
       'downstreamTargets',
       'host',
       'key',
@@ -124,14 +129,30 @@ describe('toCreateRequest', () => {
       'priority',
       'routeIsCaseSensitive',
       'serviceId',
+      'timeoutSeconds',
       'upstreamPath',
     ])
     // Host is nullable, so it is always sent — as null rather than omitted.
     expect(body.host).toBeNull()
   })
 
+  it('sends the transport defaults as null rather than omitting them', () => {
+    // Each of these means something specific, so absence would be ambiguous:
+    // a null verb keeps the upstream verb, and a null timeout means the
+    // framework default rather than "no timeout", which is what 0 would mean.
+    const body = toCreateRequest(validDraft())
+
+    expect(body.downstreamMethod).toBeNull()
+    expect(body.downstreamHttpVersion).toBeNull()
+    expect(body.downstreamHttpVersionPolicy).toBeNull()
+    expect(body.acceptAnyServerCertificate).toBe(false)
+    expect(body.timeoutSeconds).toBeNull()
+  })
+
   it('omits disabled option blocks rather than sending zero values', () => {
     const body = toCreateRequest(validDraft())
+    expect(body).not.toHaveProperty('httpClientOptions')
+    expect(body).not.toHaveProperty('delegatingHandlers')
     expect(body).not.toHaveProperty('rateLimitOptions')
     expect(body).not.toHaveProperty('qosOptions')
     expect(body).not.toHaveProperty('cacheOptions')

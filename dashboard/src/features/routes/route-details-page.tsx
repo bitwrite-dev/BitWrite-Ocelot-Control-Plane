@@ -54,6 +54,11 @@ function Code({ children }: { children: React.ReactNode }) {
 }
 
 /** Shown where an option is not configured, so absence is explicit. */
+/** A plain yes or no, for a switch whose value is the whole point. */
+function yesNo(value: boolean): string {
+  return value ? 'yes' : 'no'
+}
+
 function Absent() {
   return <span className="text-muted-foreground">Not configured</span>
 }
@@ -108,6 +113,9 @@ export function RouteDetailsPage() {
   }
 
   const data = route.data
+  // Tolerated as absent so a route written before these fields existed still
+  // renders instead of taking the page down.
+  const handlers = data.delegatingHandlers ?? []
   const serviceName =
     services.data?.services.find((service) => service.id === data.serviceId)?.name ??
     data.serviceId
@@ -227,6 +235,128 @@ export function RouteDetailsPage() {
               )}
             </Row>
             <Row label="Service">{serviceName}</Row>
+            <Row label="Downstream path">
+              {data.downstreamPathTemplate ? (
+                <Code>{data.downstreamPathTemplate}</Code>
+              ) : (
+                <span className="text-muted-foreground">
+                  forwarded unchanged, as <Code>/{'{everything}'}</Code>
+                </span>
+              )}
+            </Row>
+            <Row label="Upstream header rules">
+              {data.headerTransformations?.transform?.length ? (
+                <ul className="space-y-0.5">
+                  {data.headerTransformations.transform.map((entry) => (
+                    <li key={entry.key}>
+                      <Code>
+                        {entry.key}: {entry.value}
+                      </Code>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <Absent />
+              )}
+            </Row>
+            <Row label="Downstream header rules">
+              {data.headerTransformations?.add?.length ? (
+                <ul className="space-y-0.5">
+                  {data.headerTransformations.add.map((entry) => (
+                    <li key={entry.key}>
+                      <Code>
+                        {entry.key}: {entry.value}
+                      </Code>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <Absent />
+              )}
+            </Row>
+            <Row label="Downstream method">
+              {data.downstreamMethod ? (
+                <>
+                  <Code>{data.downstreamMethod}</Code>
+                  <span className="ml-2 text-sm text-muted-foreground">
+                    the upstream {data.method} is rewritten to this
+                  </span>
+                </>
+              ) : (
+                <span className="text-muted-foreground">
+                  <Code>{data.method}</Code> is kept
+                </span>
+              )}
+            </Row>
+            <Row label="HTTP version">
+              {data.downstreamHttpVersion ? (
+                <>
+                  <Code>{data.downstreamHttpVersion}</Code>
+                  {data.downstreamHttpVersionPolicy ? (
+                    <span className="ml-2 text-sm text-muted-foreground">
+                      requested as <Code>{data.downstreamHttpVersionPolicy}</Code>
+                    </span>
+                  ) : (
+                    <span className="ml-2 text-sm text-muted-foreground">
+                      no policy, so a lower version is accepted
+                    </span>
+                  )}
+                </>
+              ) : (
+                <span className="text-muted-foreground">Framework default</span>
+              )}
+            </Row>
+            <Row label="Downstream timeout">
+              {data.timeoutSeconds !== null ? (
+                <Code>{data.timeoutSeconds}s</Code>
+              ) : (
+                <span className="text-muted-foreground">framework default</span>
+              )}
+            </Row>
+            <Row label="TLS certificate">
+              {data.dangerousAcceptAnyServerCertificateValidator ? (
+                <span className="text-destructive">
+                  any certificate accepted — development only
+                </span>
+              ) : (
+                <span>Verified</span>
+              )}
+            </Row>
+            <Row label="Delegating handlers">
+              {handlers.length > 0 ? (
+                <ul className="flex flex-wrap gap-1.5">
+                  {handlers.map((handler) => (
+                    <li key={handler}>
+                      <Code>{handler}</Code>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <Absent />
+              )}
+            </Row>
+            <Row label="HTTP client">
+              {data.httpClientOptions ? (
+                <ul className="space-y-0.5 text-sm">
+                  <li>Follows redirects: {yesNo(data.httpClientOptions.allowAutoRedirect)}</li>
+                  <li>Cookie container: {yesNo(data.httpClientOptions.useCookieContainer)}</li>
+                  <li>Proxy: {yesNo(data.httpClientOptions.useProxy)}</li>
+                  <li>Tracing: {yesNo(data.httpClientOptions.useTracing)}</li>
+                  <li>
+                    Max connections per server:{' '}
+                    {data.httpClientOptions.maxConnectionsPerServer >= Number.MAX_SAFE_INTEGER
+                      ? 'framework default'
+                      : data.httpClientOptions.maxConnectionsPerServer}
+                  </li>
+                  <li>
+                    Pooled connection lifetime:{' '}
+                    {data.httpClientOptions.pooledConnectionLifetimeSeconds}s
+                  </li>
+                </ul>
+              ) : (
+                <span className="text-muted-foreground">framework defaults</span>
+              )}
+            </Row>
             <Row label="Downstream targets">
               {data.downstreamTargets.length > 0 ? (
                 <ul className="space-y-1">

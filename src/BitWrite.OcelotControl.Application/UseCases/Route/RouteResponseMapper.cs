@@ -32,6 +32,14 @@ public static class RouteResponseMapper
             route.QueryOptions,
             route.Priority,
             route.RouteIsCaseSensitive,
+            route.DownstreamMethod,
+            route.DownstreamTemplate,
+            route.DownstreamHttpVersion,
+            route.DownstreamHttpVersionPolicy,
+            route.DangerousAcceptAnyServerCertificateValidator,
+            route.DelegatingHandlers,
+            route.HttpClientOptions,
+            route.TimeoutSeconds,
             route.CreatedAt,
             route.UpdatedAt);
 }

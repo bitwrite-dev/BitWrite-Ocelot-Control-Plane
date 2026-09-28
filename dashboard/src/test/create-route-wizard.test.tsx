@@ -179,6 +179,38 @@ describe('CreateRouteWizardPage', () => {
     expect(screen.getByLabelText('Service')).toHaveValue('svc-users')
   })
 
+  it('shows the downstream request fields only on the advanced step', async () => {
+    // A block rendered outside the step guard shows up on every tab, which is
+    // how a transport section ends up sitting on the basic step.
+    const { impl } = stubFetch()
+    renderWizard(impl)
+    const user = userEvent.setup()
+
+    // Leaves the wizard on Authentication, three steps short of Advanced.
+    await fillRequiredSteps(user)
+
+    // Authentication, Rate Limiting and QoS are not the advanced step.
+    for (const _step of ['Authentication', 'Rate Limiting', 'QoS']) {
+      expect(screen.queryByLabelText('Downstream method')).not.toBeInTheDocument()
+      await next(user)
+    }
+
+    // Advanced is.
+    expect(await screen.findByLabelText('Downstream method')).toBeInTheDocument()
+    expect(await screen.findByLabelText('Downstream method')).toBeInTheDocument()
+    expect(screen.getByLabelText('HTTP version')).toBeInTheDocument()
+    expect(screen.getByLabelText('Timeout (seconds)')).toBeInTheDocument()
+    expect(screen.getByLabelText('Delegating handlers')).toBeInTheDocument()
+
+    // And it is gone again on the way out, rather than following the wizard.
+    await next(user)
+    expect(screen.queryByLabelText('Downstream method')).not.toBeInTheDocument()
+  }, 20_000)
+
+
+  // Walks every step of the wizard, and userEvent re-reads the DOM on each
+  // interaction, so this costs about twice what it did before the advanced step
+  // grew. The default timeout is not enough when the suite runs in parallel.
   it('checks the draft with the API before creating it', async () => {
     const { impl, calls } = stubFetch()
     renderWizard(impl)
@@ -195,8 +227,11 @@ describe('CreateRouteWizardPage', () => {
       calls.indexOf('POST /api/v1/routes'),
     )
     expect(await screen.findByText('route detail')).toBeInTheDocument()
-  })
+  }, 20_000)
 
+  // Walks every step of the wizard, and userEvent re-reads the DOM on each
+  // interaction, so this costs about twice what it did before the advanced step
+  // grew. The default timeout is not enough when the suite runs in parallel.
   it('does not create a route the API rejects as a draft', async () => {
     const { impl, posts } = stubFetch({
       validation: {
@@ -221,7 +256,7 @@ describe('CreateRouteWizardPage', () => {
     expect(await screen.findByText('One problem to fix before saving:')).toBeInTheDocument()
     // The only POST that happened was the validation call, not a create.
     expect(posts).toHaveLength(0)
-  })
+  }, 20_000)
 
   it('sends a server error back to the step that owns the field', async () => {
     const { impl } = stubFetch({
@@ -276,6 +311,12 @@ describe('CreateRouteWizardPage', () => {
       downstreamTargets: [{ host: 'localhost', port: 5001, scheme: 'http', path: '/' }],
       priority: 0,
       routeIsCaseSensitive: false,
+      downstreamMethod: null,
+      downstreamHttpVersion: null,
+      downstreamHttpVersionPolicy: null,
+      acceptAnyServerCertificate: false,
+      downstreamPathTemplate: null,
+      timeoutSeconds: null,
     })
     expect(await screen.findByText('route detail')).toBeInTheDocument()
   })

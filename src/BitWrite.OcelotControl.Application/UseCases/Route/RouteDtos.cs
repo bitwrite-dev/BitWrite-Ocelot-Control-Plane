@@ -24,6 +24,14 @@ public record RouteResponse(
     QueryOptions? QueryOptions,
     int Priority,
     bool RouteIsCaseSensitive,
+    DomainHttpMethod? DownstreamMethod,
+    DownstreamPathTemplate? DownstreamTemplate,
+    string? DownstreamHttpVersion,
+    string? DownstreamHttpVersionPolicy,
+    bool DangerousAcceptAnyServerCertificateValidator,
+    IReadOnlyList<string> DelegatingHandlers,
+    HttpClientOptions? HttpClientOptions,
+    int? TimeoutSeconds,
     DateTimeOffset CreatedAt,
     DateTimeOffset UpdatedAt
 );

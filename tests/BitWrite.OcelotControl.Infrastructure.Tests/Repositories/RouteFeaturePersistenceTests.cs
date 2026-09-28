@@ -330,4 +330,104 @@ public class RouteFeaturePersistenceTests
         loaded.ClaimOptions.Should().NotBeNull();
         loaded.QueryOptions.Should().NotBeNull();
     }
+
+    [Fact]
+    public async Task Route_ShouldRoundTripTransportSettings()
+    {
+        var route = NewRoute();
+        route.SetDownstreamMethod(HttpMethod.Post);
+        route.SetDownstreamHttpVersion("2.0", "RequestVersionExact");
+        route.SetAcceptAnyServerCertificate(true);
+        route.SetDelegatingHandlers(new[] { "First", "Second" });
+        route.SetHttpClientOptions(HttpClientOptions.Create(
+            allowAutoRedirect: true,
+            maxConnectionsPerServer: 25,
+            pooledConnectionLifetimeSeconds: 400,
+            useCookieContainer: true,
+            useProxy: true,
+            useTracing: true));
+        route.SetTimeout(75);
+
+        var loaded = await RoundTrip(route);
+
+        loaded.DownstreamMethod!.Value.Should().Be("POST");
+        loaded.DownstreamHttpVersion.Should().Be("2.0");
+        loaded.DownstreamHttpVersionPolicy.Should().Be("RequestVersionExact");
+        loaded.DangerousAcceptAnyServerCertificateValidator.Should().BeTrue();
+        loaded.DelegatingHandlers.Should().BeEquivalentTo(new[] { "First", "Second" });
+        loaded.TimeoutSeconds.Should().Be(75);
+        loaded.HttpClientOptions.Should().NotBeNull();
+        loaded.HttpClientOptions!.AllowAutoRedirect.Should().BeTrue();
+        loaded.HttpClientOptions.MaxConnectionsPerServer.Should().Be(25);
+        loaded.HttpClientOptions.PooledConnectionLifetimeSeconds.Should().Be(400);
+        loaded.HttpClientOptions.UseCookieContainer.Should().BeTrue();
+        loaded.HttpClientOptions.UseProxy.Should().BeTrue();
+        loaded.HttpClientOptions.UseTracing.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Route_WithoutTransportSettings_ShouldLoadWithDefaults()
+    {
+        var loaded = await RoundTrip(NewRoute());
+
+        loaded.DownstreamMethod.Should().BeNull();
+        loaded.DownstreamHttpVersion.Should().BeNull();
+        loaded.DownstreamHttpVersionPolicy.Should().BeNull();
+        loaded.DangerousAcceptAnyServerCertificateValidator.Should().BeFalse();
+        loaded.DelegatingHandlers.Should().BeEmpty();
+        loaded.HttpClientOptions.Should().BeNull();
+        loaded.TimeoutSeconds.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Route_ShouldNotStoreEmptyStringsAsSetValues()
+    {
+        // An empty stored entry means "not set". Storing "" for a null value
+        // would come back as an empty version rather than absent.
+        var loaded = await RoundTrip(NewRoute());
+
+        var entries = _store.Should().ContainSingle().Subject.Value;
+        entries.Should().Contain(e => e.Name == "DownstreamMethod" && e.Value!.ToString() == "");
+        entries.Should().Contain(e => e.Name == "DownstreamHttpVersion" && e.Value!.ToString() == "");
+        entries.Should().Contain(e => e.Name == "DownstreamHttpVersionPolicy" && e.Value!.ToString() == "");
+        entries.Should().Contain(e => e.Name == "HttpClientOptions" && e.Value!.ToString() == "");
+        entries.Should().Contain(e => e.Name == "TimeoutSeconds" && e.Value!.ToString() == "");
+    }
+
+    [Fact]
+    public async Task Route_ShouldRoundTripTheDownstreamPathTemplate()
+    {
+        var route = NewRoute();
+        route.Replace(
+            route.Method,
+            UpstreamPath.From("/api/orders/{orderId}"),
+            route.ServiceId,
+            new List<DownstreamTarget> { DownstreamTarget.Create("https", "orders.internal.example.com", 443) },
+            key: null,
+            host: null,
+            authenticationOptions: null,
+            rateLimitOptions: null,
+            qosOptions: null,
+            cacheOptions: null,
+            loadBalancerOptions: null,
+            downstreamTemplate: DownstreamPathTemplate.From("/internal/orders/{orderId}"));
+
+        var loaded = await RoundTrip(route);
+
+        loaded.UpstreamPath.Value.Should().Be("/api/orders/{orderId}");
+        loaded.DownstreamTemplate.Should().NotBeNull();
+        loaded.DownstreamTemplate!.Value.Should().Be("/internal/orders/{orderId}");
+    }
+
+    [Fact]
+    public async Task Route_WithoutADownstreamTemplate_ShouldLoadWithNothing()
+    {
+        // Absent, not an empty string: an empty template would not parse.
+        var loaded = await RoundTrip(NewRoute());
+
+        loaded.DownstreamTemplate.Should().BeNull();
+
+        var entries = _store.Should().ContainSingle().Subject.Value;
+        entries.Should().Contain(e => e.Name == "DownstreamTemplate" && e.Value!.ToString() == "");
+    }
 }

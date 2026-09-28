@@ -50,7 +50,35 @@ public record CreateRouteRequest(
     TransformationsRequest? ClaimTransformations,
     TransformationsRequest? QueryTransformations,
     [Range(0, 1000)] int Priority = 0,
-    bool RouteIsCaseSensitive = false
+    bool RouteIsCaseSensitive = false,
+    string? DownstreamMethod = null,
+    /// <summary>
+    /// The path the request is rewritten to downstream. Null forwards the
+    /// upstream path unchanged, which is Ocelot's "/{everything}".
+    /// </summary>
+    [MaxLength(500)]
+    string? DownstreamPathTemplate = null,
+    /// <summary>"1.0", "1.1" or "2.0".</summary>
+    [property: RegularExpression("^1\\.[01]$|^2\\.0$", ErrorMessage = "DownstreamHttpVersion must be 1.0, 1.1 or 2.0")]
+    string? DownstreamHttpVersion = null,
+    /// <summary>RequestVersionExact, RequestVersionOrHigher or RequestVersionOrLower.</summary>
+    [property: RegularExpression("^RequestVersion(Exact|OrHigher|OrLower)$",
+        ErrorMessage = "DownstreamHttpVersionPolicy must be RequestVersionExact, RequestVersionOrHigher or RequestVersionOrLower")]
+    string? DownstreamHttpVersionPolicy = null,
+    bool AcceptAnyServerCertificate = false,
+    List<string>? DelegatingHandlers = null,
+    HttpClientOptionsRequest? HttpClientOptions = null,
+    [property: Range(1, 86400)] int? TimeoutSeconds = null
+);
+
+/// <summary>How the gateway's HTTP client calls the downstream service.</summary>
+public record HttpClientOptionsRequest(
+    bool AllowAutoRedirect = false,
+    [property: Range(1, int.MaxValue)] int? MaxConnectionsPerServer = null,
+    [property: Range(1, int.MaxValue)] int? PooledConnectionLifetimeSeconds = null,
+    bool UseCookieContainer = false,
+    bool UseProxy = false,
+    bool UseTracing = false
 );
 
 /// <summary>
@@ -79,8 +107,28 @@ public record UpdateRouteRequest(
     TransformationsRequest? ClaimTransformations,
     TransformationsRequest? QueryTransformations,
     [Range(0, 1000)] int Priority = 0,
-    bool RouteIsCaseSensitive = false
+    bool RouteIsCaseSensitive = false,
+    string? DownstreamMethod = null,
+    /// <summary>
+    /// The path the request is rewritten to downstream. Null forwards the
+    /// upstream path unchanged, which is Ocelot's "/{everything}".
+    /// </summary>
+    [MaxLength(500)]
+    string? DownstreamPathTemplate = null,
+    /// <summary>"1.0", "1.1" or "2.0".</summary>
+    [property: RegularExpression("^1\\.[01]$|^2\\.0$", ErrorMessage = "DownstreamHttpVersion must be 1.0, 1.1 or 2.0")]
+    string? DownstreamHttpVersion = null,
+    /// <summary>RequestVersionExact, RequestVersionOrHigher or RequestVersionOrLower.</summary>
+    [property: RegularExpression("^RequestVersion(Exact|OrHigher|OrLower)$",
+        ErrorMessage = "DownstreamHttpVersionPolicy must be RequestVersionExact, RequestVersionOrHigher or RequestVersionOrLower")]
+    string? DownstreamHttpVersionPolicy = null,
+    bool AcceptAnyServerCertificate = false,
+    List<string>? DelegatingHandlers = null,
+    HttpClientOptionsRequest? HttpClientOptions = null,
+    [property: Range(1, 86400)] int? TimeoutSeconds = null
 );
+
+
 
 public record DownstreamTargetRequest(
     [Required][MaxLength(200)] string Host,
@@ -132,8 +180,25 @@ public record RouteResponse(
     TransformationsResponse? QueryTransformations,
     int Priority,
     bool RouteIsCaseSensitive,
+    string? DownstreamMethod,
+    string? DownstreamPathTemplate,
+    string? DownstreamHttpVersion,
+    string? DownstreamHttpVersionPolicy,
+    bool DangerousAcceptAnyServerCertificateValidator,
+    List<string> DelegatingHandlers,
+    HttpClientOptionsResponse? HttpClientOptions,
+    int? TimeoutSeconds,
     DateTimeOffset CreatedAt,
     DateTimeOffset UpdatedAt
+);
+
+public record HttpClientOptionsResponse(
+    bool AllowAutoRedirect,
+    int MaxConnectionsPerServer,
+    int PooledConnectionLifetimeSeconds,
+    bool UseCookieContainer,
+    bool UseProxy,
+    bool UseTracing
 );
 
 /// <summary>Authorization rules as stored on a route.</summary>

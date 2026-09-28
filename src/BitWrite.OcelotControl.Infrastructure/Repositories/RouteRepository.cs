@@ -65,6 +65,16 @@ public class RedisRouteRepository : RedisRepositoryBase, IRouteRepository
             routeIsCaseSensitive:
                 bool.TryParse(GetEntry(entries, "RouteIsCaseSensitive"), out var storedCase)
                     && storedCase,
+            downstreamTemplate: ParseStoredTemplate(GetEntry(entries, "DownstreamTemplate")),
+            downstreamMethod: ParseStoredMethod(GetEntry(entries, "DownstreamMethod")),
+            downstreamHttpVersion: NullIfEmpty(GetEntry(entries, "DownstreamHttpVersion")),
+            downstreamHttpVersionPolicy: NullIfEmpty(GetEntry(entries, "DownstreamHttpVersionPolicy")),
+            acceptAnyServerCertificate:
+                bool.TryParse(GetEntry(entries, "DangerousAcceptAnyServerCertificateValidator"), out var storedAcceptAny)
+                    && storedAcceptAny,
+            delegatingHandlers: DeserializeList(GetEntry(entries, "DelegatingHandlers")),
+            httpClientOptions: DeserializeHttpClientOptions(GetEntry(entries, "HttpClientOptions")),
+            timeoutSeconds: ParseStoredTimeout(GetEntry(entries, "TimeoutSeconds")),
             authenticationOptions: DeserializeAuthentication(GetEntry(entries, "AuthenticationOptions")),
             authorizationOptions: DeserializeAuthorization(GetEntry(entries, "AuthorizationOptions")),
             rateLimitOptions: DeserializeRateLimit(GetEntry(entries, "RateLimitOptions")),
@@ -126,6 +136,20 @@ public class RedisRouteRepository : RedisRepositoryBase, IRouteRepository
             new("IsEnabled", route.IsEnabled.ToString()),
             new("Priority", route.Priority.ToString()),
             new("RouteIsCaseSensitive", route.RouteIsCaseSensitive.ToString()),
+            new("DownstreamTemplate", route.DownstreamTemplate?.Value ?? ""),
+            new("DownstreamMethod", route.DownstreamMethod?.Value ?? ""),
+            new("DownstreamHttpVersion", route.DownstreamHttpVersion ?? ""),
+            new("DownstreamHttpVersionPolicy", route.DownstreamHttpVersionPolicy ?? ""),
+            new("DangerousAcceptAnyServerCertificateValidator", route.DangerousAcceptAnyServerCertificateValidator.ToString()),
+            new("DelegatingHandlers", RedisSerializer.Serialize(route.DelegatingHandlers.ToList())),
+            new("HttpClientOptions", Serialize(route.HttpClientOptions, o => new HttpClientRecord(
+                o.AllowAutoRedirect,
+                o.MaxConnectionsPerServer,
+                o.PooledConnectionLifetimeSeconds,
+                o.UseCookieContainer,
+                o.UseProxy,
+                o.UseTracing))),
+            new("TimeoutSeconds", route.TimeoutSeconds?.ToString() ?? ""),
             new("DownstreamTargets", RedisSerializer.Serialize(SerializeTargets(route.DownstreamTargets))),
             // Every feature config is persisted. They were all missing, so a
             // route came back from storage with nothing configured and the
@@ -211,6 +235,14 @@ public class RedisRouteRepository : RedisRepositoryBase, IRouteRepository
     // persisted as plain records and mapped back through the domain factory,
     // which is also what re-applies the value's own validation.
 
+    private sealed record HttpClientRecord(
+        bool AllowAutoRedirect,
+        int MaxConnectionsPerServer,
+        int PooledConnectionLifetimeSeconds,
+        bool UseCookieContainer,
+        bool UseProxy,
+        bool UseTracing);
+
     private sealed record AuthenticationRecord(string? Scheme, string? Provider, Dictionary<string, string>? Properties);
 
     private sealed record AuthorizationRecord(List<string>? Policies, List<string>? Scopes, Dictionary<string, string>? Requirements);
@@ -269,6 +301,71 @@ public class RedisRouteRepository : RedisRepositoryBase, IRouteRepository
     {
         if (string.IsNullOrWhiteSpace(json)) return null;
         return RedisSerializer.Deserialize<TRecord>(json);
+    }
+
+    /// <summary>An empty stored entry means "not set", not an empty value.</summary>
+    private static string? NullIfEmpty(string? value) =>
+        string.IsNullOrEmpty(value) ? null : value;
+
+    /// <summary>
+    /// Restores the downstream verb, ignoring a stored value that no longer parses.
+    /// </summary>
+    /// <remarks>
+    /// Silently dropping it keeps a route loadable if a verb is ever removed from
+    /// the allowed set. Storing a value the domain would reject would make the row
+    /// unreadable, which is worse than losing one optional setting.
+    /// </remarks>
+    private static HttpMethod? ParseStoredMethod(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return null;
+        try
+        {
+            return HttpMethod.Parse(value);
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Restores the downstream template, ignoring a stored value that no longer
+    /// parses so the row stays readable.
+    /// </summary>
+    private static DownstreamPathTemplate? ParseStoredTemplate(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return null;
+        try
+        {
+            return DownstreamPathTemplate.From(value);
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
+    private static List<string>? DeserializeList(string json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return null;
+        return RedisSerializer.Deserialize<List<string>>(json);
+    }
+
+    private static int? ParseStoredTimeout(string? value) =>
+        int.TryParse(value, out var seconds) && seconds > 0 ? seconds : null;
+
+    private static HttpClientOptions? DeserializeHttpClientOptions(string json)
+    {
+        var record = TryDeserialize<HttpClientRecord>(json);
+        if (record is null) return null;
+
+        return HttpClientOptions.Create(
+            record.AllowAutoRedirect,
+            record.MaxConnectionsPerServer,
+            record.PooledConnectionLifetimeSeconds,
+            record.UseCookieContainer,
+            record.UseProxy,
+            record.UseTracing);
     }
 
     private static AuthenticationOptions? DeserializeAuthentication(string json)

@@ -102,6 +102,42 @@ public record RuntimeStatus : ValueObject
     public static RuntimeStatus Active => new("Active");
     public static RuntimeStatus Degraded => new("Degraded");
 
+    /// <summary>
+    /// Parses a status, reporting failure instead of throwing.
+    /// </summary>
+    /// <remarks>
+    /// Needed on the read path, where a stored value this build no longer
+    /// recognises should degrade to a default rather than make the whole gateway
+    /// unreadable. <see cref="From"/> stays throwing for input a caller supplied.
+    /// </remarks>
+    public static bool TryParse(string? value, out RuntimeStatus status)
+    {
+        switch (value)
+        {
+            case "Disconnected":
+                status = Disconnected;
+                return true;
+            case "Connecting":
+                status = Connecting;
+                return true;
+            case "Synchronized":
+                status = Synchronized;
+                return true;
+            case "Applying":
+                status = Applying;
+                return true;
+            case "Active":
+                status = Active;
+                return true;
+            case "Degraded":
+                status = Degraded;
+                return true;
+            default:
+                status = Disconnected;
+                return false;
+        }
+    }
+
     public static RuntimeStatus From(string value)
     {
         return value switch

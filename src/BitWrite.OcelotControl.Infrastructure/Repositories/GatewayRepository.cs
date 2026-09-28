@@ -1,6 +1,7 @@
 using BitWrite.OcelotControl.Application.Interfaces;
 using BitWrite.OcelotControl.Domain.Aggregates.Gateway;
 using BitWrite.OcelotControl.Domain.ValueObjects.Identity;
+using BitWrite.OcelotControl.Domain.ValueObjects.Status;
 using BitWrite.OcelotControl.Infrastructure.Redis;
 using StackExchange.Redis;
 
@@ -13,6 +14,15 @@ public class RedisGatewayRepository : RedisRepositoryBase, IGatewayRepository
     {
     }
 
+    /// <summary>
+    /// A missing or unparseable timestamp falls back to the epoch rather than
+    /// failing the read, since a gateway is still usable without one.
+    /// </summary>
+    private static DateTimeOffset ParseTimestamp(string value) =>
+        DateTimeOffset.TryParse(value, out var parsed)
+            ? parsed
+            : DateTimeOffset.UnixEpoch;
+
     public async Task<Gateway?> GetAsync(GatewayId id, CancellationToken cancellationToken = default)
     {
         var key = RedisKeyHelper.Gateway(id);
@@ -21,20 +31,24 @@ public class RedisGatewayRepository : RedisRepositoryBase, IGatewayRepository
         if (entries.Length == 0)
             return null;
 
-        var gateway = Gateway.Register(
+        // Reconstitute, not Register: Register mints a new id, which made this
+        // read return a gateway under a different key than the one it was loaded
+        // from. A subsequent write then created a second row and the next read
+        // of the original key reported the gateway as missing.
+        var statusEntry = GetEntry(entries, "Status");
+
+        return Gateway.Reconstitute(
             id,
             GetEntry(entries, "Name"),
-            GetEntry(entries, "Description")
-        );
-
-        // Update status if present
-        var statusEntry = GetEntry(entries, "Status");
-        if (!string.IsNullOrEmpty(statusEntry))
-        {
-            // Gateway status would need to be set via the aggregate's methods
-        }
-
-        return gateway;
+            GetEntry(entries, "Description") is { Length: > 0 } storedDescription
+                ? storedDescription
+                : null,
+            // A row written before the status existed, or one holding a value
+            // this build no longer knows, reads as Disconnected rather than
+            // failing the whole gateway.
+            RuntimeStatus.TryParse(statusEntry, out var status) ? status : RuntimeStatus.Disconnected,
+            ParseTimestamp(GetEntry(entries, "CreatedAt")),
+            ParseTimestamp(GetEntry(entries, "UpdatedAt")));
     }
 
     public async Task<List<Gateway>> GetAllAsync(CancellationToken cancellationToken = default)

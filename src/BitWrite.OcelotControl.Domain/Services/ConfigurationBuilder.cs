@@ -1,3 +1,4 @@
+using BitWrite.OcelotControl.Domain.Aggregates.SystemSettings;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -39,11 +40,16 @@ public class ConfigurationBuilder
         GlobalConfiguration globalConfig,
         OcelotVersion ocelotVersion)
     {
+        // Refuses an installation that has not chosen a version, and a version
+        // whose shapes are not established. Generating a file either way would
+        // publish something no gateway was ever asked to run.
+        var version = OcelotVersionCatalog.RequireConfigured(ocelotVersion);
+
         var ocelotRoutes = new List<OcelotRouteConfiguration>();
 
         foreach (var route in routes)
         {
-            var ocelotRoute = BuildRouteConfiguration(route, ocelotVersion);
+            var ocelotRoute = BuildRouteConfiguration(route, version);
             ocelotRoutes.Add(ocelotRoute);
         }
 
@@ -136,10 +142,10 @@ public class ConfigurationBuilder
             // Authorization and the transformation blocks. A value the target
             // version cannot express throws rather than being dropped, so a
             // rule an operator configured never silently fails to apply.
-            RouteClaimsRequirement = FeatureOptionEmitter.Authorization(route.AuthorizationOptions),
-            AddClaimsToRequest = FeatureOptionEmitter.AddClaimsToRequest(route.ClaimOptions),
-            UpstreamHeaderTransform = FeatureOptionEmitter.UpstreamHeaderTransform(route.HeaderOptions),
-            DownstreamHeaderTransform = FeatureOptionEmitter.DownstreamHeaderTransform(route.HeaderOptions),
+            RouteClaimsRequirement = FeatureOptionEmitter.Authorization(route.AuthorizationOptions, ocelotVersion),
+            AddClaimsToRequest = FeatureOptionEmitter.AddClaimsToRequest(route.ClaimOptions, ocelotVersion),
+            UpstreamHeaderTransform = FeatureOptionEmitter.UpstreamHeaderTransform(route.HeaderOptions, ocelotVersion),
+            DownstreamHeaderTransform = FeatureOptionEmitter.DownstreamHeaderTransform(route.HeaderOptions, ocelotVersion),
             LoadBalancerOptions = loadBalancerOptions ?? (route.LoadBalancerOptions != null
                 ? new OcelotLoadBalancerOptions { Type = route.LoadBalancerOptions.Algorithm }
                 : null),
@@ -168,10 +174,10 @@ public class ConfigurationBuilder
             Timeout = route.TimeoutSeconds
         };
 
-        // Query transformation has no 18 counterpart, so this throws when one is
-        // configured. Called last so the blocks that can be expressed are
-        // validated first and the error names the right field.
-        FeatureOptionEmitter.RejectQueryTransformations(route.QueryOptions);
+        // Query transformation has no counterpart in the target version, so this
+        // throws when one is configured. Called last so the blocks that can be
+        // expressed are validated first and the error names the right field.
+        FeatureOptionEmitter.RejectQueryTransformations(route.QueryOptions, ocelotVersion);
 
         return ocelotRoute;
     }

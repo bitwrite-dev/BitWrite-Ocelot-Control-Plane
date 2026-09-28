@@ -7,6 +7,8 @@ namespace BitWrite.OcelotControl.Infrastructure.Redis;
 public static class RedisKeyHelper
 {
     public const string GlobalConfig = "ocelot:global";
+    /// <summary>The one system settings row, holding the Ocelot version.</summary>
+    public const string SystemSettings = "ocelot:settings";
     public const string RuntimeCurrent = "ocelot:runtime:current";
     public const string LockConfiguration = "ocelot:lock:configuration";
 

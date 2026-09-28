@@ -1,5 +1,6 @@
 using System.Text.Json;
 using BitWrite.OcelotControl.Application.Interfaces;
+using DomainSystemSettings = BitWrite.OcelotControl.Domain.Aggregates.SystemSettings.SystemSettings;
 using BitWrite.OcelotControl.Application.UseCases.Snapshot;
 using BitWrite.OcelotControl.Domain.Services;
 using BitWrite.OcelotControl.Domain.ValueObjects.Configuration;
@@ -116,10 +117,25 @@ public class SnapshotHashIntegrityTests
 
         var dispatcher = new Mock<IDomainEventDispatcher>();
 
+        // Snapshot creation now reads the configured Ocelot version from settings
+        // rather than assuming one, so the fake has to report a chosen version.
+        var systemSettings = new Mock<ISystemSettingsRepository>();
+        systemSettings.Setup(r => r.GetAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(DomainSystemSettings.Reconstitute(
+                OcelotVersion.V18_0,
+                DateTimeOffset.UtcNow,
+                "test",
+                30,
+                90,
+                0,
+                DateTimeOffset.UtcNow,
+                DateTimeOffset.UtcNow));
+
         return new CreateSnapshotCommandHandler(
             globalConfig.Object, routes.Object, services.Object, snapshots.Object,
             builder.Object, conflicts.Object, consistency.Object,
-            capabilities.Object, canonicalizer.Object, integrityVerifier.Object, allocator.Object,
+            capabilities.Object, canonicalizer.Object, systemSettings.Object,
+            integrityVerifier.Object, allocator.Object,
             dispatcher.Object);
     }
 

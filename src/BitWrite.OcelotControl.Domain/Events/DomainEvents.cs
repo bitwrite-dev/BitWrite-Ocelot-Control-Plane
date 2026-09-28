@@ -7,8 +7,44 @@ public abstract record DomainEvent
 {
     public Guid EventId { get; init; } = Guid.NewGuid();
     public DateTimeOffset OccurredAt { get; init; } = DateTimeOffset.UtcNow;
-    public string CorrelationId { get; init; } = Guid.NewGuid().ToString();
+    /// <summary>
+    /// Set by the aggregate from the correlation id it was given, so a trace can
+    /// be followed from a request through the events it produced.
+    /// </summary>
+    /// <remarks>
+    /// This was a plain initialiser, so it always produced a fresh guid and the
+    /// value passed to the aggregate was discarded. An event declaring
+    /// <c>CorrelationId</c> as a positional parameter therefore reported a random
+    /// one — which reads as a working trace and is not.
+    /// </remarks>
+    public string CorrelationId { get; set; } = Guid.NewGuid().ToString();
     public string? CausationId { get; init; }
+
+}
+
+/// <summary>
+/// Helpers for the events above.
+/// </summary>
+public static class DomainEventExtensions
+{
+    /// <summary>
+    /// Lands a correlation id on an event that was constructed without one.
+    /// </summary>
+    /// <remarks>
+    /// A record's positional constructor cannot set an inherited <c>init</c>
+    /// property, so an event declaring <c>CorrelationId</c> as a positional
+    /// parameter would otherwise always report a fresh guid instead of the one
+    /// the aggregate was given. The setter exists for that reason; prefer
+    /// <c>init</c> wherever it is usable.
+    /// </remarks>
+    public static TEvent WithCorrelationId<TEvent>(this TEvent domainEvent, string? correlationId)
+        where TEvent : DomainEvent
+    {
+        if (!string.IsNullOrWhiteSpace(correlationId))
+            domainEvent.CorrelationId = correlationId;
+
+        return domainEvent;
+    }
 }
 
 // Identity events
@@ -33,6 +69,15 @@ public record ServiceDeleted(ServiceId ServiceId) : DomainEvent;
 
 // GlobalConfiguration events
 public record GlobalConfigurationUpdated() : DomainEvent;
+
+// SystemSettings events
+/// <summary>
+/// The one-time choice of Ocelot version, and the end of first-run setup.
+/// </summary>
+public record SystemSettingsInitialised(
+    OcelotVersion OcelotVersion,
+    string SelectedBy,
+    string CorrelationId) : DomainEvent;
 
 // Snapshot events
 public record SnapshotCreated(SnapshotVersion Version, ConfigurationHash Hash, string CreatedBy) : DomainEvent;

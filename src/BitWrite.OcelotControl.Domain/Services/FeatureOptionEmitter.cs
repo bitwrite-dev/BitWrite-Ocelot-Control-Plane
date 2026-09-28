@@ -46,7 +46,9 @@ public class NotExpressibleException : DomainException
 /// </remarks>
 internal static class FeatureOptionEmitter
 {
-    public static OcelotClaimsRequirement? Authorization(AuthorizationOptions? options)
+    public static OcelotClaimsRequirement? Authorization(
+        AuthorizationOptions? options,
+        OcelotVersion version)
     {
         if (options == null) return null;
 
@@ -72,7 +74,9 @@ internal static class FeatureOptionEmitter
         return new OcelotClaimsRequirement { Claims = new Dictionary<string, string>(options.Requirements) };
     }
 
-    public static Dictionary<string, string>? AddClaimsToRequest(ClaimOptions? options)
+    public static Dictionary<string, string>? AddClaimsToRequest(
+        ClaimOptions? options,
+        OcelotVersion version)
     {
         if (options == null) return null;
 
@@ -82,29 +86,34 @@ internal static class FeatureOptionEmitter
         RejectUnsupported(options.Remove, "claimTransformations.remove",
             "Ocelot 18 has no way to remove a claim from a request");
         RejectUnsupported(options.Transform, "claimTransformations.transform",
-            "Ocelot 18 expresses a rewrite as the value of an AddClaimsToRequest entry rather than a separate block");
+            $"Ocelot {version} expresses a rewrite as the value of an AddClaimsToRequest " +
+            "entry rather than a separate block");
 
         return ToDictionary(options.Add);
     }
 
-    public static Dictionary<string, string>? UpstreamHeaderTransform(HeaderOptions? options)
+    public static Dictionary<string, string>? UpstreamHeaderTransform(
+        HeaderOptions? options,
+        OcelotVersion version)
     {
         if (options == null) return null;
 
         RejectUnsupported(options.Remove, "headerTransformations.remove",
-            "Ocelot 18 has no way to remove a header");
+            $"Ocelot {version} has no way to remove a header");
 
         return ToDictionary(options.Transform);
     }
 
-    public static Dictionary<string, string>? DownstreamHeaderTransform(HeaderOptions? options)
+    public static Dictionary<string, string>? DownstreamHeaderTransform(
+        HeaderOptions? options,
+        OcelotVersion version)
     {
         if (options == null) return null;
 
         return ToDictionary(options.Add);
     }
 
-    public static void RejectQueryTransformations(QueryOptions? options)
+    public static void RejectQueryTransformations(QueryOptions? options, OcelotVersion version)
     {
         if (options == null) return;
 
@@ -116,8 +125,8 @@ internal static class FeatureOptionEmitter
         // that is emitted as part of the claims transformation above.
         throw new NotExpressibleException(
             "queryTransformations",
-            "Ocelot 18 shapes the query string through the path template; only claim-sourced " +
-            "AddQueriesToRequest is available, which is not what this block describes");
+            $"Ocelot {version} shapes the query string through the path template; only " +
+            "claim-sourced AddQueriesToRequest is available, which is not what this block describes");
     }
 
     private static Dictionary<string, string>? ToDictionary<T>(List<T>? entries)

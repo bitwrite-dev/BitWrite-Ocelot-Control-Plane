@@ -60,7 +60,9 @@ public class RouteConfigurationEmissionTests
         return builder.BuildConfiguration(
             new List<RouteConfiguration> { BuilderInput(route) },
             new MinimalGlobalConfig { BaseUrl = "", RequestIdKey = "" },
-            OcelotVersion.V20_0);
+            // 20 is not emittable yet, and the builder now says so rather than
+            // quietly emitting 18's shapes for it. See #484.
+            OcelotVersion.V18_0);
     }
 
     [Fact]

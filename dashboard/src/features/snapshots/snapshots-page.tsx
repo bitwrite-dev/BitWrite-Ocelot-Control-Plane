@@ -50,6 +50,7 @@ import {
   publicationState,
   shortHash,
   snapshotSummary,
+  validationResultsOf,
   useSnapshotComparison,
   useSnapshotDeployment,
   useSnapshotMutations,
@@ -563,6 +564,7 @@ function SnapshotSheet({
   canCompare: boolean
 }) {
   const { data: deployment } = useSnapshotDeployment(snapshot.version, true)
+  const results = validationResultsOf(snapshot)
 
   return (
     <Sheet open onOpenChange={(open) => !open && onClose()}>
@@ -594,16 +596,26 @@ function SnapshotSheet({
             <CardHeader>
               <CardTitle>Validation</CardTitle>
               <CardDescription>
-                {snapshot.validationResults.length} rules checked
+                {results === null
+                  ? 'Not reported by the API'
+                  : `${results.length} rules checked`}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-1.5">
-              {snapshot.validationResults.length === 0 ? (
+              {results === null ? (
+                // The column was missing, which points at the server rather than
+                // at this snapshot. Saying "no results" would blame the snapshot
+                // for something it never reported.
+                <p className="text-xs text-muted-foreground">
+                  This response did not include validation results, so nothing can be said about
+                  whether this snapshot passed.
+                </p>
+              ) : results.length === 0 ? (
                 <p className="text-xs text-muted-foreground">
                   No results were recorded. That is not the same as passing.
                 </p>
               ) : (
-                snapshot.validationResults.map((result) => (
+                results.map((result) => (
                   <div key={result.rule} className="flex items-start gap-2 text-xs">
                     <StatusBadge status={result.isValid ? 'Passed' : 'Failed'} className="shrink-0" />
                     <div>

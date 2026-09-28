@@ -176,14 +176,19 @@ describe('resources', () => {
     const resources = createResources(client(fetchImpl))
 
     await resources.routes.get('r-1')
-    await resources.snapshots.compare(7)
-    await resources.snapshots.rollback(3, { reason: 'regression' })
+    await resources.snapshots.compare(7, 5)
+    await resources.snapshots.rollback(3, {
+      initiatedBy: 'operator',
+      targetVersion: 2,
+      reason: 'regression',
+    })
     await resources.services.remove('s-9')
 
     const urls = fetchImpl.mock.calls.map((c) => c[0])
     expect(urls).toEqual([
       'http://api.test/api/v1/routes/r-1',
-      'http://api.test/api/v1/snapshots/7/compare',
+      // The API has nothing to diff against without the other version.
+      'http://api.test/api/v1/snapshots/7/compare?compareWith=5',
       'http://api.test/api/v1/snapshots/3/rollback',
       'http://api.test/api/v1/services/s-9',
     ])

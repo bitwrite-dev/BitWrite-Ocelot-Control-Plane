@@ -8,6 +8,8 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace BitWrite.OcelotControl.Api.Controllers;
 
+using BitWrite.OcelotControl.Domain.Services;
+
 [ApiController]
 [Route("api/v1/snapshots")]
 public class SnapshotsController : BaseApiController
@@ -187,8 +189,10 @@ public class SnapshotsController : BaseApiController
             if (result == null)
                 return NotFound();
 
-            // For export, we return the snapshot content in a special format
-            // The ExportSnapshotResponse has Version, Content, Format
+            // The export is a fresh copy rather than a stored snapshot, so it
+            // has no hash, no creator and no validation history. Reporting the
+            // composition is still honest, because it is read from the content
+            // that is being exported.
             return HandleResult(new ApiDtos.SnapshotResponse(
                 result.Version.Value,
                 "", // Hash not available in export
@@ -197,7 +201,11 @@ public class SnapshotsController : BaseApiController
                 "System",
                 DateTimeOffset.UtcNow,
                 null,
-                null
+                null,
+                SnapshotComposition.RouteCount(result.Content),
+                SnapshotComposition.ServiceCount(result.Content),
+                SnapshotComposition.PluginVersions(result.Content),
+                Array.Empty<ApiDtos.SnapshotValidationResultResponse>()
             ));
         }
         catch (Exception ex)
@@ -296,6 +304,8 @@ public class SnapshotsController : BaseApiController
 
     private static ApiDtos.SnapshotResponse MapToResponse(AppSnapshot.SnapshotResponse snapshot)
     {
+        // The composition is read out of the document rather than stored beside
+        // it, so the numbers cannot drift from the file a gateway runs.
         return new ApiDtos.SnapshotResponse(
             snapshot.Version.Value,
             snapshot.Hash.Value,
@@ -304,7 +314,14 @@ public class SnapshotsController : BaseApiController
             snapshot.CreatedBy,
             snapshot.CreatedAt,
             snapshot.PublishedAt,
-            snapshot.ArchivedAt
+            snapshot.ArchivedAt,
+            SnapshotComposition.RouteCount(snapshot.Content),
+            SnapshotComposition.ServiceCount(snapshot.Content),
+            SnapshotComposition.PluginVersions(snapshot.Content),
+            snapshot.ValidationResults
+                .Select(result => new ApiDtos.SnapshotValidationResultResponse(
+                    result.Rule, result.IsValid, result.Message))
+                .ToList()
         );
     }
 }

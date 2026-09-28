@@ -15,7 +15,28 @@ public record SnapshotResponse(
     string CreatedBy,
     DateTimeOffset CreatedAt,
     DateTimeOffset? PublishedAt,
-    DateTimeOffset? ArchivedAt
+    DateTimeOffset? ArchivedAt,
+    /// <summary>
+    /// How many routes this snapshot carries, or null when its content could
+    /// not be read. Zero means the document has no routes; null means nobody
+    /// can tell, and the two must not look the same.
+    /// </summary>
+    int? RouteCount,
+    /// <summary>How many services this snapshot carries, or null if unreadable.</summary>
+    int? ServiceCount,
+    /// <summary>Plugin versions published in the snapshot, for the spec's column.</summary>
+    IReadOnlyList<string> PluginVersions,
+    /// <summary>
+    /// Per-rule validation results, so a list can show a verdict rather than
+    /// a bare status.
+    /// </summary>
+    IReadOnlyList<SnapshotValidationResultResponse> ValidationResults
+);
+
+public record SnapshotValidationResultResponse(
+    string Rule,
+    bool IsValid,
+    string? Message
 );
 
 public record SnapshotListResponse(

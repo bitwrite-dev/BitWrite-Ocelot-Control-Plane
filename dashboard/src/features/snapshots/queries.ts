@@ -5,6 +5,7 @@ import type {
   SnapshotDeploymentResponse,
   SnapshotListResponse,
   SnapshotResponse,
+  SnapshotValidationRule,
 } from '@/api'
 
 /**
@@ -134,22 +135,47 @@ export function useSnapshotMutations() {
   }
 }
 
+/**
+ * The validation results a snapshot actually carries, or null when the field is
+ * absent altogether.
+ *
+ * Null is not the same as an empty list. An empty list means the API answered and
+ * found no rules; a missing field means the answer did not include the column at
+ * all — a server older than this page, or a partial response. Collapsing the
+ * second into the first would report "not validated" for a snapshot whose
+ * validation nobody looked at, which reads as reassurance.
+ */
+export function validationResultsOf(snapshot: {
+  validationResults?: SnapshotValidationRule[] | null
+}): SnapshotValidationRule[] | null {
+  return Array.isArray(snapshot.validationResults) ? snapshot.validationResults : null
+}
+
 /** A snapshot's overall validation verdict, from its per-rule results. */
-export function validationVerdict(
-  snapshot: Pick<SnapshotResponse, 'validationResults' | 'status'>,
-): { label: string; tone: 'ok' | 'bad' | 'warn' | 'mute' } {
+export function validationVerdict(snapshot: {
+  validationResults?: SnapshotValidationRule[] | null
+  status: string
+}): { label: string; tone: 'ok' | 'bad' | 'warn' | 'mute' } {
   // An archived snapshot was valid when it was made; its status moved on since.
   if (snapshot.status.toLowerCase() === 'archived') {
     return { label: 'Archived', tone: 'mute' }
   }
 
-  if (snapshot.validationResults.length === 0) {
+  const results = validationResultsOf(snapshot)
+
+  if (results === null) {
+    // The column was not in the response at all. Saying "not validated" would
+    // point at the snapshot; saying this points at the connection.
+    return { label: 'Unknown', tone: 'mute' }
+  }
+
+  if (results.length === 0) {
     // No results is not a pass. Claiming one would mean a snapshot that was
     // never validated reads the same as one that passed.
     return { label: 'Not validated', tone: 'warn' }
   }
 
-  const failed = snapshot.validationResults.filter((result) => !result.isValid)
+  const failed = results.filter((result) => !result.isValid)
   if (failed.length > 0) {
     return { label: `${failed.length} failed`, tone: 'bad' }
   }
@@ -203,7 +229,7 @@ export function snapshotSummary(
     publishedVersion: published?.version ?? null,
     readyCount: snapshots.filter((snapshot) => snapshot.status === 'Ready').length,
     failureCount: snapshots.filter(
-      (snapshot) => snapshot.validationResults.some((result) => !result.isValid),
+      (snapshot) => validationResultsOf(snapshot)?.some((result) => !result.isValid),
     ).length,
     scope: totalCount > pageSize ? 'on this page' : 'in total',
   }
@@ -228,15 +254,22 @@ export function shortHash(hash: string): string {
  * "this one could not be read".
  */
 export function describeComposition(
-  snapshot: Pick<SnapshotResponse, 'routeCount' | 'serviceCount'>,
+  snapshot: Pick<SnapshotResponse, 'routeCount' | 'serviceCount'> & {
+    routeCount?: number | null
+    serviceCount?: number | null
+  },
 ): string {
-  if (snapshot.routeCount === null && snapshot.serviceCount === null) {
+  // `undefined` means the column was not in the response at all, which is a
+  // different thing from a null the API sent deliberately. Both mean the same
+  // thing to the operator, though: nobody can tell what is in here.
+  const routes = snapshot.routeCount
+  const services = snapshot.serviceCount
+
+  if (routes == null && services == null) {
     return 'Contents could not be read'
   }
 
-  const routes = snapshot.routeCount === null ? '—' : `${snapshot.routeCount} routes`
-  const services = snapshot.serviceCount === null ? '—' : `${snapshot.serviceCount} services`
-  return `${routes} · ${services}`
+  return `${routes == null ? '—' : `${routes} routes`} · ${services == null ? '—' : `${services} services`}`
 }
 
 /**

@@ -30,6 +30,7 @@ import type {
   CreateSnapshotRequest,
   SnapshotPublishRequest,
   SnapshotRollbackRequest,
+  PreviewSnapshotResponse,
   SnapshotDeploymentResponse,
   SnapshotListResponse,
   SnapshotResponse,
@@ -113,6 +114,9 @@ export function createResources(http: HttpClient) {
     list: ({ signal, ...query }: PageParams = {}) =>
       http.get<SnapshotListResponse>('/api/v1/snapshots', { query, signal }),
     get: (version: number, o?: Options) => http.get<SnapshotResponse>(`/api/v1/snapshots/${version}`, o),
+    // Resolves and validates the artifact without storing it, so the create page
+    // can show the state before it becomes immutable.
+    preview: (o?: Options) => http.post<PreviewSnapshotResponse>('/api/v1/snapshots/preview', {}, o),
     create: (body: CreateSnapshotRequest, o?: Options) =>
       http.post<SnapshotResponse>('/api/v1/snapshots', body, o),
     validate: (body: unknown, o?: Options) =>

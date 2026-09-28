@@ -11,6 +11,7 @@ import {
   describeComposition,
   describeDeployment,
   snapshotSummary,
+  validationResultsOf,
   describeDifference,
   publicationState,
   shortHash,
@@ -199,6 +200,64 @@ describe('SnapshotsPage', () => {
     // which is a different fact and the only honest one here.
     within(row).getByText('Contents could not be read')
     expect(within(row).queryByText(/0 routes/)).not.toBeInTheDocument()
+  })
+
+  it('survives a response from a server that does not send the new columns', async () => {
+    // A backend predating the preview work answers with no validationResults,
+    // no routeCount, no serviceCount and no pluginVersions at all. Reading any of
+    // them blindly crashed the whole page, taking the list down with it.
+    const legacy = {
+      version: 2,
+      hash: 'd8abcea42385a0e394a7adfcc40d2d1d8dae0567a4296e79f937287c2fba0f74',
+      content: '{}',
+      status: 'Ready',
+      createdBy: 'system',
+      createdAt: '2026-09-29T02:00:00Z',
+      publishedAt: null,
+      archivedAt: null,
+    } as unknown as SnapshotResponse
+
+    renderSnapshots(listOnly([legacy]))
+
+    // The page still has to render: a server that is behind must not be able to
+    // blank out a list an operator is trying to read.
+    const row = await screen.findByRole('row', { name: /#2/ })
+    within(row).getByText('Contents could not be read')
+    within(row).getByText('Unknown')
+  })
+
+  it('does not claim a snapshot passed validation just because the column was missing', async () => {
+    const legacy = { status: 'Active', createdBy: 'x' } as unknown as SnapshotResponse
+
+    // "Unknown" and "Not validated" both read as caution, but only one of them
+    // points at the right thing: the first at the connection, the second at the
+    // snapshot. A missing column is the first.
+    expect(validationVerdict(legacy)).toEqual({ label: 'Unknown', tone: 'mute' })
+  })
+
+  it('still tells an empty result set apart from a missing one', () => {
+    // An empty array means the API answered and found no rules. That is a fact
+    // about the snapshot, not about the connection.
+    expect(validationVerdict({ status: 'Active', validationResults: [] })).toEqual({
+      label: 'Not validated',
+      tone: 'warn',
+    })
+    expect(validationVerdict({ status: 'Active' })).toEqual({ label: 'Unknown', tone: 'mute' })
+  })
+
+  it('does not count failures it could not see', () => {
+    const summary = snapshotSummary(
+      [
+        { ...BASE, validationResults: [{ rule: 'R', isValid: false, message: 'x' }] },
+        { ...BASE, version: 3, validationResults: undefined as unknown as [] },
+      ],
+      2,
+      20,
+    )
+
+    // The one snapshot that reported a failure still counts; the one that
+    // reported nothing is not assumed to have passed or failed.
+    expect(summary.failureCount).toBe(1)
   })
 
   it('shows a real zero as zero rather than as a dash', async () => {
@@ -562,6 +621,14 @@ describe('snapshot presentation', () => {
     expect(shortHash('abc123')).toBe('abc123')
     expect(shortHash('0123456789abcdef0123')).toBe('0123456789ab…')
     expect(shortHash('')).toBe('—')
+  })
+
+  it('treats a missing count the same as an unreadable one', () => {
+    // Both mean nobody can tell what is inside. Neither means zero.
+    expect(describeComposition({ routeCount: 3, serviceCount: 1 })).toBe('3 routes · 1 services')
+    expect(describeComposition({} as Pick<SnapshotResponse, 'routeCount' | 'serviceCount'>)).
+      toBe('Contents could not be read')
+    expect(validationResultsOf({})).toBeNull()
   })
 
   it('keeps an unknown count as a dash when only one side is unreadable', () => {

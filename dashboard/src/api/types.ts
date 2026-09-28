@@ -554,6 +554,28 @@ export interface SnapshotResponse {
   validationResults: SnapshotValidationRule[]
 }
 
+/**
+ * What a snapshot would contain, resolved and validated but not stored.
+ *
+ * Returned before anything is sealed, so the create page can show the state and
+ * its verdict instead of asking the operator to trust it.
+ */
+export interface PreviewSnapshotResponse {
+  /** The canonical artifact, or null when the state could not be built into one. */
+  content: string | null
+  /** The hash this artifact would carry, or null when there is nothing to hash. */
+  hash: string | null
+  routeCount: number
+  serviceCount: number
+  pluginVersions: string[]
+  validationResults: SnapshotValidationRule[]
+  /** False when any blocking rule failed. */
+  isValid: boolean
+  ocelotVersion: string
+  /** The version this snapshot would take. Reported, not consumed. */
+  nextVersion: number
+}
+
 export interface CreateSnapshotRequest {
   /**
    * Who asked for the snapshot. The dashboard has no real session yet (#433),

@@ -1,5 +1,8 @@
 using BitWrite.OcelotControl.Domain.Aggregates.RuntimeInstance;
+using System.Text.Json;
+using BitWrite.OcelotControl.Domain.ValueObjects.Configuration;
 using BitWrite.OcelotControl.Domain.ValueObjects.Identity;
+using BitWrite.OcelotControl.Domain.ValueObjects.Status;
 using BitWrite.OcelotControl.Infrastructure.Redis;
 using StackExchange.Redis;
 
@@ -17,24 +20,46 @@ public class RedisRuntimeInstanceRepository : RedisRepositoryBase, IRuntimeInsta
     public async Task<RuntimeInstance?> GetAsync(GatewayId gatewayId, CancellationToken cancellationToken = default)
     {
         var key = RedisKeyHelper.RuntimeInstance(gatewayId);
-        var entries = await GetHashAsync(key);
-        
-        if (entries.Length == 0)
+
+        // The runtime writes a JSON string here, not a hash. Reading it as a hash
+        // found nothing — or threw WRONGTYPE — so no heartbeat was ever observed
+        // and anything derived from it was always empty.
+        var json = await StringGetAsync(key);
+
+        if (string.IsNullOrWhiteSpace(json))
             return null;
 
-        var capabilitiesStr = GetEntry(entries, "Capabilities");
-        var capabilities = !string.IsNullOrEmpty(capabilitiesStr) 
-            ? capabilitiesStr.Split(',', StringSplitOptions.RemoveEmptyEntries) 
-            : Array.Empty<string>();
+        // The runtime serialises its heartbeat with default (PascalCase) naming,
+        // while RedisSerializer reads camelCase. Matching case-insensitively is
+        // what lets the document bind; anything stricter reads an empty document
+        // and reports the gateway as having no runtime data at all.
+        var heartbeat = JsonSerializer.Deserialize<HeartbeatDocument>(
+            json,
+            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
-        var instance = RuntimeInstance.Register(
-            GatewayId.From(GetEntry(entries, "GatewayId")),
-            capabilities,
-            string.Empty
-        );
+        if (heartbeat is null)
+            return null;
 
-        return instance;
+        return RuntimeInstance.Reconstitute(
+            gatewayId,
+            Array.Empty<string>(),
+            // The heartbeat does not report a status, so the recorded one stands.
+            RuntimeStatus.TryParse(heartbeat.Status, out var status) ? status : RuntimeStatus.Disconnected,
+            ParseTimestamp(heartbeat.Timestamp),
+            ParseVersion(heartbeat.Version));
     }
+
+    private static DateTimeOffset ParseTimestamp(string? value) =>
+        DateTimeOffset.TryParse(value, out var parsed) ? parsed : DateTimeOffset.UnixEpoch;
+
+    private static SnapshotVersion? ParseVersion(string? value) =>
+        int.TryParse(value, out var number) ? SnapshotVersion.From(number) : null;
+
+    private sealed record HeartbeatDocument(
+        string? GatewayId,
+        string? Version,
+        string? Status,
+        string? Timestamp);
 
     public async Task<RuntimeInstance?> GetByGatewayIdAsync(GatewayId gatewayId, CancellationToken cancellationToken = default)
     {
@@ -72,17 +97,22 @@ public class RedisRuntimeInstanceRepository : RedisRepositoryBase, IRuntimeInsta
 
     public async Task AddAsync(RuntimeInstance instance, CancellationToken cancellationToken = default)
     {
+        // Written as a JSON string to match what the runtime actually stores.
+        // This method is not the source of heartbeats — the runtime writes that
+        // key itself — so anything written here would be overwritten by the next
+        // beat rather than merged with it.
         var key = RedisKeyHelper.RuntimeInstance(instance.GatewayId);
-        var entries = new HashEntry[]
-        {
-            new("GatewayId", instance.GatewayId.Value.ToString()),
-            new("Capabilities", string.Join(",", instance.Capabilities)),
-            new("Status", instance.Status.Value),
-            new("LastHeartbeatAt", instance.LastHeartbeat.ToString("O")),
-        };
+        var document = new HeartbeatDocument(
+            instance.GatewayId.Value.ToString(),
+            instance.CurrentVersion?.Value.ToString(),
+            instance.Status.Value,
+            instance.LastHeartbeat.ToString("O"));
 
-        await SetHashAsync(key, entries);
-        await Database.SortedSetAddAsync(RuntimeInstancesIndexKey, instance.GatewayId.Value.ToString(), ToUnixTimestamp(instance.LastHeartbeat));
+        await StringSetAsync(key, RedisSerializer.Serialize(document));
+        await Database.SortedSetAddAsync(
+            RuntimeInstancesIndexKey,
+            instance.GatewayId.Value.ToString(),
+            ToUnixTimestamp(instance.LastHeartbeat));
     }
 
     public async Task UpdateAsync(RuntimeInstance instance, CancellationToken cancellationToken = default)

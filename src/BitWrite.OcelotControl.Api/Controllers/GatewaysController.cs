@@ -204,7 +204,8 @@ public class GatewaysController : BaseApiController
             gateway.Description,
             gateway.Status.Value,
             gateway.CreatedAt,
-            gateway.UpdatedAt
+            gateway.UpdatedAt,
+            gateway.LastHeartbeat
         );
     }
 }

@@ -18,6 +18,7 @@ public class SnapshotsController : BaseApiController
     private readonly AppSnapshot.GetSnapshotQueryHandler _getSnapshotQueryHandler;
     private readonly AppSnapshot.ListSnapshotsQueryHandler _listSnapshotsQueryHandler;
     private readonly AppSnapshot.ValidateSnapshotCommandHandler _validateSnapshotCommandHandler;
+    private readonly AppSnapshot.PreviewSnapshotCommandHandler _previewSnapshotCommandHandler;
     private readonly AppSnapshot.CompareSnapshotsQueryHandler _compareSnapshotsQueryHandler;
     private readonly AppSnapshot.CloneSnapshotCommandHandler _cloneSnapshotCommandHandler;
     private readonly AppSnapshot.ExportSnapshotQueryHandler _exportSnapshotQueryHandler;
@@ -30,6 +31,7 @@ public class SnapshotsController : BaseApiController
         AppSnapshot.GetSnapshotQueryHandler getSnapshotQueryHandler,
         AppSnapshot.ListSnapshotsQueryHandler listSnapshotsQueryHandler,
         AppSnapshot.ValidateSnapshotCommandHandler validateSnapshotCommandHandler,
+        AppSnapshot.PreviewSnapshotCommandHandler previewSnapshotCommandHandler,
         AppSnapshot.CompareSnapshotsQueryHandler compareSnapshotsQueryHandler,
         AppSnapshot.CloneSnapshotCommandHandler cloneSnapshotCommandHandler,
         AppSnapshot.ExportSnapshotQueryHandler exportSnapshotQueryHandler,
@@ -41,6 +43,7 @@ public class SnapshotsController : BaseApiController
         _getSnapshotQueryHandler = getSnapshotQueryHandler;
         _listSnapshotsQueryHandler = listSnapshotsQueryHandler;
         _validateSnapshotCommandHandler = validateSnapshotCommandHandler;
+        _previewSnapshotCommandHandler = previewSnapshotCommandHandler;
         _compareSnapshotsQueryHandler = compareSnapshotsQueryHandler;
         _cloneSnapshotCommandHandler = cloneSnapshotCommandHandler;
         _exportSnapshotQueryHandler = exportSnapshotQueryHandler;
@@ -91,6 +94,49 @@ public class SnapshotsController : BaseApiController
                 return NotFound();
 
             return HandleResult(MapToResponse(snapshot));
+        }
+        catch (Exception ex)
+        {
+            return HandleError(ex);
+        }
+    }
+
+    /// <summary>
+    /// Resolves and validates the artifact a snapshot would contain, without
+    /// storing it.
+    /// </summary>
+    /// <remarks>
+    /// This is what makes a create page able to show the state before it becomes
+    /// immutable. It consumes no version, so a preview that is abandoned costs
+    /// nothing — the numbers are what a rollback names, and they must not be
+    /// spent on a page that was only looked at.
+    /// <para>
+    /// The result describes the management state at the moment of the call. It is
+    /// not a reservation, so the create that follows validates again rather than
+    /// trusting a preview it may never have received.
+    /// </para>
+    /// </remarks>
+    [HttpPost("preview")]
+    public async Task<ActionResult<ApiDtos.PreviewSnapshotResponse>> PreviewSnapshot(
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var preview = await _previewSnapshotCommandHandler.HandleAsync(cancellationToken);
+
+            return HandleResult(new ApiDtos.PreviewSnapshotResponse(
+                preview.Content,
+                preview.Hash,
+                preview.Composition.RouteCount,
+                preview.Composition.ServiceCount,
+                preview.Composition.PluginVersions,
+                preview.ValidationResults
+                    .Select(result => new ApiDtos.SnapshotValidationResultResponse(
+                        result.Rule, result.IsValid, result.Message))
+                    .ToList(),
+                preview.IsValid,
+                preview.OcelotVersion,
+                preview.NextVersion));
         }
         catch (Exception ex)
         {

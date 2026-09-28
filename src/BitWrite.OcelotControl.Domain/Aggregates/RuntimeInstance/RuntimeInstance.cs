@@ -55,6 +55,46 @@ public class RuntimeInstance
     }
 
     /// <summary>
+    /// Restores a runtime instance from a heartbeat, preserving what it reported.
+    /// </summary>
+    /// <remarks>
+    /// Adapters must use this rather than <see cref="Register"/>. Register mints
+    /// a fresh timestamp and resets the status to Connecting, so a read would
+    /// report every gateway as having just connected — the opposite of what a
+    /// heartbeat is for.
+    /// <para>
+    /// No event is raised: a heartbeat is a report, not a change of identity.
+    /// </para>
+    /// </remarks>
+    public static RuntimeInstance Reconstitute(
+        GatewayId gatewayId,
+        IReadOnlyList<string> capabilities,
+        RuntimeStatus status,
+        DateTimeOffset lastHeartbeat,
+        SnapshotVersion? currentVersion = null,
+        DateTimeOffset? lastSynchronized = null,
+        DateTimeOffset? lastConfigApplied = null)
+    {
+        var instance = new RuntimeInstance
+        {
+            GatewayId = gatewayId,
+            Status = status,
+            CurrentVersion = currentVersion,
+            LastHeartbeat = lastHeartbeat,
+            LastSynchronized = lastSynchronized,
+            LastConfigApplied = lastConfigApplied
+        };
+
+        foreach (var capability in capabilities)
+        {
+            if (!string.IsNullOrWhiteSpace(capability))
+                instance._capabilities.Add(capability.Trim());
+        }
+
+        return instance;
+    }
+
+    /// <summary>
     /// Records a heartbeat from the runtime.
     /// </summary>
     public void RecordHeartbeat(string correlationId = "")

@@ -1,6 +1,8 @@
 using BitWrite.OcelotControl.Application.Interfaces;
 using BitWrite.OcelotControl.Application.UseCases.Gateway;
 using DomainGateway = BitWrite.OcelotControl.Domain.Aggregates.Gateway.Gateway;
+using DomainRuntimeInstance = BitWrite.OcelotControl.Domain.Aggregates.RuntimeInstance.RuntimeInstance;
+using AppIRuntimeInstanceRepository = BitWrite.OcelotControl.Application.Interfaces.IRuntimeInstanceRepository;
 using BitWrite.OcelotControl.Domain.Events;
 using BitWrite.OcelotControl.Domain.ValueObjects.Identity;
 using BitWrite.OcelotControl.Domain.ValueObjects.Status;
@@ -113,12 +115,18 @@ public class GetGatewayQueryHandlerTests
 public class ListGatewaysQueryHandlerTests
 {
     private readonly Mock<IGatewayRepository> _mockRepository;
+    private readonly Mock<IRuntimeInstanceRepository> _mockRuntimeInstances;
     private readonly ListGatewaysQueryHandler _handler;
 
     public ListGatewaysQueryHandlerTests()
     {
         _mockRepository = new Mock<IGatewayRepository>();
-        _handler = new ListGatewaysQueryHandler(_mockRepository.Object);
+        _mockRuntimeInstances = new Mock<AppIRuntimeInstanceRepository>();
+        // No runtime has reported, so no heartbeat is available to join in.
+        _mockRuntimeInstances
+            .Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<DomainRuntimeInstance>());
+        _handler = new ListGatewaysQueryHandler(_mockRepository.Object, _mockRuntimeInstances.Object);
     }
 
     [Fact]

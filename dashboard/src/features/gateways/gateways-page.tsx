@@ -37,6 +37,7 @@ import { isPermissionError } from '@/lib/api-error'
 
 import {
   GATEWAY_STATUSES,
+  HEARTBEAT_STALE_AFTER_MINUTES,
   emptyGatewayDraft,
   gatewayErrors,
   toGatewayRequest,
@@ -127,6 +128,7 @@ function GatewayTable({ gateways }: { gateways: GatewayResponse[] }) {
           <TableRow>
             <TableHead>Name</TableHead>
             <TableHead>Status</TableHead>
+            <TableHead>Last report</TableHead>
             <TableHead>Description</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
@@ -152,6 +154,9 @@ function GatewayRow({ gateway }: { gateway: GatewayResponse }) {
         <TableCell className="font-medium">{gateway.name}</TableCell>
         <TableCell>
           <StatusBadge status={gateway.status} />
+        </TableCell>
+        <TableCell className={isStale(gateway.lastHeartbeat) ? 'text-destructive' : 'text-muted-foreground'}>
+          {describeLastHeartbeat(gateway.lastHeartbeat)}
         </TableCell>
         <TableCell className="max-w-md text-muted-foreground">
           {gateway.description || '—'}
@@ -426,6 +431,48 @@ function DeleteGatewayDialog({
       </AlertDialogContent>
     </AlertDialog>
   )
+}
+
+/**
+ * Whether the report is too old for the status beside it to mean anything.
+ */
+function isStale(lastHeartbeat: string | null): boolean {
+  if (!lastHeartbeat) return true
+
+  const parsed = new Date(lastHeartbeat)
+  if (Number.isNaN(parsed.getTime())) return true
+
+  return Date.now() - parsed.getTime() > HEARTBEAT_STALE_AFTER_MINUTES * 60_000
+}
+
+/**
+ * How long ago the gateway last reported, and whether that is recent enough to
+ * believe the status beside it.
+ *
+ * The status is a label the control plane records and nothing updates it on its
+ * own, so a stale report is the operator's only signal that it no longer
+ * describes the gateway. This is deliberately not a "last seen" in the sense of
+ * activity — it is only ever updated by a report.
+ */
+function describeLastHeartbeat(lastHeartbeat: string | null): string {
+  if (!lastHeartbeat) return 'Never reported'
+
+  const parsed = new Date(lastHeartbeat)
+  if (Number.isNaN(parsed.getTime())) return 'Never reported'
+
+  const ageMs = Date.now() - parsed.getTime()
+  const minutes = Math.floor(ageMs / 60000)
+
+  if (ageMs < 0) return 'Just now'
+  if (minutes < 1) return 'Just now'
+  if (minutes < 60) return `${minutes} min ago`
+
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `${hours} h ago`
+
+  const days = Math.floor(hours / 24)
+  if (days < 30) return `${days} d ago`
+  return parsed.toLocaleDateString()
 }
 
 function MutationError({ error }: { error: unknown }) {

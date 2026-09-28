@@ -17,6 +17,7 @@ const GATEWAY: GatewayResponse = {
   status: 'Active',
   createdAt: '2026-01-02T03:04:05Z',
   updatedAt: '2026-01-03T04:05:06Z',
+  lastHeartbeat: null,
 }
 
 const SECOND: GatewayResponse = {
@@ -268,5 +269,54 @@ describe('when the API fails', () => {
 
     expect(await screen.findByText('Not permitted')).toBeInTheDocument()
     expect(screen.getByText(/GatewayManager or Admin role/)).toBeInTheDocument()
+  })
+})
+
+describe('the last report column', () => {
+  const minutesAgo = (minutes: number) =>
+    new Date(Date.now() - minutes * 60_000).toISOString()
+
+  it('says so plainly when a gateway has never reported', async () => {
+    // A blank cell would be indistinguishable from a gateway that has not been
+    // checked, which is the opposite of what an operator needs here.
+    renderGateways(() => ok(list([GATEWAY])))
+
+    await screen.findByText('edge-eu')
+    const row = within(screen.getByRole('table')).getByRole('row', { name: /edge-eu/ })
+    expect(within(row).getByText('Never reported')).toBeInTheDocument()
+  })
+
+  it('reports a recent beat in relative time', async () => {
+    renderGateways(() =>
+      ok(list([{ ...GATEWAY, lastHeartbeat: minutesAgo(2) }])),
+    )
+
+    await screen.findByText('edge-eu')
+    expect(screen.getByText('2 min ago')).toBeInTheDocument()
+  })
+
+  it('reports hours and days rather than a wall of minutes', async () => {
+    renderGateways(() => ok(list([{ ...GATEWAY, lastHeartbeat: minutesAgo(60 * 5) }])))
+    await screen.findByText('edge-eu')
+    expect(screen.getByText('5 h ago')).toBeInTheDocument()
+  })
+
+  it('marks a stale report, because the status beside it may no longer be true', async () => {
+    renderGateways(() =>
+      ok(list([{ ...GATEWAY, status: 'Active', lastHeartbeat: minutesAgo(60 * 24) }])),
+    )
+
+    await screen.findByText('edge-eu')
+    // A gateway that has not reported in a day is not the thing "Active" says,
+    // and the two are only useful together.
+    const cell = screen.getByText('1 d ago')
+    expect(cell).toHaveClass('text-destructive')
+  })
+
+  it('leaves a fresh report unmarked', async () => {
+    renderGateways(() => ok(list([{ ...GATEWAY, lastHeartbeat: minutesAgo(1) }])))
+
+    await screen.findByText('edge-eu')
+    expect(screen.getByText('1 min ago')).not.toHaveClass('text-destructive')
   })
 })

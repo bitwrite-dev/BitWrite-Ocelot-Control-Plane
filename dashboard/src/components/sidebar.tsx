@@ -1,4 +1,4 @@
-import { Menu } from 'lucide-react'
+import { LifeBuoy, Menu } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 
 import {
@@ -74,6 +74,27 @@ function NavLinks({ roles, onNavigate }: { roles?: Role[]; onNavigate?: () => vo
   )
 }
 
+/**
+ * The one reminder that carries design weight.
+ *
+ * A snapshot page is where someone reaches for a delete button, so the rule
+ * that stops them is stated where the navigation is rather than only in the
+ * prose at the top of the page.
+ */
+function LifecycleGuardrail() {
+  return (
+    <div className="mx-3 mb-4 rounded-md border border-primary/30 bg-primary/5 p-3">
+      <p className="flex items-center gap-2 text-xs font-medium">
+        <LifeBuoy aria-hidden="true" className="size-3.5" />
+        Lifecycle guardrail
+      </p>
+      <p className="mt-1 text-xs text-muted-foreground">
+        Snapshots are immutable. Publication selects the desired runtime state.
+      </p>
+    </div>
+  )
+}
+
 function Brand() {
   return (
     <div className="px-6 py-5">
@@ -89,6 +110,7 @@ export function Sidebar({ roles }: { roles?: Role[] }) {
       <Brand />
       <Separator />
       <NavLinks roles={roles} />
+      <LifecycleGuardrail />
       <ThemeToggle />
     </aside>
   )
@@ -111,6 +133,7 @@ export function MobileSidebar({ roles }: { roles?: Role[] }) {
         </SheetHeader>
         <Separator />
         <NavLinks roles={roles} />
+        <LifecycleGuardrail />
       </SheetContent>
     </Sheet>
   )

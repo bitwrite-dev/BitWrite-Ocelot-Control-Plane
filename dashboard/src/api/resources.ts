@@ -13,7 +13,6 @@ import type {
   PluginListResponse,
   PluginResponse,
   PublicationListResponse,
-  PublicationResponse,
   CurrentPublicationResponse,
   ReconcileResponse,
   RouteListResponse,
@@ -28,6 +27,9 @@ import type {
   ServiceResponse,
   ServiceRoutesResponse,
   SnapshotCompareResponse,
+  CreateSnapshotRequest,
+  SnapshotPublishRequest,
+  SnapshotRollbackRequest,
   SnapshotDeploymentResponse,
   SnapshotListResponse,
   SnapshotResponse,
@@ -111,19 +113,27 @@ export function createResources(http: HttpClient) {
     list: ({ signal, ...query }: PageParams = {}) =>
       http.get<SnapshotListResponse>('/api/v1/snapshots', { query, signal }),
     get: (version: number, o?: Options) => http.get<SnapshotResponse>(`/api/v1/snapshots/${version}`, o),
-    create: (body: unknown, o?: Options) => http.post<SnapshotResponse>('/api/v1/snapshots', body, o),
+    create: (body: CreateSnapshotRequest, o?: Options) =>
+      http.post<SnapshotResponse>('/api/v1/snapshots', body, o),
     validate: (body: unknown, o?: Options) =>
       http.post<SnapshotValidationResponse>('/api/v1/snapshots/validate', body, o),
-    compare: (version: number, o?: Options) =>
-      http.get<SnapshotCompareResponse>(`/api/v1/snapshots/${version}/compare`, o),
+    // The API takes the version to compare *against* as a query parameter, so
+    // without it there is nothing to diff.
+    compare: (version: number, compareWith: number, o?: Options) =>
+      http.get<SnapshotCompareResponse>(`/api/v1/snapshots/${version}/compare`, {
+        ...o,
+        query: { compareWith },
+      }),
     clone: (version: number, body: unknown, o?: Options) =>
       http.post<SnapshotResponse>(`/api/v1/snapshots/${version}/clone`, body, o),
     export: (version: number, o?: Options) =>
       http.get<string>(`/api/v1/snapshots/${version}/export`, o),
-    publish: (version: number, body: unknown, o?: Options) =>
-      http.post<PublicationResponse>(`/api/v1/snapshots/${version}/publish`, body, o),
-    rollback: (version: number, body: unknown, o?: Options) =>
-      http.post<unknown>(`/api/v1/snapshots/${version}/rollback`, body, o),
+    publish: (version: number, body: SnapshotPublishRequest, o?: Options) =>
+      http.post<SnapshotDeploymentResponse>(`/api/v1/snapshots/${version}/publish`, body, o),
+    // The outcome, not just success or failure: a rollback can be refused, and
+    // the reason is what an operator needs.
+    rollback: (version: number, body: SnapshotRollbackRequest, o?: Options) =>
+      http.post<SnapshotDeploymentResponse>(`/api/v1/snapshots/${version}/rollback`, body, o),
     deployment: (version: number, o?: Options) =>
       http.get<SnapshotDeploymentResponse>(`/api/v1/snapshots/${version}/deployment`, o),
   }

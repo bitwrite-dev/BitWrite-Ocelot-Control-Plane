@@ -526,6 +526,12 @@ export interface SnapshotListResponse {
   pageSize: number
 }
 
+export interface SnapshotValidationRule {
+  rule: string
+  isValid: boolean
+  message: string | null
+}
+
 export interface SnapshotResponse {
   version: number
   hash: string
@@ -535,6 +541,38 @@ export interface SnapshotResponse {
   createdAt: string
   publishedAt: string | null
   archivedAt: string | null
+  /**
+   * How many routes this snapshot carries, read out of its content.
+   * Null when the content could not be read, which is not the same as zero.
+   */
+  routeCount: number | null
+  /** How many services this snapshot carries, or null if unreadable. */
+  serviceCount: number | null
+  /** Plugin versions pinned in the snapshot, as "name version". */
+  pluginVersions: string[]
+  /** Per-rule validation results, so the list can show a verdict. */
+  validationResults: SnapshotValidationRule[]
+}
+
+export interface CreateSnapshotRequest {
+  /**
+   * Who asked for the snapshot. The dashboard has no real session yet (#433),
+   * so the page sends a fixed operator until roles land.
+   */
+  initiatedBy: string
+  correlationId?: string
+}
+
+export interface SnapshotPublishRequest {
+  initiatedBy: string
+  targetGatewayIds?: string[]
+}
+
+export interface SnapshotRollbackRequest {
+  initiatedBy: string
+  /** The version to go back to. */
+  targetVersion: number
+  reason: string
 }
 
 export interface SnapshotValidationResponse {

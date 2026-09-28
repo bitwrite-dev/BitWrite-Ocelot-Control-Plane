@@ -144,7 +144,7 @@ describe('GatewaysPage', () => {
   })
 
   it('registers a gateway with a trimmed name and a null description', async () => {
-    const { calls } = renderGateways((url, method) =>
+    const { calls } = renderGateways((_url, method) =>
       method === 'GET' ? ok(list([])) : ok(GATEWAY),
     )
     const user = userEvent.setup()

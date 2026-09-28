@@ -20,7 +20,7 @@ public class SnapshotResponseContractTests
 {
     private static readonly JsonSerializerOptions WireOptions = new(JsonSerializerDefaults.Web);
 
-    private static string ToJson<T>(T response) => JsonSerializer.Serialize(response, WireOptions);
+    private static string ToJson(SnapshotResponse response) => JsonSerializer.Serialize(response, WireOptions);
 
     [Fact]
     public void TheListCarriesEverythingTheTableShows()
@@ -125,53 +125,6 @@ public class SnapshotResponseContractTests
     }
 
     [Fact]
-    public void ThePreviewCarriesEverythingTheCreatePageNeedsBeforeItSealsAnything()
-    {
-        var response = new PreviewSnapshotResponse(
-            "{\"Routes\":[]}",
-            "abc123",
-            2,
-            1,
-            new[] { "RateLimiting 2.1.0" },
-            new[] { new SnapshotValidationResultResponse("RouteConflicts", true, null) },
-            true,
-            "20.0.0",
-            105);
-
-        var json = ToJson(response);
-        using var document = JsonDocument.Parse(json);
-        var root = document.RootElement;
-
-        // The page shows each of these before the operator commits, so a missing
-        // one is a field that silently cannot be displayed.
-        foreach (var name in new[]
-                 {
-                     "content", "hash", "routeCount", "serviceCount", "pluginVersions",
-                     "validationResults", "isValid", "ocelotVersion", "nextVersion",
-                 })
-        {
-            root.TryGetProperty(name, out _).Should().BeTrue($"the create page reads '{name}'");
-        }
-
-        root.GetProperty("nextVersion").GetInt32().Should().Be(105);
-    }
-
-    [Fact]
-    public void APreviewWithNothingToHashSaysSoRatherThanReportingAnEmptyHash()
-    {
-        // An empty string would read as a real hash that happens to be blank.
-        var json = ToJson(new PreviewSnapshotResponse(
-            null, null, 0, 0, Array.Empty<string>(),
-            Array.Empty<SnapshotValidationResultResponse>(), false, "20.0.0", 1));
-
-        using var document = JsonDocument.Parse(json);
-        var root = document.RootElement;
-
-        root.GetProperty("content").ValueKind.Should().Be(JsonValueKind.Null);
-        root.GetProperty("hash").ValueKind.Should().Be(JsonValueKind.Null);
-    }
-
-    [Fact]
     public void TheSnapshotEndpointsKeepTheirDocumentedPaths()
     {
         var controller = typeof(SnapshotResponse).Assembly
@@ -191,7 +144,6 @@ public class SnapshotResponseContractTests
         paths.Should().Contain(new[]
         {
             null,
-            "preview",
             "{version}",
             "{version}/compare",
             "{version}/clone",

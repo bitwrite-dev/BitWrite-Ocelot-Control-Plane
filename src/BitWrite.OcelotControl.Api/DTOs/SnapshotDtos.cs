@@ -39,34 +39,6 @@ public record SnapshotValidationResultResponse(
     string? Message
 );
 
-/// <summary>
-/// The artifact a snapshot would contain, resolved and validated but not stored.
-/// </summary>
-public record PreviewSnapshotResponse(
-    /// <summary>
-    /// The canonical artifact, or null when the management state could not be
-    /// built into one. Null rather than an empty document, because an empty
-    /// document would read as a valid artifact with nothing in it.
-    /// </summary>
-    string? Content,
-    /// <summary>
-    /// The hash this artifact would carry, computed over the exact string that
-    /// would be stored, or null when there is nothing to hash.
-    /// </summary>
-    string? Hash,
-    int RouteCount,
-    int ServiceCount,
-    IReadOnlyList<string> PluginVersions,
-    IReadOnlyList<SnapshotValidationResultResponse> ValidationResults,
-    bool IsValid,
-    string OcelotVersion,
-    /// <summary>
-    /// The version this snapshot would take. Reported, not consumed: these
-    /// numbers are what a rollback names, so a preview must not spend one.
-    /// </summary>
-    int NextVersion
-);
-
 public record SnapshotListResponse(
     List<SnapshotResponse> Snapshots,
     int TotalCount,

@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import type { SystemSettingsResponse } from '@/api'
+import { isPermissionError } from '@/lib/api-error'
 
 import {
   draftFromSettings,
@@ -345,15 +346,13 @@ function NumericField({
 
 function SubmitError({ error }: { error: unknown }) {
   const message = error instanceof Error ? error.message : String(error)
-  const isPermission =
-    message.includes('403') || message.toLowerCase().includes('forbidden')
 
   return (
     <Alert variant="destructive">
       <CircleAlert aria-hidden="true" className="size-4" />
-      <AlertTitle>{isPermission ? 'Not permitted' : 'Could not save'}</AlertTitle>
+      <AlertTitle>{isPermissionError(error) ? 'Not permitted' : 'Could not save'}</AlertTitle>
       <AlertDescription>
-        {isPermission
+        {isPermissionError(error)
           ? 'Changing settings needs the Admin role. Ask an administrator to make this change.'
           : message}
       </AlertDescription>

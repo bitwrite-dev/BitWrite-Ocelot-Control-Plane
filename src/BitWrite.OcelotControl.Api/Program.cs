@@ -124,6 +124,8 @@ builder.Services.AddScoped<AppInterfaces.IConfigurationBuilder, ConfigurationBui
             builder.Services.AddScoped<PublishSnapshotCommandHandler>();
             builder.Services.AddScoped<RollbackSnapshotCommandHandler>();
 
+            builder.Services.AddScoped<GetGatewayDeletionEligibilityQueryHandler>();
+
             // Route UseCase Handlers
             builder.Services.AddScoped<CreateRouteCommandHandler>();
             builder.Services.AddScoped<ReplaceRouteCommandHandler>();

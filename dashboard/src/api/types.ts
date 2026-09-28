@@ -214,6 +214,45 @@ export interface RoutePreviewResponse {
   ocelotJson: string
 }
 
+export interface GatewayResponse {
+  id: string
+  name: string
+  description: string | null
+  /**
+   * A label the control plane records, not live health.
+   *
+   * The API accepts one of `Disconnected`, `Connecting`, `Synchronized`,
+   * `Applying`, `Active` or `Degraded`. There is no "shut down" state: the only
+   * lifecycle rule is that a gateway which has received a publication cannot be
+   * deleted.
+   */
+  status: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface GatewayListResponse {
+  gateways: GatewayResponse[]
+  totalCount: number
+  page: number
+  pageSize: number
+}
+
+export interface GatewayRequest {
+  name: string
+  description: string | null
+}
+
+/**
+ * Whether a gateway can be deleted, and why not if it cannot.
+ */
+export interface GatewayDeletionEligibility {
+  gatewayId: string
+  hasBeenPublishedTo: boolean
+  /** Why deletion is refused, or null when it is allowed. */
+  reason: string | null
+}
+
 /**
  * The system settings, and what a first-run screen needs to render itself.
  */

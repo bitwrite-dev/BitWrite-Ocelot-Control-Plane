@@ -17,7 +17,6 @@ import { NAV_PATHS } from '@/navigation'
  * no way to tell which is right.
  */
 export const PLACEHOLDER_PATHS = [
-  '/gateways',
   '/global-configuration',
   '/snapshots',
   '/plugins',
@@ -46,6 +45,7 @@ export const IMPLEMENTED_PATHS = [
   '/routes/:id/edit',
   '/services',
   '/settings',
+  '/gateways',
 ] as const
 
 export const ALL_ROUTES: readonly string[] = [

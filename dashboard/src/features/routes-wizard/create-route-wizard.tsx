@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
   DOWNSTREAM_HTTP_VERSIONS,
@@ -16,13 +15,14 @@ import {
   HTTP_METHODS,
   loadBalancerOptions,
   periodOptions,
-  UNSUPPORTED_STEPS,
   WIZARD_STEPS,
   draftFromRoute,
   emptyRouteDraft,
   emptyTransportDraft,
   furthestReachableStep,
+  parseRequirements,
   toCreateRequest,
+  type AuthorizationDraft,
   type RouteDraft,
   type StepId,
 } from './wizard-model'
@@ -35,6 +35,17 @@ import {
   useWizardServices,
 } from './queries'
 import { stepForField } from './wizard-model'
+
+/** A one-line summary of who may call this route, for the review row. */
+function summariseAuthorization(authorization: AuthorizationDraft): string {
+  const parts: string[] = []
+  if (authorization.policies.length > 0) {
+    parts.push(`policies ${authorization.policies.filter((p) => p.trim() !== '').join(', ')}`)
+  }
+  const claims = Object.keys(authorization.requirements)
+  if (claims.length > 0) parts.push(`claims ${claims.join(', ')}`)
+  return parts.join('; ')
+}
 
 /** The names a header block sets, for the review row. */
 function summariseRules(block: string): string {
@@ -95,6 +106,8 @@ function RouteWizard({ mode, routeId }: { mode: 'create' | 'edit'; routeId?: str
   // so it is complete.
   const transport = draft.transport ?? emptyTransportDraft()
   const headers = draft.headers ?? { add: '', transform: '' }
+  const claims = draft.claims ?? { add: '', transform: '' }
+  const authorization = draft.authorization ?? { policies: [], requirements: {} }
 
   const services = useWizardServices()
   const createRoute = useCreateRoute()
@@ -208,28 +221,6 @@ function RouteWizard({ mode, routeId }: { mode: 'create' | 'edit'; routeId?: str
             })}
           </ol>
 
-          <Separator className="my-4" />
-
-          <div className="space-y-2 px-3">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Not yet supported
-            </p>
-            {UNSUPPORTED_STEPS.map((entry) => (
-              <p key={entry.title} className="text-xs text-muted-foreground">
-                {entry.title}{' '}
-                <a
-                  href={`https://github.com/bitwrite-dev/BitWrite-Ocelot-Control-Plane/issues/${entry.issue}`}
-                  className="underline underline-offset-2"
-                >
-                  #{entry.issue}
-                </a>
-              </p>
-            ))}
-            <p className="text-xs text-muted-foreground">
-              The API cannot store these yet, so they are listed rather than offered as
-              fields that would be discarded on save.
-            </p>
-          </div>
         </nav>
 
         {/* Step body */}
@@ -1141,6 +1132,102 @@ function RouteWizard({ mode, routeId }: { mode: 'create' | 'edit'; routeId?: str
                             }
                           />
                         </Field>
+
+                      <div className="space-y-4 border-t pt-4">
+                        <div>
+                          <h3 className="text-sm font-medium">Claims added downstream</h3>
+                          <p className="text-xs text-muted-foreground">
+                            One rule per line, as <code className="font-mono">claim: value</code>.
+                            A value may contain Ocelot placeholders, which are filled per
+                            request from the caller&rsquo;s token.
+                          </p>
+                        </div>
+
+                        <Field
+                          label="Add to the outgoing request"
+                          htmlFor="claims-add"
+                          error={stepErrors.find(
+                            (e) => e.startsWith('Ocelot 18 has no block for rewriting a claim'),
+                          )}
+                          hint="Sent as Ocelot's AddClaimsToRequest. Rewriting an existing claim is not available in 18, so there is only this half."
+                        >
+                          <textarea
+                            id="claims-add"
+                            rows={3}
+                            className="w-full rounded-md border border-input bg-transparent px-3 py-2 font-mono text-sm"
+                            placeholder={'customerId: {Claims[sub]}\ntenant: {Claims[tenant]}'}
+                            value={claims.add}
+                            onChange={(event) =>
+                              setDraft((current) => ({
+                                ...current,
+                                claims: { ...claims, add: event.target.value },
+                              }))
+                            }
+                          />
+                        </Field>
+                      </div>
+
+                      <div className="space-y-4 border-t pt-4">
+                        <div>
+                          <h3 className="text-sm font-medium">Authorization</h3>
+                          <p className="text-xs text-muted-foreground">
+                            Who may call this route, as distinct from who they are.
+                            Authentication answers &ldquo;is this a valid caller&rdquo;;
+                            authorization answers &ldquo;is this caller allowed here&rdquo;.
+                          </p>
+                        </div>
+
+                        <Field
+                          label="Required policies"
+                          htmlFor="auth-policies"
+                          error={stepErrors.find(
+                            (e) => e.startsWith('Policy') || e.startsWith('A policy name'),
+                          )}
+                          hint="One per line. Sent as Ocelot's RouteClaimsRequirement, which Ocelot matches against the caller's token. Not the same as a policy name in your own code."
+                        >
+                          <textarea
+                            id="auth-policies"
+                            rows={3}
+                            className="w-full rounded-md border border-input bg-transparent px-3 py-2 font-mono text-sm"
+                            value={authorization.policies.join('\n')}
+                            onChange={(event) =>
+                              setDraft((current) => ({
+                                ...current,
+                                authorization: {
+                                  ...authorization,
+                                  policies: event.target.value.split('\n'),
+                                },
+                              }))
+                            }
+                          />
+                        </Field>
+
+                        <Field
+                          label="Required claims"
+                          htmlFor="auth-requirements"
+                          error={stepErrors.find((e) => e.startsWith('Claim'))}
+                          hint="One per line, as claim: value. The value is a comma-separated list, and the request is refused unless the caller's claim matches one of them."
+                        >
+                          <textarea
+                            id="auth-requirements"
+                            rows={3}
+                            className="w-full rounded-md border border-input bg-transparent px-3 py-2 font-mono text-sm"
+                            placeholder={'role: admin,staff\nregion: eu-west-1'}
+                            value={Object.entries(authorization.requirements)
+                              .map(([claim, values]) => `${claim}: ${values}`)
+                              .join('\n')}
+                            onChange={(event) =>
+                              setDraft((current) => ({
+                                ...current,
+                                authorization: {
+                                  ...authorization,
+                                  requirements: parseRequirements(event.target.value),
+                                },
+                              }))
+                            }
+                          />
+                        </Field>
+                      </div>
                       </div>
                     </div>
                   </div>
@@ -1216,6 +1303,14 @@ function RouteWizard({ mode, routeId }: { mode: 'create' | 'edit'; routeId?: str
                       <ReviewRow
                         label="Downstream headers"
                         value={summariseRules(headers.add) || '—'}
+                      />
+                      <ReviewRow
+                        label="Added claims"
+                        value={summariseRules(claims.add) || '—'}
+                      />
+                      <ReviewRow
+                        label="Authorization"
+                        value={summariseAuthorization(authorization) || '—'}
                       />
                       <ReviewRow
                         label="HTTP version"

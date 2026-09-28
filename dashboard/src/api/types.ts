@@ -214,6 +214,12 @@ export interface RoutePreviewResponse {
   ocelotJson: string
 }
 
+export interface AuthorizationOptionsResponse {
+  policies: string[] | null
+  scopes: string[] | null
+  requirements: Record<string, string> | null
+}
+
 export interface TransformEntryResponse {
   key: string
   value: string
@@ -276,6 +282,15 @@ export interface RouteResponse {
   /** The path the request is rewritten to, or null to forward it unchanged. */
   downstreamPathTemplate: string | null
   headerTransformations: TransformationsResponse | null
+  claimTransformations: TransformationsResponse | null
+  queryTransformations: TransformationsResponse | null
+  /**
+   * Who may call this route, as distinct from who they are.
+   *
+   * Separate from `authenticationOptions.allowedScopes`: a caller can be
+   * authenticated and still not be allowed here.
+   */
+  authorizationOptions: AuthorizationOptionsResponse | null
   serviceId: string
   isEnabled: boolean
   downstreamTargets: DownstreamTargetResponse[]

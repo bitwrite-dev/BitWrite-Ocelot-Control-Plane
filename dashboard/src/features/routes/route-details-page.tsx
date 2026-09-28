@@ -259,6 +259,49 @@ export function RouteDetailsPage() {
                 <Absent />
               )}
             </Row>
+            <Row label="Authorization">
+              {data.authorizationOptions &&
+              ((data.authorizationOptions.policies?.length ?? 0) > 0 ||
+                Object.keys(data.authorizationOptions.requirements ?? {}).length > 0) ? (
+                <div className="space-y-1">
+                  {data.authorizationOptions.policies?.length ? (
+                    <div>
+                      <span className="text-muted-foreground">Policies: </span>
+                      <Code>{data.authorizationOptions.policies.join(', ')}</Code>
+                    </div>
+                  ) : null}
+                  {Object.entries(data.authorizationOptions.requirements ?? {}).map(
+                    ([claim, values]) => (
+                      <div key={claim}>
+                        <span className="text-muted-foreground">Claim </span>
+                        <Code>{claim}</Code>
+                        <span className="text-muted-foreground"> must be one of </span>
+                        <Code>{values}</Code>
+                      </div>
+                    ),
+                  )}
+                </div>
+              ) : (
+                <span className="text-muted-foreground">
+                  anyone who passes authentication may call it
+                </span>
+              )}
+            </Row>
+            <Row label="Added claims">
+              {data.claimTransformations?.add?.length ? (
+                <ul className="space-y-0.5">
+                  {data.claimTransformations.add.map((entry) => (
+                    <li key={entry.key}>
+                      <Code>
+                        {entry.key}: {entry.value}
+                      </Code>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <Absent />
+              )}
+            </Row>
             <Row label="Downstream header rules">
               {data.headerTransformations?.add?.length ? (
                 <ul className="space-y-0.5">

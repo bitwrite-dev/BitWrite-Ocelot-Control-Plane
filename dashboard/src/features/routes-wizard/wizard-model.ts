@@ -62,6 +62,20 @@ export interface HeaderTransformsDraft {
   transform: string
 }
 
+/**
+ * Authorization rules for a route.
+ *
+ * Distinct from authentication, which says who the caller is. A caller can be
+ * authenticated and still not be allowed on this route, so the two are not
+ * conflated: `authenticationOptions.allowedScopes` keeps its own meaning.
+ */
+export interface AuthorizationDraft {
+  /** Policy names, published as Ocelot's RouteClaimsRequirement. */
+  policies: string[]
+  /** Required claim values, each a comma-separated list. */
+  requirements: Record<string, string>
+}
+
 export interface HttpClientOptionsDraft {
   enabled: boolean
   allowAutoRedirect: boolean
@@ -109,6 +123,9 @@ export interface RouteDraft {
   cache: CacheDraft
   loadBalancer: LoadBalancerDraft
   headers?: HeaderTransformsDraft
+  authorization?: AuthorizationDraft
+  /** Claims are added to the outgoing request, not the incoming one. */
+  claims?: HeaderTransformsDraft
   /**
    * Optional so a caller that builds a partial draft by hand still type-checks.
    * `toCreateRequest` and the validator both read a missing block as the
@@ -179,6 +196,8 @@ export const emptyRouteDraft = (): RouteDraft => ({
   loadBalancer: { enabled: false, algorithm: 'RoundRobin' },
   transport: emptyTransportDraft(),
   headers: { add: '', transform: '' },
+  authorization: { policies: [], requirements: {} },
+  claims: { add: '', transform: '' },
 })
 
 /** The versions Ocelot accepts for a downstream request. */
@@ -231,6 +250,25 @@ function toHeaderBlock(entries: TransformEntryResponse[] | null | undefined): st
   return entries.map((entry) => `${entry.key}: ${entry.value}`).join('\n')
 }
 
+/**
+ * Parses a "claim: a,b,c" block back into a map, so the editable form and the
+ * stored shape stay in step. Later entries for the same claim win, which is the
+ * same as a duplicate key in a JSON object.
+ */
+export function parseRequirements(block: string): Record<string, string> {
+  const requirements: Record<string, string> = {}
+  for (const line of block.split('\n')) {
+    const trimmed = line.trim()
+    if (trimmed === '') continue
+    const separator = trimmed.indexOf(':')
+    if (separator === -1) continue
+    const claim = trimmed.slice(0, separator).trim()
+    if (claim === '') continue
+    requirements[claim] = trimmed.slice(separator + 1).trim()
+  }
+  return requirements
+}
+
 function parseHeaderRules(block: string): TransformEntryDraft[] {
   return block
     .split('\n')
@@ -256,6 +294,19 @@ export interface TransformEntryDraft {
  * empty list is not the same as one carrying none: the API treats the first as
  * "the operator cleared this", and an absent block as "leave what is there".
  */
+/**
+ * Claims are published as Ocelot's AddClaimsToRequest, which is a flat map, so
+ * only the add half is expressible. A transform would need a different block and
+ * a remove has no equivalent in 18.
+ */
+function claimBlock(claims: HeaderTransformsDraft | undefined): Record<string, unknown> {
+  // A claim transform has no block in 18. The half that cannot be expressed is
+  // refused during validation rather than dropped silently here.
+  const add = parseHeaderRules(claims?.add ?? '')
+  if (add.length === 0) return {}
+  return { claimTransformations: { add } }
+}
+
 function headerBlock(headers: HeaderTransformsDraft | undefined): Record<string, unknown> {
   const add = parseHeaderRules(headers?.add ?? '')
   const transform = parseHeaderRules(headers?.transform ?? '')
@@ -435,6 +486,7 @@ const advanced: WizardStep = {
     }
     errors.push(...transportErrors(draft))
     errors.push(...headerErrors(draft))
+    errors.push(...authorizationErrors(draft))
     return errors
   },
 }
@@ -449,6 +501,52 @@ const advanced: WizardStep = {
  * Header rules are checked where they are entered, because a malformed one is
  * only reported by the API as a field error the operator then has to locate.
  */
+/**
+ * Authorization and claims are checked where they are entered, because both
+ * have a half that Ocelot 18 cannot express and the operator should learn that
+ * before saving rather than from a rejected request.
+ */
+function authorizationErrors(draft: RouteDraft): string[] {
+  const errors: string[] = []
+  const authorization = draft.authorization
+
+  const seen = new Set<string>()
+  for (const policy of authorization?.policies ?? []) {
+    const name = policy.trim()
+    if (name === '') {
+      errors.push('A policy name cannot be empty')
+      continue
+    }
+    const key = name.toLowerCase()
+    if (seen.has(key)) {
+      // Ocelot would register the same policy twice.
+      errors.push(`Policy '${name}' is listed twice`)
+    }
+    seen.add(key)
+  }
+
+  for (const [claim, values] of Object.entries(authorization?.requirements ?? {})) {
+    if (claim.trim() === '') {
+      errors.push('A claim name cannot be empty')
+      continue
+    }
+    if (values.trim() === '') {
+      // An empty requirement matches nothing, which reads as a rule that is set.
+      errors.push(`Claim '${claim}' needs at least one required value`)
+    }
+  }
+
+  // Only the add half of claims is expressible in 18.
+  const claimTransforms = parseHeaderRules(draft.claims?.transform ?? '')
+  if (claimTransforms.length > 0) {
+    errors.push(
+      'Ocelot 18 has no block for rewriting a claim, only for adding one, so only the add half is available',
+    )
+  }
+
+  return errors
+}
+
 function headerErrors(draft: RouteDraft): string[] {
   const errors: string[] = []
   const headers = draft.headers
@@ -564,11 +662,6 @@ export const WIZARD_STEPS: WizardStep[] = [
 ]
 
 /** Steps named in the spec that cannot be stored yet. Surfaced, not silently dropped. */
-export const UNSUPPORTED_STEPS = [
-  { title: 'Authorization', issue: 466 },
-  { title: 'Transformations', issue: 466 },
-] as const
-
 /** Index of the furthest step the draft can reach, given everything before it. */
 export function furthestReachableStep(draft: RouteDraft): number {
   let reachable = 0
@@ -622,6 +715,8 @@ export function toCreateRequest(draft: RouteDraft): CreateRouteRequestBody {
   // request, and narrowing once keeps every use below non-optional.
   const transport = draft.transport ?? emptyTransportDraft()
   const headers = draft.headers ?? emptyRouteDraft().headers!
+  const claims = draft.claims ?? emptyRouteDraft().claims!
+  const authorization = draft.authorization ?? emptyRouteDraft().authorization!
 
   return {
     key: draft.key.trim(),
@@ -646,6 +741,16 @@ export function toCreateRequest(draft: RouteDraft): CreateRouteRequestBody {
         : transport.downstreamHttpVersionPolicy.trim(),
     acceptAnyServerCertificate: transport.acceptAnyServerCertificate,
     ...headerBlock(headers),
+    ...claimBlock(claims),
+    ...(authorization.policies.length > 0 ||
+    Object.keys(authorization.requirements).length > 0
+      ? {
+          authorizationOptions: {
+            policies: authorization.policies.map((p) => p.trim()).filter(Boolean),
+            requirements: authorization.requirements,
+          },
+        }
+      : {}),
     ...(transport.delegatingHandlers.length > 0
       ? { delegatingHandlers: transport.delegatingHandlers.map((h) => h.trim()).filter(Boolean) }
       : {}),
@@ -796,6 +901,14 @@ export function draftFromRoute(route: RouteResponse): RouteDraft {
   draft.headers = {
     add: toHeaderBlock(route.headerTransformations?.add),
     transform: toHeaderBlock(route.headerTransformations?.transform),
+  }
+  draft.claims = {
+    add: toHeaderBlock(route.claimTransformations?.add),
+    transform: toHeaderBlock(route.claimTransformations?.transform),
+  }
+  draft.authorization = {
+    policies: [...(route.authorizationOptions?.policies ?? [])],
+    requirements: { ...(route.authorizationOptions?.requirements ?? {}) },
   }
 
   draft.transport = {

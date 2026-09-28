@@ -355,11 +355,22 @@ describe('CreateRouteWizardPage', () => {
     expect(screen.queryByLabelText('Key')).not.toBeInTheDocument()
   })
 
-  it('names the two steps the API cannot store yet', async () => {
+  it('no longer lists a step as unsupported, and offers the fields instead', async () => {
+    // Authorization and transformations were listed rather than offered while
+    // the API could not store them. They can now, so the notice is gone and the
+    // fields are on the advanced step.
     const { impl } = stubFetch()
     renderWizard(impl)
+    const user = userEvent.setup()
 
-    expect(await screen.findByText('Authorization')).toBeInTheDocument()
-    expect(screen.getByText('Transformations')).toBeInTheDocument()
-  })
+    expect(screen.queryByText('Not yet supported')).not.toBeInTheDocument()
+    expect(screen.queryByText(/#466/)).not.toBeInTheDocument()
+
+    await fillRequiredSteps(user)
+    for (const _step of ['Authentication', 'Rate Limiting', 'QoS']) await next(user)
+
+    expect(await screen.findByLabelText('Required policies')).toBeInTheDocument()
+    expect(screen.getByLabelText('Required claims')).toBeInTheDocument()
+    expect(screen.getByLabelText('Add to the outgoing request')).toBeInTheDocument()
+  }, 20_000)
 })

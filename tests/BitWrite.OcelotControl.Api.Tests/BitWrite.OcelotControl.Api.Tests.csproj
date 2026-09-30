@@ -9,6 +9,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!--
+      TestServer support, for the walkthrough tests. A handler-level test cannot
+      see an authorisation attribute, and that is exactly the kind of thing that
+      leaves a fresh install unable to configure itself: every endpoint's own test
+      passed, and the walk between them did not.
+    -->
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="8.0.0" />
     <PackageReference Include="FluentAssertions" Version="6.12.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.6.0" />
     <PackageReference Include="Moq" Version="4.21.0" />

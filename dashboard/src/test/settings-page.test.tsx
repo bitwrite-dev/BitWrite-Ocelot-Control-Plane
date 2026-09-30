@@ -46,6 +46,10 @@ let respond: () => SystemSettingsResponse
  * Renders the page against a fake API, through the real client and the real
  * query hooks, so the request shapes under test are the ones actually sent.
  */
+/** The sentence the setup guard hands over with the redirect. */
+const ARRIVAL_REASON =
+  'This installation has not been set up yet. Choose the Ocelot version before anything else.'
+
 function renderSettings(respondWith: () => SystemSettingsResponse = () => SETTINGS) {
   respond = respondWith
   calls = []
@@ -70,7 +74,9 @@ function renderSettings(respondWith: () => SystemSettingsResponse = () => SETTIN
   })
 
   const router = createMemoryRouter([{ path: '/settings', element: <SettingsPage /> }], {
-    initialEntries: ['/settings'],
+    // The guard redirects here with a reason attached, and the page reads it so
+    // the operator is told why they are looking at setup.
+    initialEntries: [{ pathname: '/settings', state: { reason: ARRIVAL_REASON } }],
   })
 
   render(
@@ -253,6 +259,54 @@ describe('SettingsPage before setup', () => {
 
     expect(await screen.findByText('Set up the control plane')).toBeInTheDocument()
     expect(screen.getByLabelText('Version')).toBeInTheDocument()
+  })
+
+  it('says why the operator was sent here', async () => {
+    renderFirstRun()
+
+    // The guard redirects here from whichever page was asked for. Without a
+    // reason, the operator is looking at a screen they did not choose and cannot
+    // tell whether it is required or broken.
+    expect(await screen.findByText('Setup comes first')).toBeInTheDocument()
+    expect(screen.getByText(ARRIVAL_REASON)).toBeInTheDocument()
+  })
+
+  it('can be submitted, which it could not be when the fields started blank', async () => {
+    renderFirstRun()
+
+    // The fields used to initialise empty while the server held defaults of 30
+    // and 90, so every one of them failed validation and the submit button stayed
+    // disabled. Setup was not completable from the screen built to complete it —
+    // the tests passed because they filled the form in by hand.
+    await userEvent.click(await screen.findByLabelText('Version'))
+    await userEvent.click(await screen.findByRole('option', { name: '18.0.0' }))
+
+    expect(screen.getByRole('button', { name: /complete setup/i })).toBeEnabled()
+  })
+
+  it('shows the values the server already holds rather than blanks', async () => {
+    renderFirstRun()
+
+    // A blank in a field with a known default reads as "this is empty" when the
+    // truth is "this is 30, and you may change it".
+    expect(await screen.findByDisplayValue('30')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('90')).toBeInTheDocument()
+  })
+
+  it('sends the name of whoever is setting it up, because nothing else can', async () => {
+    renderFirstRun()
+
+    await userEvent.click(await screen.findByLabelText('Version'))
+    await userEvent.click(await screen.findByRole('option', { name: '18.0.0' }))
+    await userEvent.type(screen.getByLabelText('Name'), 'alex')
+    await userEvent.click(screen.getByRole('button', { name: /complete setup/i }))
+
+    // There is no session yet, so the audit trail has nothing else to read. The
+    // version cannot be changed afterwards, which is what makes the name matter.
+    await waitFor(() => {
+      const submitted = calls.find((call) => call.url.includes('/first-run'))
+      expect(submitted?.body).toMatchObject({ initiatedBy: 'alex' })
+    })
   })
 
   it('does not pre-select the only offered version', async () => {

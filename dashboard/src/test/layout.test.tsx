@@ -7,12 +7,20 @@ import { NotFoundPage, PlaceholderPage } from '@/pages/placeholders'
 import { NAV_SECTIONS } from '@/navigation'
 import type { Role } from '@/navigation'
 
+/**
+ * The shell on its own, with no API client behind it.
+ *
+ * These tests are about the sidebar and the shell's own structure. The setup
+ * guard is a separate concern with its own tests, and it needs a client to read
+ * settings from — mounting it here would make a navigation test fail on an API
+ * call, which is the wrong reason for a test to fail.
+ */
 function renderAt(path: string, roles?: Role[]) {
   const router = createMemoryRouter(
     [
       {
         path: '/',
-        element: <AppLayout roles={roles} />,
+        element: <AppLayout roles={roles} guard={false} />,
         children: [
           { index: true, element: <PlaceholderPage path="/" /> },
           { path: 'routes', element: <PlaceholderPage path="/routes" /> },

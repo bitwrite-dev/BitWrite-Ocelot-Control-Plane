@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { CircleAlert, Info, Lock } from 'lucide-react'
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -20,7 +21,6 @@ import { isPermissionError } from '@/lib/api-error'
 
 import {
   draftFromSettings,
-  emptySettingsDraft,
   settingsErrors,
   toUpdateRequest,
   useSettingsMutations,
@@ -39,6 +39,13 @@ import {
 export function SettingsPage() {
   const { data, isPending, isError, error: loadError, refetch } = useSystemSettings()
   const { update, completeFirstRun } = useSettingsMutations()
+  const location = useLocation()
+
+  // The guard sends a reason along with the redirect. Reading it here means the
+  // operator is told why they are looking at setup rather than being left to
+  // wonder which screen they asked for.
+  const arrivalReason =
+    (location.state as { reason?: string } | null)?.reason ?? undefined
 
   if (isPending) return <SettingsSkeleton />
   if (isError || !data) {
@@ -55,7 +62,13 @@ export function SettingsPage() {
   return data.isInitialised ? (
     <ConfiguredSettings settings={data} onSave={(draft) => update.mutate(toUpdateRequest(draft))} isSaving={update.isPending} error={update.error} />
   ) : (
-    <FirstRunSettings settings={data} onComplete={(body) => completeFirstRun.mutate(body)} isSubmitting={completeFirstRun.isPending} error={completeFirstRun.error} />
+    <FirstRunSettings
+      settings={data}
+      onComplete={(body) => completeFirstRun.mutate(body)}
+      isSubmitting={completeFirstRun.isPending}
+      error={completeFirstRun.error}
+      arrivalReason={arrivalReason}
+    />
   )
 }
 
@@ -71,19 +84,25 @@ function FirstRunSettings({
   onComplete,
   isSubmitting,
   error,
+  arrivalReason,
 }: {
   settings: SystemSettingsResponse
   onComplete: (body: {
     ocelotVersion: string
+    initiatedBy?: string
     pollIntervalSeconds?: number
     auditLogRetentionDays?: number
     snapshotRetentionCount?: number
   }) => void
   isSubmitting: boolean
   error: unknown
+  arrivalReason?: string
 }) {
   const [version, setVersion] = useState('')
-  const [draft, setDraft] = useState<SettingsDraft>(emptySettingsDraft)
+  // With no session yet, this is the only name the audit trail can get, and the
+  // choice it will record cannot be undone.
+  const [operator, setOperator] = useState('')
+  const [draft, setDraft] = useState<SettingsDraft>(() => draftFromSettings(settings))
   const errors = settingsErrors(draft)
 
   // The default is the only offered version, but pre-selecting it would make the
@@ -97,6 +116,7 @@ function FirstRunSettings({
 
     onComplete({
       ocelotVersion: version.trim(),
+      initiatedBy: operator.trim() || undefined,
       pollIntervalSeconds: Number(draft.pollIntervalSeconds),
       auditLogRetentionDays: Number(draft.auditLogRetentionDays),
       snapshotRetentionCount: Number(draft.snapshotRetentionCount),
@@ -113,6 +133,14 @@ function FirstRunSettings({
           generated from here on.
         </p>
       </header>
+
+      {arrivalReason ? (
+        <Alert>
+          <Info aria-hidden="true" className="size-4" />
+          <AlertTitle>Setup comes first</AlertTitle>
+          <AlertDescription>{arrivalReason}</AlertDescription>
+        </Alert>
+      ) : null}
 
       <Alert>
         <Info aria-hidden="true" className="size-4" />
@@ -151,6 +179,29 @@ function FirstRunSettings({
             {versionMissing ? (
               <p className="text-xs text-muted-foreground">A version must be selected.</p>
             ) : null}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Who is setting this up</CardTitle>
+            <CardDescription>
+              Recorded against this choice in the audit trail. There is no sign-in yet, so it
+              cannot be worked out from a session.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <Label htmlFor="setup-operator">Name</Label>
+            <Input
+              id="setup-operator"
+              value={operator}
+              placeholder="e.g. Alex Morgan"
+              onChange={(event) => setOperator(event.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              Optional, but the version cannot be changed afterwards, and an unattributed
+              permanent decision is hard to audit later.
+            </p>
           </CardContent>
         </Card>
 

@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.Reflection;
 using BitWrite.OcelotControl.Api.Controllers;
+using BitWrite.OcelotControl.Domain.Aggregates.SystemSettings;
 using FluentAssertions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -17,13 +18,32 @@ public class SettingsControllerContractTests
         typeof(SettingsController).GetMethod(name)!;
 
     [Fact]
-    public void WritingRequiresTheAdminPolicy()
+    public void CompletingFirstRunIsOpenToAnUnauthenticatedCaller()
     {
-        // The version choice is permanent, so it is not something a lesser role
-        // gets to make.
+        // This used to require the Admin policy, and that made a fresh install
+        // impossible: nothing can issue a token yet (#433), so the one setting the
+        // product cannot run without was the one setting nobody could set. Every
+        // snapshot then refused to build, because first-run had never completed.
+        //
+        // Permanence is not weakened by this. The domain refuses a second,
+        // different version whatever the caller's role, and the choice is recorded
+        // in the audit trail against a name the caller supplies.
         Endpoint("CompleteFirstRun").GetCustomAttributes<AuthorizeAttribute>()
-            .Should().ContainSingle()
-            .Which.Policy.Should().Be("Admin");
+            .Should().BeEmpty();
+        Endpoint("CompleteFirstRun").GetCustomAttributes<AllowAnonymousAttribute>()
+            .Should().ContainSingle(
+                "without it, a fallback policy or a global filter could still close it");
+    }
+
+    [Fact]
+    public void ThePermanentChoiceIsRefusedByTheDomainRatherThanByTheController()
+    {
+        // Being open does not mean being unanswerable to a second decision. The
+        // guard that matters lives in the domain, so it applies to the first caller
+        // and the hundredth alike, and it does not consult a role at all.
+        typeof(SystemSettings)
+            .GetMethod(nameof(SystemSettings.ChooseOcelotVersion))
+            .Should().NotBeNull();
     }
 
     [Fact]

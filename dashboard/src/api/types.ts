@@ -292,6 +292,14 @@ export interface SystemSettingsResponse {
  */
 export interface CompleteFirstRunRequest {
   ocelotVersion: string
+  /**
+   * Who is completing setup.
+   *
+   * There is no session to read an identity from yet (#433), so the caller
+   * supplies one. The version cannot be changed afterwards, so this is recorded
+   * against a permanent decision.
+   */
+  initiatedBy?: string | null
   pollIntervalSeconds?: number | null
   auditLogRetentionDays?: number | null
   snapshotRetentionCount?: number | null

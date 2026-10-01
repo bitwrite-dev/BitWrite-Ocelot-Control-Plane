@@ -6,24 +6,19 @@
 #
 # `-m:1` throughout: several suites share one Redis, and running them in parallel
 # produces failures that are not the code's fault.
+#
+# No `paths` filter, for the same reason as the dashboard workflow: this check is
+# required on both protected branches, and a filtered workflow that does not
+# trigger reports nothing at all — which leaves the PR unmergeable with nothing to
+# fix. Saving a couple of minutes is not worth a check that cannot pass.
 
 name: .NET CI
 
 on:
   push:
     branches: [develop, main]
-    paths:
-      - 'src/**'
-      - 'tests/**'
-      - '*.slnx'
-      - '.github/workflows/dotnet-ci.yml'
   pull_request:
     branches: [develop, main]
-    paths:
-      - 'src/**'
-      - 'tests/**'
-      - '*.slnx'
-      - '.github/workflows/dotnet-ci.yml'
   workflow_dispatch:
 
 # Cancel superseded runs for the same ref, so a push does not queue behind its own

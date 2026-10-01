@@ -1,20 +1,25 @@
-# CI for the dashboard (BitWrite.OcelotControl.Api has none yet — see #338).
+# CI for the dashboard. The .NET side has its own workflow (dotnet-ci.yml).
 #
 # Runs the same three gates locally in one command: `npm run check`.
+#
+# No `paths` filter. There was one — `dashboard/**` — which saved about fifty
+# seconds on a backend-only PR, and cost something far more expensive: this check
+# is required on both protected branches, and a filtered workflow that does not
+# trigger produces no check run at all. GitHub then sits on "Expected — waiting
+# for status to be reported" and the PR cannot be merged, with nothing to fix. It
+# happened to #509, which touched only a workflow file.
+#
+# An optimisation that can leave a required check unreported is not an
+# optimisation. The full suite is the honest cost of making the requirement mean
+# something.
 
 name: Dashboard CI
 
 on:
   push:
     branches: [develop, main]
-    paths:
-      - 'dashboard/**'
-      - '.github/workflows/dashboard.yml'
   pull_request:
     branches: [develop, main]
-    paths:
-      - 'dashboard/**'
-      - '.github/workflows/dashboard.yml'
   workflow_dispatch:
 
 # Cancel superseded runs for the same ref.

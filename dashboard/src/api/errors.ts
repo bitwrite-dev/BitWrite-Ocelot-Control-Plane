@@ -22,6 +22,15 @@ export interface NormalizedApiError {
   status: number
   /** The `type` discriminator from either shape, when present. */
   type?: string
+  /**
+   * The domain's own code for a rejected request, e.g. `DUPLICATE_ENDPOINT`.
+   *
+   * This is the half a client should branch on. The message is written for the
+   * operator reading the screen and is free to be reworded; the code is a
+   * contract. It was being thrown away, which left every domain failure looking
+   * like a 500 with no way to tell them apart.
+   */
+  errorCode?: string
   /** Human-readable message, safe to show in the UI. */
   message: string
   /** Server-side correlation id, for support and log correlation. */
@@ -39,6 +48,7 @@ export interface NormalizedApiError {
 export class ApiError extends Error {
   readonly status: number
   readonly type?: string
+  readonly errorCode?: string
   readonly correlationId?: string
   readonly fieldErrors?: FieldErrors
   readonly isNetworkError: boolean
@@ -48,6 +58,9 @@ export class ApiError extends Error {
     this.name = 'ApiError'
     this.status = normalized.status
     this.type = normalized.type
+    // Declared on the class and never assigned here, so every error carried
+    // `undefined` however the normalizer had read the code.
+    this.errorCode = normalized.errorCode
     this.correlationId = normalized.correlationId
     this.fieldErrors = normalized.fieldErrors
     this.isNetworkError = normalized.isNetworkError
@@ -71,6 +84,8 @@ export class ApiError extends Error {
 interface ProblemDetailsLike {
   correlationId?: unknown
   error?: unknown
+  /** The domain's code for a refused request, when it sent one. */
+  errorCode?: unknown
   type?: unknown
   title?: unknown
   status?: unknown
@@ -125,12 +140,14 @@ export function normalizeError(
   const problem = body as ProblemDetailsLike
   const fieldErrors = toFieldErrors(problem.errors)
   const type = asString(problem.type)
+  const errorCode = asString(problem.errorCode)
   const correlationId = asString(problem.correlationId) ?? asString(problem.traceId)
 
   if (fieldErrors) {
     return {
       status,
       type,
+      errorCode,
       correlationId,
       fieldErrors,
       message: summarizeFieldErrors(fieldErrors),
@@ -140,7 +157,7 @@ export function normalizeError(
 
   const message = asString(problem.error) ?? asString(problem.title) ?? fallbackMessage
 
-  return { status, type, correlationId, message, isNetworkError: false }
+  return { status, type, errorCode, correlationId, message, isNetworkError: false }
 }
 
 /** Normalizes a thrown `fetch` rejection — the request never got a response. */

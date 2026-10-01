@@ -111,13 +111,18 @@ public class FreshInstallWalkthroughTests : IClassFixture<WebApplicationFactory<
         var response = await client.PostAsJsonAsync("/api/v1/settings/first-run",
             new { ocelotVersion = "17.0.0", initiatedBy = "operator" });
 
-        // It is refused, which is the part that matters here. The status code is
-        // 500 rather than the 400 this deserves because GlobalExceptionMiddleware
-        // does not map DomainException at all, and discards its message on the way
-        // — that is #504, a separate bug, and fixing the mapping inside a setup
-        // test would hide it in the one place it is least likely to be noticed.
-        response.IsSuccessStatusCode.Should().BeFalse(
-            "a version the product cannot emit must not be accepted");
+        // It used to be a 500 carrying "An internal server error occurred" — so an
+        // operator who picked the wrong version was told the server was broken, and
+        // never learned that 18.0.0 was the one to pick. That is the whole point of
+        // this change, so it is asserted directly rather than through a status
+        // number, which depends on whether another test got here first.
+        response.IsSuccessStatusCode.Should().BeFalse();
+
+        var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
+        body.GetProperty("error").GetString().Should().NotBe(
+            "An internal server error occurred");
+        body.GetProperty("errorCode").GetString()
+            .Should().BeOneOf("OCELOT_VERSION_NOT_EMITTABLE", "OCELOT_VERSION_ALREADY_CHOSEN");
     }
 
     [Fact]

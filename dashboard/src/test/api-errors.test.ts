@@ -1,3 +1,4 @@
+import { domainErrorCode, isRefusedRequest } from '@/lib/api-error'
 import { describe, expect, it } from 'vitest'
 
 import { ApiError, normalizeError, normalizeNetworkError } from '@/api/errors'
@@ -97,5 +98,79 @@ describe('ApiError', () => {
     expect(() => {
       throw error
     }).toThrow('boom')
+  })
+})
+
+describe('the domain error code', () => {
+  it('reaches the caller, which is the half a client branches on', () => {
+    // It used to be dropped on the floor: the message arrived, and with it no way
+    // to tell one refusal from another except by reading the text.
+    const error = normalizeError(
+      409,
+      {
+        correlationId: 'abc',
+        error: 'The Ocelot version was already chosen as 18.0.0 and cannot be changed.',
+        type: 'Conflict',
+        errorCode: 'OCELOT_VERSION_ALREADY_CHOSEN',
+      },
+      'fallback',
+    )
+
+    expect(error.errorCode).toBe('OCELOT_VERSION_ALREADY_CHOSEN')
+    expect(error.message).toContain('18.0.0')
+  })
+
+  it('is absent when the failure was not a domain one', () => {
+    // A fault, or a proxy. null is the answer, so a caller can tell "refused"
+    // from "broke" without inspecting the status.
+    const error = normalizeError(500, { error: 'An internal server error occurred' }, 'fallback')
+
+    expect(error.errorCode).toBeUndefined()
+  })
+
+  it('is read from the ApiError a component receives', () => {
+    // The shape a page actually holds, rather than the intermediate.
+    const error = new ApiError({
+      status: 400,
+      message: 'Invalid RouteId format: -1',
+      errorCode: 'INVALID_ROUTE_ID_FORMAT',
+      isNetworkError: false,
+    })
+
+    expect(domainErrorCode(error)).toBe('INVALID_ROUTE_ID_FORMAT')
+    expect(isRefusedRequest(error)).toBe(true)
+  })
+
+  it('tells a refused request apart from a fault', () => {
+    // Telling an operator "something went wrong" about a request the domain
+    // refused invites a retry that cannot succeed.
+    const refused = new ApiError({
+      status: 400,
+      message: 'Invalid RouteId format: -1',
+      errorCode: 'INVALID_ROUTE_ID_FORMAT',
+      isNetworkError: false,
+    })
+    const fault = new ApiError({
+      status: 500,
+      message: 'An internal server error occurred',
+      isNetworkError: false,
+    })
+
+    expect(isRefusedRequest(refused)).toBe(true)
+    expect(isRefusedRequest(fault)).toBe(false)
+    expect(domainErrorCode(fault)).toBeNull()
+  })
+
+  it('recognises a refusal that arrived without a code', () => {
+    // A 4xx is a refusal whatever the body said, which is how the API answers
+    // before #504 gave it a code to send.
+    const legacy = new ApiError({
+      status: 404,
+      message: 'Snapshot 4 not found',
+      isNetworkError: false,
+    })
+
+    expect(isRefusedRequest(legacy)).toBe(true)
+    expect(domainErrorCode(legacy)).toBeNull()
   })
 })

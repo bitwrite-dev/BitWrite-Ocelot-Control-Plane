@@ -1,0 +1,103 @@
+# CI for the .NET solution.
+#
+# The dashboard has its own workflow; this covers the other 696 tests, which until
+# now ran only on a developer's machine. Every defect in #500, #502 and #507 was
+# invisible to CI because this did not exist.
+#
+# `-m:1` throughout: several suites share one Redis, and running them in parallel
+# produces failures that are not the code's fault.
+
+name: .NET CI
+
+on:
+  push:
+    branches: [develop, main]
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - '*.slnx'
+      - '.github/workflows/dotnet-ci.yml'
+  pull_request:
+    branches: [develop, main]
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - '*.slnx'
+      - '.github/workflows/dotnet-ci.yml'
+  workflow_dispatch:
+
+# Cancel superseded runs for the same ref, so a push does not queue behind its own
+# earlier commits.
+concurrency:
+  group: dotnet-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    name: Build and test
+    runs-on: ubuntu-latest
+
+    services:
+      # `FreshInstallWalkthroughTests` boots the real Program, which connects to a
+      # real Redis. It is how the first-run deadlock was found, and without this
+      # service it cannot run at all.
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
+    env:
+      # The application falls back to localhost:6379 when no connection string is
+      # configured, so this points it at the service above rather than at whatever
+      # happens to be listening. Stated explicitly anyway: relying on the fallback
+      # means the suite breaks silently if that default ever moves.
+      ConnectionStrings__Redis: localhost:6379
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          # The projects target net8.0, but the solution file is .slnx — a format
+          # only the .NET 9+ SDK reads. Pinning 8.x makes `dotnet build` fail on the
+          # solution itself with an unrecognised <Solution> element, an error that
+          # has nothing to do with the code. So this takes the line that can
+          # actually read the file.
+          #
+          # A global.json would pin it properly, and there is deliberately none:
+          # see #508. Until the solution is .sln, this version is the one part of
+          # the build that is not reproducible.
+          dotnet-version: '10.0.x'
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --no-restore
+
+      # `-m:1` because the suites share one Redis; without it they interleave and
+      # report failures that are not the code's fault.
+      - name: Test
+        run: dotnet test --no-build -m:1 --logger "trx"
+
+      - name: Upload test results
+        # Only on failure. A run that passes does not need its output kept, and
+        # the artefacts add up across a busy week.
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          # The runner names each file after the machine and the moment, so the
+          # glob matches whatever it produced rather than one fixed name.
+          path: "**/TestResults/*.trx"
+          retention-days: 7

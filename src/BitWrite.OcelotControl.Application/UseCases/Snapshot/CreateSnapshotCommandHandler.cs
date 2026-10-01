@@ -4,6 +4,7 @@ using BitWrite.OcelotControl.Domain.Aggregates.GlobalConfiguration;
 using DomainRoute = BitWrite.OcelotControl.Domain.Aggregates.Route.Route;
 using BitWrite.OcelotControl.Domain.Aggregates.Service;
 using DomainSnapshot = BitWrite.OcelotControl.Domain.Aggregates.Snapshot.Snapshot;
+using DomainValidationResult = BitWrite.OcelotControl.Domain.Aggregates.Snapshot.ValidationResult;
 using BitWrite.OcelotControl.Domain.Events;
 using BitWrite.OcelotControl.Domain.Services;
 using BitWrite.OcelotControl.Domain.ValueObjects.Configuration;
@@ -82,60 +83,95 @@ public class CreateSnapshotCommandHandler
         // 3.1 Domain Validation - each aggregate validates itself
         // (Already validated during aggregate operations)
 
-        // 3.2 Route Conflict Validation
+        // 3.2–3.4 Run every rule, then decide.
+        //
+        // These used to throw at the first failure, which meant an operator fixing
+        // one problem was told about the next one only after fixing the first —
+        // and the results were computed and then thrown away, so a snapshot that
+        // failed left no record of why. Collecting first costs nothing and answers
+        // everything at once.
+        var results = new List<DomainValidationResult>();
+
+        // 3.2 Route conflicts.
         var routeKeys = routes.Select(r => (r.Id, r.RouteKey)).ToList();
         var allConflicts = new List<RouteKey>();
-        
+
         foreach (var (id, key) in routeKeys)
         {
-            var conflicts = _routeConflictDetector.DetectConflicts(key, routeKeys, id);
-            allConflicts.AddRange(conflicts);
+            allConflicts.AddRange(_routeConflictDetector.DetectConflicts(key, routeKeys, id));
         }
 
-        if (allConflicts.Any())
+        results.Add(new DomainValidationResult
         {
-            var failedEvent = new SnapshotValidationFailed(
-                SnapshotVersion.First(),
-                $"Route conflicts detected: {string.Join(", ", allConflicts.Select(c => c.ToSignature()))}"
-            );
-            await _eventDispatcher.DispatchAsync(failedEvent, cancellationToken);
-            throw new InvalidOperationException($"Route conflicts detected: {string.Join(", ", allConflicts.Select(c => c.ToSignature()))}");
-        }
+            Rule = "RouteConflicts",
+            IsValid = allConflicts.Count == 0,
+            Message = allConflicts.Count == 0
+                ? null
+                : $"Overlapping routes: {string.Join(", ", allConflicts.Select(c => c.ToSignature()))}",
+        });
 
-        // 3.3 Reference Validation
-        var routeServiceIds = routes.Select(r => r.ServiceId);
-        var existingServiceIds = services.Select(s => s.Id);
-        var serviceRefErrors = _consistencyValidator.ValidateServiceReferences(routeServiceIds, existingServiceIds);
-        
-        var downstreamTargets = routes.SelectMany(r => r.DownstreamTargets);
-        var downstreamErrors = _consistencyValidator.ValidateDownstreamTargets(downstreamTargets);
-        
-        var allErrors = serviceRefErrors.Concat(downstreamErrors).ToList();
-        
-        if (allErrors.Any())
+        // 3.3 References.
+        var referenceErrors = _consistencyValidator
+            .ValidateServiceReferences(routes.Select(r => r.ServiceId), services.Select(s => s.Id))
+            .Concat(_consistencyValidator.ValidateDownstreamTargets(
+                routes.SelectMany(r => r.DownstreamTargets)))
+            .ToList();
+
+        results.Add(new DomainValidationResult
         {
-            var failedEvent = new SnapshotValidationFailed(
-                SnapshotVersion.First(),
-                $"Reference validation failed: {string.Join(", ", allErrors.Select(e => $"{e.Code}: {e.Message}"))}"
-            );
-            await _eventDispatcher.DispatchAsync(failedEvent, cancellationToken);
-            throw new InvalidOperationException($"Reference validation failed: {string.Join(", ", allErrors.Select(e => $"{e.Code}: {e.Message}"))}");
-        }
+            Rule = "References",
+            IsValid = referenceErrors.Count == 0,
+            Message = referenceErrors.Count == 0
+                ? null
+                : string.Join("; ", referenceErrors.Select(e => $"{e.Code}: {e.Message}")),
+        });
 
-        // 3.4 Ocelot Configuration Validation - Check capabilities
-        var features = routes.SelectMany(r => GetFeaturesFromRoute(r)).Distinct().ToList();
+        // 3.4 Capabilities, checked against the configured version rather than a
+        // hard-coded one. It used V20_0 whatever the installation had chosen, so a
+        // deployment targeting 18 was validated against 20's capabilities.
         var capabilityErrors = _consistencyValidator.ValidateGlobalConfiguration(
-            OcelotVersion.V20_0,
-            features);
-        
-        if (capabilityErrors.Any())
+            (await _systemSettings.GetAsync(cancellationToken)).OcelotVersion ?? OcelotVersion.V18_0,
+            routes.SelectMany(GetFeaturesFromRoute).Distinct().ToList());
+
+        results.Add(new DomainValidationResult
         {
-            var failedEvent = new SnapshotValidationFailed(
-                SnapshotVersion.First(),
-                $"Ocelot capability validation failed: {string.Join(", ", capabilityErrors.Select(e => $"{e.Code}: {e.Message}"))}"
-            );
-            await _eventDispatcher.DispatchAsync(failedEvent, cancellationToken);
-            throw new InvalidOperationException($"Ocelot capability validation failed: {string.Join(", ", capabilityErrors.Select(e => $"{e.Code}: {e.Message}"))}");
+            Rule = "OcelotCapabilities",
+            IsValid = capabilityErrors.Count == 0,
+            Message = capabilityErrors.Count == 0
+                ? null
+                : string.Join("; ", capabilityErrors.Select(e => $"{e.Code}: {e.Message}")),
+        });
+
+        // A warning rather than a failure: sealing an artifact with no routes is
+        // occasionally deliberate — clearing a gateway — so the operator is told and
+        // decides. A rule that blocked here would invent a restriction the domain
+        // does not have.
+        results.Add(new DomainValidationResult
+        {
+            Rule = "HasContent",
+            IsValid = routes.Count > 0,
+            Message = routes.Count == 0
+                ? "Warning: no routes are configured. This snapshot would publish an empty configuration to every gateway."
+                : null,
+        });
+
+        // `HasContent` is a warning, not a failure: it says the snapshot would
+        // publish an empty configuration, but sealing one is occasionally how a
+        // gateway gets cleared, so the operator is told and decides. Treating it as
+        // a failure here would make that impossible — and would have quietly
+        // contradicted the create page, which shows the same rule as a warning and
+        // lets the step through.
+        var failures = results
+            .Where(r => !r.IsValid && !r.Message.StartsWith("Warning", StringComparison.Ordinal))
+            .ToList();
+
+        if (failures.Any())
+        {
+            var summary = string.Join("; ", failures.Select(f => $"{f.Rule}: {f.Message}"));
+            await _eventDispatcher.DispatchAsync(
+                new SnapshotValidationFailed(SnapshotVersion.First(), summary),
+                cancellationToken);
+            throw new InvalidOperationException($"Snapshot validation failed: {summary}");
         }
 
         // 4. Canonicalize once, then hash exactly the string that is stored.
@@ -156,8 +192,8 @@ public class CreateSnapshotCommandHandler
             canonicalJson,
             hash,
             version,
-            command.InitiatedBy
-        );
+            command.InitiatedBy,
+            validationResults: results);
 
         // 7. Persist Snapshot
         await _snapshotRepository.AddAsync(snapshot, cancellationToken);

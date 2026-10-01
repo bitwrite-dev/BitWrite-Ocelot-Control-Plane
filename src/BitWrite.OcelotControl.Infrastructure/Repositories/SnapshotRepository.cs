@@ -42,7 +42,15 @@ public class RedisSnapshotRepository : RedisRepositoryBase, ISnapshotRepository
             document.CreatedBy,
             document.CreatedAt,
             document.PublishedAt,
-            document.ArchivedAt);
+            document.ArchivedAt,
+            document.ValidationResults
+                .Select(result => new ValidationResult
+                {
+                    Rule = result.Rule,
+                    IsValid = result.IsValid,
+                    Message = result.Message,
+                })
+                .ToList());
     }
 
     public async Task<Snapshot?> GetLatestAsync(CancellationToken cancellationToken = default)
@@ -87,7 +95,18 @@ public class RedisSnapshotRepository : RedisRepositoryBase, ISnapshotRepository
             CreatedBy = snapshot.CreatedBy,
             CreatedAt = snapshot.CreatedAt,
             PublishedAt = snapshot.PublishedAt,
-            ArchivedAt = snapshot.ArchivedAt
+            ArchivedAt = snapshot.ArchivedAt,
+            // Without this the rules were computed, attached to the aggregate, and
+            // lost on the way to storage — so a snapshot read back showed no
+            // validation at all, which is what the column has always displayed.
+            ValidationResults = snapshot.ValidationResults
+                .Select(result => new SnapshotValidationResultDocument
+                {
+                    Rule = result.Rule,
+                    IsValid = result.IsValid,
+                    Message = result.Message,
+                })
+                .ToList()
         };
 
         await StringSetAsync(key, JsonSerializer.Serialize(document, JsonOptions));
@@ -109,5 +128,17 @@ public class RedisSnapshotRepository : RedisRepositoryBase, ISnapshotRepository
         public DateTimeOffset CreatedAt { get; set; }
         public DateTimeOffset? PublishedAt { get; set; }
         public DateTimeOffset? ArchivedAt { get; set; }
+        /// <summary>
+        /// The rules run when the snapshot was sealed. Absent on documents written
+        /// before this field existed, which deserializes as an empty list.
+        /// </summary>
+        public List<SnapshotValidationResultDocument> ValidationResults { get; set; } = new();
+    }
+
+    private sealed class SnapshotValidationResultDocument
+    {
+        public string Rule { get; set; } = string.Empty;
+        public bool IsValid { get; set; }
+        public string? Message { get; set; }
     }
 }

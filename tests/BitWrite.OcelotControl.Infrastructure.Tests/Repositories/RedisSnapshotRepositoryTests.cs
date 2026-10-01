@@ -89,6 +89,40 @@ public class RedisSnapshotRepositoryTests
             Times.Once);
     }
 
+    [Fact]
+    public async Task ValidationResults_ShouldSurviveAWriteAndARead()
+    {
+        // The half that was missing. The rules were computed and attached to the
+        // aggregate, and this document had no field for them — so every read rebuilt
+        // a snapshot with nothing recorded, which is what the validation column has
+        // always displayed.
+        SetupWrites();
+
+        await _repository.AddAsync(BuildSnapshotWithResults());
+        _writtenValue.ToString().Should().Contain("RouteConflicts");
+
+        var read = await _repository.GetAsync(SnapshotVersion.From(1));
+
+        read.Should().NotBeNull();
+        read!.ValidationResults.Should().HaveCount(2);
+        read.ValidationResults[0].Rule.Should().Be("RouteConflicts");
+        read.ValidationResults[1].Message.Should().Be("Unknown service s-1");
+    }
+
+    [Fact]
+    public async Task GetAsync_ShouldRestoreASnapshotStoredBeforeResultsWereRecorded()
+    {
+        // Documents written before the field existed have none. Reading one has to
+        // keep working, and it is reported as unchecked rather than as checked.
+        SetupWrites();
+        await _repository.AddAsync(BuildSnapshot());
+
+        var read = await _repository.GetAsync(SnapshotVersion.From(1));
+
+        read.Should().NotBeNull();
+        read!.ValidationResults.Should().BeEmpty();
+    }
+
     private void SetupWrites()
     {
         _mockDatabase.Setup(d => d.StringSetAsync(
@@ -110,6 +144,26 @@ public class RedisSnapshotRepositoryTests
         _mockDatabase.Setup(d => d.StringGetAsync(It.IsAny<RedisKey>(), It.IsAny<CommandFlags>()))
             .ReturnsAsync(() => _writtenValue);
     }
+
+    private static Snapshot BuildSnapshotWithResults() =>
+        Snapshot.Reconstitute(
+            Content,
+            ConfigurationHash.FromString(Hash),
+            SnapshotVersion.From(1),
+            SnapshotStatus.Published,
+            "admin",
+            CreatedAt,
+            PublishedAt,
+            validationResults:
+            [
+                new ValidationResult { Rule = "RouteConflicts", IsValid = true },
+                new ValidationResult
+                {
+                    Rule = "References",
+                    IsValid = false,
+                    Message = "Unknown service s-1",
+                },
+            ]);
 
     private static Snapshot BuildSnapshot() =>
         Snapshot.Reconstitute(

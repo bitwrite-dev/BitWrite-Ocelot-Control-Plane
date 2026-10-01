@@ -70,6 +70,16 @@ public class Snapshot
     /// timestamps. Unlike <see cref="Create"/>, this raises no domain events,
     /// because the events it would represent have already happened.
     /// </summary>
+    /// <param name="validationResults">
+    /// The rules that were run when this snapshot was sealed, restored as they were
+    /// recorded.
+    /// </param>
+    /// <remarks>
+    /// Optional because snapshots stored before this field existed have none, and
+    /// reading one has to keep working. An older document restores with an empty
+    /// list rather than failing, which the page shows as "not validated" — which
+    /// is the truth about a snapshot nobody recorded a check for.
+    /// </remarks>
     public static Snapshot Reconstitute(
         string content,
         ConfigurationHash hash,
@@ -78,7 +88,8 @@ public class Snapshot
         string createdBy,
         DateTimeOffset createdAt,
         DateTimeOffset? publishedAt = null,
-        DateTimeOffset? archivedAt = null)
+        DateTimeOffset? archivedAt = null,
+        IReadOnlyList<ValidationResult>? validationResults = null)
     {
         if (string.IsNullOrWhiteSpace(content))
             throw new DomainException("Snapshot content cannot be empty", "EMPTY_SNAPSHOT_CONTENT");
@@ -86,7 +97,7 @@ public class Snapshot
         if (string.IsNullOrWhiteSpace(createdBy))
             throw new DomainException("Created by cannot be empty", "INVALID_CREATED_BY");
 
-        return new Snapshot
+        var instance = new Snapshot
         {
             Version = version,
             Status = status,
@@ -97,6 +108,18 @@ public class Snapshot
             PublishedAt = publishedAt,
             ArchivedAt = archivedAt
         };
+
+        if (validationResults is not null)
+        {
+            // Restored in order, because the sequence is the report: the first
+            // failure explains the rest.
+            foreach (var result in validationResults)
+            {
+                instance._validationResults.Add(result);
+            }
+        }
+
+        return instance;
     }
 
     /// <summary>
@@ -171,9 +194,23 @@ public class Snapshot
     }
 
     /// <summary>
-    /// Checks if snapshot is valid.
+    /// Whether every rule that was run passed.
     /// </summary>
-    public bool IsValid => _validationResults.All(r => r.IsValid);
+    /// <remarks>
+    /// False when nothing was run. <c>All</c> over an empty list is vacuously true,
+    /// which said "valid" about a snapshot whose validation nobody had recorded —
+    /// while the API, given that same empty list, rendered "not validated". The two
+    /// were describing one snapshot and disagreeing, and an operator reading the
+    /// aggregate directly would have been told it was fine.
+    /// <para>
+    /// A warning counts here. The only rule that reports one is
+    /// <c>HasContent</c>, and it says the snapshot would publish an empty
+    /// configuration — worth saying, not worth refusing.
+    /// </para>
+    /// </remarks>
+    public bool IsValid =>
+        _validationResults.Count > 0 &&
+        _validationResults.All(result => result.IsValid || IsWarning(result.Message));
 
     private void AddDomainEvent(DomainEvent domainEvent)
     {
@@ -184,6 +221,9 @@ public class Snapshot
     {
         _domainEvents.Clear();
     }
+
+    private static bool IsWarning(string? message) =>
+        message is not null && message.StartsWith("Warning", StringComparison.Ordinal);
 }
 
 /// <summary>

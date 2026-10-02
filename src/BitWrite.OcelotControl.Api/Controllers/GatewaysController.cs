@@ -66,7 +66,7 @@ public class GatewaysController : BaseApiController
     {
         try
         {
-            var query = new AppGateway.GetGatewayQuery(GatewayId.From(Guid.Parse(id)));
+            var query = new AppGateway.GetGatewayQuery(GatewayId.From(id));
             var result = await _getGatewayQueryHandler.HandleAsync(query);
 
             if (result == null)
@@ -106,7 +106,7 @@ public class GatewaysController : BaseApiController
         try
         {
             var command = new AppGateway.UpdateGatewayCommand(
-                GatewayId.From(Guid.Parse(id)),
+                GatewayId.From(id),
                 request.Name,
                 request.Description,
                 User.Identity?.Name ?? "system"
@@ -136,7 +136,7 @@ public class GatewaysController : BaseApiController
         {
             var deleted = await _deleteGatewayCommandHandler.HandleAsync(
                 new AppGateway.DeleteGatewayCommand(
-                    GatewayId.From(Guid.Parse(id)),
+                    GatewayId.From(id),
                     User.Identity?.Name ?? "system"));
 
             return deleted ? NoContent() : NotFound();
@@ -164,7 +164,7 @@ public class GatewaysController : BaseApiController
         {
             return Ok(await _deletionEligibilityQueryHandler.HandleAsync(
                 new AppGateway.GetGatewayDeletionEligibilityQuery(
-                    GatewayId.From(Guid.Parse(id)),
+                    GatewayId.From(id),
                     User.Identity?.Name ?? "system")));
         }
         catch (Exception ex)
@@ -182,7 +182,7 @@ public class GatewaysController : BaseApiController
             var status = RuntimeStatus.From(request.Status);
 
             var command = new AppGateway.UpdateGatewayStatusCommand(
-                GatewayId.From(Guid.Parse(id)),
+                GatewayId.From(id),
                 status,
                 User.Identity?.Name ?? "system"
             );

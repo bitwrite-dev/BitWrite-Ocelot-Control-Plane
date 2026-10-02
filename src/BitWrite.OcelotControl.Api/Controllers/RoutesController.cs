@@ -98,7 +98,7 @@ public class RoutesController : BaseApiController
     {
         try
         {
-            var query = new AppRoute.GetRouteQuery(RouteId.From(Guid.Parse(id)));
+            var query = new AppRoute.GetRouteQuery(RouteId.From(id));
             var result = await _getRouteQueryHandler.HandleAsync(query);
 
             if (result == null)
@@ -229,7 +229,7 @@ public class RoutesController : BaseApiController
     {
         try
         {
-            var routeId = RouteId.From(Guid.Parse(id));
+            var routeId = RouteId.From(id);
 
             var mapping = RouteRequestMapper.ToReplaceCommand(
                 request,
@@ -259,7 +259,7 @@ public class RoutesController : BaseApiController
         try
         {
             var command = new AppRoute.EnableRouteCommand(
-                RouteId.From(Guid.Parse(id)),
+                RouteId.From(id),
                 User.Identity?.Name ?? "system"
             );
 
@@ -278,7 +278,7 @@ public class RoutesController : BaseApiController
         try
         {
             var command = new AppRoute.DisableRouteCommand(
-                RouteId.From(Guid.Parse(id)),
+                RouteId.From(id),
                 User.Identity?.Name ?? "system"
             );
 
@@ -297,7 +297,7 @@ public class RoutesController : BaseApiController
         try
         {
             var command = new AppRoute.DeleteRouteCommand(
-                RouteId.From(Guid.Parse(id)),
+                RouteId.From(id),
                 User.Identity?.Name ?? "system"
             );
 
@@ -316,7 +316,7 @@ public class RoutesController : BaseApiController
         try
         {
             var command = new AppRoute.ValidateRouteCommand(
-                RouteId.From(Guid.Parse(id)),
+                RouteId.From(id),
                 User.Identity?.Name ?? "system"
             );
 
@@ -334,7 +334,7 @@ public class RoutesController : BaseApiController
     {
         try
         {
-            var query = new AppRoute.PreviewRouteQuery(RouteId.From(Guid.Parse(id)));
+            var query = new AppRoute.PreviewRouteQuery(RouteId.From(id));
             var result = await _previewRouteQueryHandler.HandleAsync(query);
             return HandleResult(new ApiDtos.RoutePreviewResponse(result.OcelotJson));
         }
@@ -349,7 +349,7 @@ public class RoutesController : BaseApiController
     {
         try
         {
-            var query = new AppRoute.GetEffectiveRouteQuery(RouteId.From(Guid.Parse(id)));
+            var query = new AppRoute.GetEffectiveRouteQuery(RouteId.From(id));
             var result = await _getEffectiveRouteQueryHandler.HandleAsync(query);
             return HandleResult(new ApiDtos.RouteEffectiveResponse(result.OcelotJson));
         }
@@ -364,7 +364,7 @@ public class RoutesController : BaseApiController
     {
         try
         {
-            var query = new AppRoute.RouteHistoryQuery(RouteId.From(Guid.Parse(id)));
+            var query = new AppRoute.RouteHistoryQuery(RouteId.From(id));
             var result = await _routeHistoryQueryHandler.HandleAsync(query);
             return HandleResult(new ApiDtos.RouteHistoryResponse(result.History.Select(MapToHistoryItem).ToList()));
         }

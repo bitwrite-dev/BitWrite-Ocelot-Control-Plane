@@ -34,6 +34,7 @@ public abstract class BaseApiController : ControllerBase
         // Genuinely unexpected failures keep a generic message: their text is not
         // written for a caller, and it may contain internals.
         if (ex is not DomainException && ex is not ArgumentException
+            && ex is not FormatException
             && ex is not InvalidOperationException && ex is not KeyNotFoundException
             && ex is not UnauthorizedAccessException)
         {
@@ -64,6 +65,7 @@ public abstract class BaseApiController : ControllerBase
 
         return ex switch
         {
+            FormatException => BadRequest(error),
             ArgumentException => BadRequest(error),
             InvalidOperationException => Conflict(error),
             KeyNotFoundException => NotFound(error),

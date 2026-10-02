@@ -1,6 +1,8 @@
 using BitWrite.OcelotControl.Api.Middleware;
 using BitWrite.OcelotControl.Api.Validators;
 using AppInterfaces = BitWrite.OcelotControl.Application.Interfaces;
+using BitWrite.OcelotControl.Domain.Events;
+using BitWrite.OcelotControl.Infrastructure.EventHandlers;
 using BitWrite.OcelotControl.Application.UseCases.Snapshot;
 using BitWrite.OcelotControl.Application.UseCases.Publication;
 using BitWrite.OcelotControl.Application.UseCases.Route;
@@ -94,6 +96,14 @@ builder.Services.AddScoped<AppInterfaces.IConfigurationBuilder, ConfigurationBui
             builder.Services.AddScoped<AppInterfaces.IPluginRepository, PluginRepositoryAdapter>();
             builder.Services.AddScoped<AppInterfaces.ILicenseRepository, RedisLicenseRepository>();
             builder.Services.AddScoped<AppInterfaces.IAuditLogRepository, RedisAuditLogRepository>();
+
+            // The audit trail is written by handling the event, not by each command
+            // remembering to. Nothing was registered here before, so every
+            // `AuditRecorded` the commands dispatch had no subscriber and the log
+            // stayed empty — see #514.
+            builder.Services.AddScoped<
+                AppInterfaces.IDomainEventHandler<AuditRecorded>,
+                AuditRecordedEventHandler>();
 
             // Infrastructure Services
             builder.Services.AddSingleton<AppInterfaces.IDistributedLock, RedisDistributedLock>();

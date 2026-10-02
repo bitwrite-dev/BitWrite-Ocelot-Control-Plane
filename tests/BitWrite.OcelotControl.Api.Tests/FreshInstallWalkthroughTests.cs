@@ -166,4 +166,65 @@ public class FreshInstallWalkthroughTests : IClassFixture<WebApplicationFactory<
 
         return JsonDocument.Parse(json).RootElement.Clone();
     }
+
+    [Fact]
+    public async Task PerformingAnActionLeavesARecordOfIt()
+    {
+        using var client = CreateClient();
+        await CompleteSetup(client);
+
+        // This is the test that would have caught #514. Every layer tested its own
+        // seam — the handlers assert the event was dispatched, the controller
+        // asserts it maps the repository's shape — and nothing crossed the two, so
+        // the audit log stayed empty while the whole suite passed.
+        var before = JsonDocument
+            .Parse(await client.GetStringAsync("/api/v1/audit?page=1&pageSize=1"))
+            .RootElement.GetProperty("totalCount").GetInt32();
+
+        var created = JsonDocument.Parse(await client.PostAsJsonAsync("/api/v1/services",
+            new
+            {
+                name = $"audit-walkthrough-{Guid.NewGuid():N}"[..20],
+                downstreamTargets = new[] { new { host = "localhost", port = 5001, weight = 1 } },
+            }).ContinueWith(task => task.Result.Content.ReadAsStringAsync()).Result)
+            .RootElement;
+
+        var id = created.GetProperty("id").GetString();
+        created.GetProperty("downstreamTargets")[0].GetProperty("weight").GetInt32()
+            .Should().Be(1, "the endpoint request now carries a weight");
+
+        var after = JsonDocument.Parse(await client.GetStringAsync("/api/v1/audit?page=1&pageSize=50"))
+            .RootElement;
+
+        after.GetProperty("totalCount").GetInt32().Should().BeGreaterThan(before);
+
+        var mine = after.GetProperty("audits").EnumerateArray()
+            .Where(entry => entry.GetProperty("resourceId").GetString() == id)
+            .ToList();
+
+        mine.Should().ContainSingle("creating one service should record one entry");
+        var entry = mine[0];
+        entry.GetProperty("action").GetString().Should().Be("CreateService");
+        entry.GetProperty("resourceType").GetString().Should().Be("Service");
+        entry.GetProperty("result").GetString().Should().Be("Success");
+
+        await client.DeleteAsync($"/api/v1/services/{id}");
+    }
+
+    [Fact]
+    public async Task FiltersTheLogByWhatItIsAskedFor()
+    {
+        using var client = CreateClient();
+
+        // The list takes filters, and a filter that returned everything would look
+        // like one that worked.
+        var all = JsonDocument.Parse(await client.GetStringAsync("/api/v1/audit?page=1&pageSize=50"));
+        if (all.RootElement.GetProperty("totalCount").GetInt32() == 0) return;
+
+        var filtered = JsonDocument.Parse(
+            await client.GetStringAsync("/api/v1/audit?action=CreateService&pageSize=50"));
+
+        filtered.RootElement.GetProperty("audits").EnumerateArray()
+            .Should().OnlyContain(entry => entry.GetProperty("action").GetString() == "CreateService");
+    }
 }

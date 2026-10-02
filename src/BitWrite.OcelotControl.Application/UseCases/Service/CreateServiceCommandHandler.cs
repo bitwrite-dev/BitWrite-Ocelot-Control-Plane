@@ -30,7 +30,7 @@ public class CreateServiceCommandHandler
         {
             foreach (var target in command.DownstreamTargets)
             {
-                service.AddHost(target.Host, target.Port);
+                service.AddHost(target.Host, target.Port, target.Weight);
             }
         }
 

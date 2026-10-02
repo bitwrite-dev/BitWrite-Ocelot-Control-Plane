@@ -6,7 +6,7 @@ import { validateServiceDraft } from '../service-form'
 const validDraft = () => {
   const draft = emptyServiceDraft()
   draft.name = 'users-api'
-  draft.downstreamTargets[0] = { host: 'localhost', port: 5001, scheme: 'http', path: '/' }
+  draft.downstreamTargets[0] = { host: 'localhost', port: 5001, weight: 1 }
   return draft
 }
 
@@ -57,7 +57,7 @@ describe('validateServiceDraft', () => {
 
   it('rejects a duplicate endpoint, which the aggregate would refuse', () => {
     const draft = validDraft()
-    draft.downstreamTargets.push({ host: 'localhost', port: 5001, scheme: 'http', path: '/' })
+    draft.downstreamTargets.push({ host: 'localhost', port: 5001, weight: 1 })
     expect(validateServiceDraft(draft)['endpoints.1.host']).toEqual([
       'This endpoint is already listed',
     ])
@@ -65,13 +65,13 @@ describe('validateServiceDraft', () => {
 
   it('treats a duplicate host case-insensitively, as the domain does', () => {
     const draft = validDraft()
-    draft.downstreamTargets.push({ host: 'LOCALHOST', port: 5001, scheme: 'http', path: '/' })
+    draft.downstreamTargets.push({ host: 'LOCALHOST', port: 5001, weight: 1 })
     expect(validateServiceDraft(draft)['endpoints.1.host']).toBeDefined()
   })
 
   it('allows several distinct endpoints', () => {
     const draft = validDraft()
-    draft.downstreamTargets.push({ host: 'other.internal', port: 5001, scheme: 'http', path: '/' })
+    draft.downstreamTargets.push({ host: 'other.internal', port: 5001, weight: 1 })
     expect(validateServiceDraft(draft)).toEqual({})
   })
 
@@ -85,7 +85,7 @@ describe('validateServiceDraft', () => {
 
   it('reports every bad endpoint, not just the first', () => {
     const draft = validDraft()
-    draft.downstreamTargets.push({ host: '', port: '', scheme: 'http', path: '/' })
+    draft.downstreamTargets.push({ host: '', port: '', weight: '' })
     const errors = validateServiceDraft(draft)
     expect(errors['endpoints.1.host']).toBeDefined()
     expect(errors['endpoints.1.port']).toBeDefined()
@@ -99,8 +99,8 @@ describe('serviceDraftFrom', () => {
       name: 'users-api',
       description: 'The users backend',
       downstreamTargets: [
-        { host: 'localhost', port: 5001, scheme: 'http', path: '/' },
-        { host: 'other', port: 5002, scheme: 'http', path: '/' },
+        { host: 'localhost', port: 5001, weight: 3, isActive: true },
+        { host: 'other', port: 5002, weight: 1, isActive: true },
       ],
       createdAt: '',
       updatedAt: '',
@@ -137,22 +137,29 @@ describe('toServiceRequest', () => {
     expect(body.downstreamTargets[0]).toEqual({
       host: 'localhost',
       port: 5001,
-      scheme: 'http',
-      path: '/',
+      weight: 1,
     })
   })
 
-  it('sends scheme and path fixed, because the domain has nowhere to put them', () => {
-    // #474: the API echoes these back hard-coded, so offering them as editable
-    // would mean an edit that silently does nothing.
+  it('sends the weight the operator set', () => {
+    // #474: the API accepted no weight at all, and the update handler matched
+    // endpoints on host and port alone, so a changed weight was echoed back and
+    // dropped. It is stored now, so the form has to actually send it.
     const draft = validDraft()
-    draft.downstreamTargets[0].scheme = 'https'
-    draft.downstreamTargets[0].path = '/v2'
+    draft.downstreamTargets[0].weight = 5
 
     const body = toServiceRequest(draft)
 
-    expect(body.downstreamTargets[0].scheme).toBe('http')
-    expect(body.downstreamTargets[0].path).toBe('/')
+    expect(body.downstreamTargets[0].weight).toBe(5)
+  })
+
+  it('carries no scheme or path, because the domain stores neither', () => {
+    // They used to be in the request, accepted, discarded, and echoed back as
+    // "http" and "/" — so a typed path came back as "/" with nothing to say
+    // whether it had been kept.
+    const endpoint = toServiceRequest(validDraft()).downstreamTargets[0]
+
+    expect(Object.keys(endpoint).sort()).toEqual(['host', 'port', 'weight'])
   })
 
   it('keeps a null description as null rather than an empty string', () => {

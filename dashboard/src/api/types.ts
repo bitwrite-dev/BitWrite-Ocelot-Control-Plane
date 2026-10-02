@@ -499,13 +499,48 @@ export interface ServiceListResponse {
   pageSize: number
 }
 
+/**
+ * A service endpoint, as the API now reports it.
+ *
+ * Distinct from the route's `DownstreamTargetResponse`: a service endpoint is host,
+ * port, weight and isActive, and nothing else. It used to borrow the route's shape
+ * and answer with the invented constants "http" and "/", so a caller could not tell
+ * a real value from a placeholder.
+ */
+export interface ServiceEndpointResponse {
+  host: string
+  port: number
+  /** Load-balancing weight. A domain field the API did not expose at all before. */
+  weight: number
+  isActive: boolean
+}
+
+/** What the API accepts for a service endpoint. Same four fields, no scheme or path. */
+export interface ServiceEndpointRequest {
+  host: string
+  port: number
+  weight?: number
+}
+
 export interface ServiceResponse {
   id: string
   name: string
   description: string | null
-  downstreamTargets: DownstreamTargetResponse[]
+  downstreamTargets: ServiceEndpointResponse[]
   createdAt: string
   updatedAt: string
+}
+
+export interface CreateServiceRequest {
+  name: string
+  description?: string | null
+  downstreamTargets?: ServiceEndpointRequest[] | null
+}
+
+export interface UpdateServiceRequest {
+  name?: string | null
+  description?: string | null
+  downstreamTargets?: ServiceEndpointRequest[] | null
 }
 
 export interface ServiceRoutesResponse {

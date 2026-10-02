@@ -78,34 +78,37 @@ export function useServiceMutations() {
 /**
  * A service endpoint as the domain actually stores it.
  *
- * Host and port only: `ServiceEndpoint` has no scheme or path, and the API
- * reports `"http"` and `"/"` for both regardless of what was sent. See #474.
+ * Host, port and weight. The form used to carry a scheme and a path too, which the
+ * API accepted, discarded, and echoed back as `"http"` and `"/"` — so a typed path
+ * came back as `/` with nothing to say whether it had been kept. See #474.
  */
 export interface ServiceEndpointDraft {
   host: string
   /** A blank field is `''` rather than `NaN`, so it can be typed into. */
   port: number | ''
+  /** Load-balancing weight. Editable, because the API now accepts and reports it. */
+  weight: number | ''
 }
 
 /** The editable form state. */
 export interface ServiceDraft {
   name: string
   description: string | null
-  downstreamTargets: (ServiceEndpointDraft & { scheme: string; path: string })[]
+  downstreamTargets: ServiceEndpointDraft[]
 }
 
-/** The request body the API accepts, where a port is a real number. */
+/** The request body the API accepts, where a port and a weight are real numbers. */
 export interface ServiceRequest {
   name: string
   description: string | null
-  downstreamTargets: { host: string; port: number; scheme: string; path: string }[]
+  downstreamTargets: { host: string; port: number; weight: number }[]
 }
 
 export const emptyServiceDraft = (): ServiceDraft => ({
   name: '',
   description: null,
   // The API requires at least one endpoint, so the form starts with one row.
-  downstreamTargets: [{ host: '', port: '', scheme: 'http', path: '/' }],
+  downstreamTargets: [{ host: '', port: '', weight: 1 }],
 })
 
 /** Reads a stored service into the form state. */
@@ -116,9 +119,9 @@ export function serviceDraftFrom(service: ServiceResponse): ServiceDraft {
     downstreamTargets: service.downstreamTargets.map((target) => ({
       host: target.host,
       port: target.port,
-      // Fixed, because the domain has nowhere to put them. See #474.
-      scheme: 'http',
-      path: '/',
+      // Read back rather than invented: it is in the domain, the API reports it,
+      // and it decides how heavily a gateway sends traffic this way.
+      weight: target.weight,
     })),
   }
 }
@@ -131,10 +134,9 @@ export function toServiceRequest(draft: ServiceDraft): ServiceRequest {
     downstreamTargets: draft.downstreamTargets.map((target) => ({
       host: target.host.trim(),
       port: Number(target.port),
-      // The domain stores neither, so they are sent fixed rather than
-      // pretending to be editable.
-      scheme: 'http',
-      path: '/',
+      // Sent as the operator set it, and stored: the update handler used to
+      // match endpoints on host and port alone and drop a changed weight.
+      weight: Number(target.weight),
     })),
   }
 }

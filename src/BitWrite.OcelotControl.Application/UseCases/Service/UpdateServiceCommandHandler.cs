@@ -59,15 +59,23 @@ public class UpdateServiceCommandHandler
                 }
             }
 
-            // Add new endpoints
+            // Add new endpoints, and re-weigh the ones already present.
             foreach (var target in command.DownstreamTargets)
             {
-                var existing = existingEndpoints.FirstOrDefault(e => 
+                var existing = existingEndpoints.FirstOrDefault(e =>
                     e.Host.Equals(target.Host, StringComparison.OrdinalIgnoreCase) && e.Port == target.Port);
-                
+
                 if (existing == null)
                 {
-                    service.AddHost(target.Host, target.Port);
+                    service.AddHost(target.Host, target.Port, target.Weight);
+                }
+                else if (existing.Weight != target.Weight)
+                {
+                    // The endpoint is matched on host and port alone, so without this
+                    // a changed weight was accepted and dropped: the response echoed
+                    // the value back and nothing was stored. The domain has always
+                    // had UpdateHostWeight for this; nothing called it.
+                    service.UpdateHostWeight(target.Host, target.Port, target.Weight);
                 }
             }
         }

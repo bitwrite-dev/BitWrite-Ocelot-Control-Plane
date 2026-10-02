@@ -45,6 +45,14 @@ export function validateServiceDraft(draft: ServiceDraft): Record<string, string
       errors[`endpoints.${index}.port`] = ['Port must be between 1 and 65535']
     }
 
+    if (target.weight === '') {
+      errors[`endpoints.${index}.weight`] = ['Weight is required']
+    } else if (!Number.isInteger(target.weight) || target.weight < 1 || target.weight > 1000) {
+      // The API accepts 1–1000 and the domain refuses a non-positive weight; the
+      // range is checked here so the reason arrives before a round trip.
+      errors[`endpoints.${index}.weight`] = ['Weight must be between 1 and 1000']
+    }
+
     if (host && target.port !== '') {
       const key = `${host.toLowerCase()}:${target.port}`
       if (seen.has(key)) {
@@ -66,9 +74,11 @@ export function hasErrors(errors: Record<string, string[]>): boolean {
 /**
  * Create or edit form for a service.
  *
- * Endpoints are host and port only, because that is all `ServiceEndpoint`
- * holds. The API echoes a scheme and path back for each one but stores neither,
- * so offering them would invite an edit that quietly does nothing — see #474.
+ * Endpoints are host, port and weight, which is what `ServiceEndpoint` holds. The
+ * API used to borrow the route's endpoint shape and answer with an invented scheme
+ * and path it never stored, so the form kept two fields that quietly did nothing —
+ * see #474. Weight was in the domain all along and could neither be seen nor set,
+ * so it is editable here.
  */
 export function ServiceForm({
   initial,
@@ -165,7 +175,7 @@ export function ServiceForm({
                 ...current,
                 downstreamTargets: [
                   ...current.downstreamTargets,
-                  { host: '', port: '', scheme: 'http', path: '/' },
+                  { host: '', port: '', weight: 1 },
                 ],
               }))
             }
@@ -176,7 +186,7 @@ export function ServiceForm({
 
         <ul className="space-y-2">
           {draft.downstreamTargets.map((endpoint, index) => (
-            <li key={index} className="grid gap-2 sm:grid-cols-[2fr_1fr_auto]">
+            <li key={index} className="grid gap-2 sm:grid-cols-[2fr_1fr_1fr_auto]">
               <div className="space-y-1">
                 <Input
                   aria-label={`Endpoint ${index + 1} host`}
@@ -203,6 +213,24 @@ export function ServiceForm({
                   placeholder="5001"
                 />
                 {errors[`endpoints.${index}.port`]?.map((message) => (
+                  <p key={message} className="text-xs text-destructive">
+                    {message}
+                  </p>
+                ))}
+              </div>
+              <div className="space-y-1">
+                <Input
+                  aria-label={`Endpoint ${index + 1} weight`}
+                  type="number"
+                  value={endpoint.weight}
+                  onChange={(event) =>
+                    setEndpoint(index, {
+                      weight: event.target.value === '' ? '' : Number(event.target.value),
+                    })
+                  }
+                  placeholder="1"
+                />
+                {errors[`endpoints.${index}.weight`]?.map((message) => (
                   <p key={message} className="text-xs text-destructive">
                     {message}
                   </p>

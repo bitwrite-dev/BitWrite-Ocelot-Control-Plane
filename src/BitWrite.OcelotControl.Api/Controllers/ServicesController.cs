@@ -159,9 +159,18 @@ public class ServicesController : BaseApiController
         }
     }
 
-    private static DomainDownstreamTarget MapToDownstreamTarget(ApiDtos.DownstreamTargetRequest request)
+    /// <summary>
+    /// Turns an endpoint request into the value the command carries.
+    /// </summary>
+    /// <remarks>
+    /// A <c>DownstreamTarget</c> has a scheme and a path that a
+    /// <c>ServiceEndpoint</c> does not have, so they are not carried across. The
+    /// request no longer accepts them either, so a caller cannot set a value that
+    /// would be dropped.
+    /// </remarks>
+    private static DomainDownstreamTarget MapToDownstreamTarget(ApiDtos.ServiceEndpointRequest request)
     {
-        return DomainDownstreamTarget.Create(request.Scheme, request.Host, request.Port, request.Path);
+        return DomainDownstreamTarget.Create("http", request.Host, request.Port, "/", request.Weight);
     }
 
     private static ApiDtos.ServiceResponse MapToResponse(AppService.ServiceResponse service)
@@ -170,7 +179,13 @@ public class ServicesController : BaseApiController
             service.Id.Value.ToString(),
             service.Name,
             service.Description,
-            service.Endpoints.Select(e => new ApiDtos.DownstreamTargetResponse(e.Host, e.Port, "http", "/")).ToList(),
+            // Host, port, weight and isActive — the four fields a ServiceEndpoint
+            // actually has. It used to answer with the route's shape and the
+            // invented constants "http" and "/", so a caller could not tell a real
+            // value from a placeholder, and weight could not be seen at all.
+            service.Endpoints
+                .Select(e => new ApiDtos.ServiceEndpointResponse(e.Host, e.Port, e.Weight, e.IsActive))
+                .ToList(),
             service.CreatedAt,
             service.UpdatedAt
         );

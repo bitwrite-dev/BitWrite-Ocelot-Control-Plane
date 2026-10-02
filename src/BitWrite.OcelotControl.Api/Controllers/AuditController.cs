@@ -80,7 +80,7 @@ public class AuditController : BaseApiController
     }
 
     [HttpGet("stats")]
-    public async Task<ActionResult<object>> GetAuditStats()
+    public async Task<ActionResult<AuditStatsResponse>> GetAuditStats()
     {
         try
         {

@@ -14,6 +14,20 @@ export interface AuditListResponse {
   pageSize: number
 }
 
+/**
+ * Counts across the log.
+ *
+ * Declared because the endpoint used to return `{"result":{},"value":null}`: a
+ * syntactically valid response with nothing in it, which is the hardest kind of
+ * wrong to notice.
+ */
+export interface AuditStatsResponse {
+  totalCount: number
+  todayCount: number
+  thisWeekCount: number
+  thisMonthCount: number
+}
+
 export interface AuditResponse {
   id: string
   actor: string

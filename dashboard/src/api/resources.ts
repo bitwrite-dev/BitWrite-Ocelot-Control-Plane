@@ -1,6 +1,7 @@
 import type { HttpClient, RequestOptions } from './http'
 import type {
   AuditListResponse,
+  AuditStatsResponse,
   AuditResponse,
   GatewayListResponse,
   GatewayResponse,
@@ -55,6 +56,22 @@ type Options = Omit<RequestOptions, 'method' | 'body'>
 export interface RouteListParams extends PageParams {
   serviceId?: string
   isEnabled?: boolean
+}
+
+/**
+ * The audit log's filters.
+ *
+ * Part of the request rather than something the page applies afterwards: the log
+ * grows without bound, so a total computed from one page is wrong as soon as
+ * there is more than one page.
+ */
+export interface AuditListParams extends PageParams {
+  actor?: string
+  action?: string
+  resourceType?: string
+  resourceId?: string
+  from?: string
+  to?: string
 }
 
 export function createResources(http: HttpClient) {
@@ -179,10 +196,15 @@ export function createResources(http: HttpClient) {
   }
 
   const audit = {
-    list: ({ signal, ...query }: PageParams = {}) =>
+    list: ({ signal, ...query }: AuditListParams = {}) =>
       http.get<AuditListResponse>('/api/v1/audit', { query, signal }),
     get: (id: string, o?: Options) => http.get<AuditResponse>(`/api/v1/audit/${id}`, o),
-    stats: (o?: Options) => http.get<unknown>('/api/v1/audit/stats', o),
+    /**
+     * Counts for the cards. Typed, because it used to be `unknown` and the
+     * endpoint returned `{"result":{},"value":null}` — a valid-looking response
+     * carrying nothing.
+     */
+    stats: (o?: Options) => http.get<AuditStatsResponse>('/api/v1/audit/stats', o),
   }
 
   const runtime = {

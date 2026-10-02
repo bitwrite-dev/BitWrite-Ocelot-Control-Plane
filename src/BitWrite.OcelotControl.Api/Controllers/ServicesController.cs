@@ -63,7 +63,7 @@ public class ServicesController : BaseApiController
     {
         try
         {
-            var query = new AppService.GetServiceQuery(ServiceId.From(Guid.Parse(id)));
+            var query = new AppService.GetServiceQuery(ServiceId.From(id));
             var result = await _getServiceQueryHandler.HandleAsync(query);
 
             if (result == null)
@@ -104,7 +104,7 @@ public class ServicesController : BaseApiController
         try
         {
             var command = new AppService.UpdateServiceCommand(
-                ServiceId.From(Guid.Parse(id)),
+                ServiceId.From(id),
                 request.Name,
                 request.Description,
                 request.DownstreamTargets?.Select(MapToDownstreamTarget).ToList(),
@@ -126,7 +126,7 @@ public class ServicesController : BaseApiController
         try
         {
             var command = new AppService.DeleteServiceCommand(
-                ServiceId.From(Guid.Parse(id)),
+                ServiceId.From(id),
                 User.Identity?.Name ?? "system"
             );
 
@@ -144,7 +144,7 @@ public class ServicesController : BaseApiController
     {
         try
         {
-            var query = new AppService.GetServiceRoutesQuery(ServiceId.From(Guid.Parse(id)));
+            var query = new AppService.GetServiceRoutesQuery(ServiceId.From(id));
             var result = await _getServiceRoutesQueryHandler.HandleAsync(query);
 
             var response = new ApiDtos.ServiceRoutesResponse(

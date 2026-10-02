@@ -34,7 +34,7 @@ public class RuntimeController : BaseApiController
     {
         try
         {
-            var query = new AppRuntime.GetRuntimeStatusQuery(GatewayId.From(Guid.Parse(gatewayId)));
+            var query = new AppRuntime.GetRuntimeStatusQuery(GatewayId.From(gatewayId));
             var result = await _getRuntimeStatusQueryHandler.HandleAsync(query);
 
             if (result == null)
@@ -73,7 +73,7 @@ public class RuntimeController : BaseApiController
     {
         try
         {
-            var query = new AppRuntime.GetGatewayRuntimeDetailQuery(GatewayId.From(Guid.Parse(id)));
+            var query = new AppRuntime.GetGatewayRuntimeDetailQuery(GatewayId.From(id));
             var result = await _getGatewayRuntimeDetailQueryHandler.HandleAsync(query);
 
             if (result == null)
@@ -93,7 +93,7 @@ public class RuntimeController : BaseApiController
         try
         {
             var command = new AppRuntime.ReconcileGatewayCommand(
-                GatewayId.From(Guid.Parse(request.GatewayId)),
+                GatewayId.From(request.GatewayId),
                 SnapshotVersion.From(request.TargetVersion),
                 request.InitiatedBy
             );

@@ -80,6 +80,10 @@ public class GlobalExceptionMiddleware
 
         var (statusCode, error) = exception switch
         {
+            // FormatException derives from SystemException, not ArgumentException, so
+            // it matched nothing and answered 500. Wherever it is thrown — a parsed
+            // id, a parsed date — the input was malformed, which is a 400.
+            FormatException => (StatusCodes.Status400BadRequest, new { CorrelationId = correlationId, Error = exception.Message, Type = "ValidationError" }),
             ArgumentException => (StatusCodes.Status400BadRequest, new { CorrelationId = correlationId, Error = exception.Message, Type = "ValidationError" }),
             InvalidOperationException => (StatusCodes.Status409Conflict, new { CorrelationId = correlationId, Error = exception.Message, Type = "ConflictError" }),
             KeyNotFoundException => (StatusCodes.Status404NotFound, new { CorrelationId = correlationId, Error = exception.Message, Type = "NotFoundError" }),

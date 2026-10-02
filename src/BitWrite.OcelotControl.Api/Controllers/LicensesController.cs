@@ -65,7 +65,7 @@ public class LicensesController : BaseApiController
     {
         try
         {
-            var query = new AppLicense.GetLicenseQuery(LicenseId.From(Guid.Parse(id)));
+            var query = new AppLicense.GetLicenseQuery(LicenseId.From(id));
             var result = await _getLicenseQueryHandler.HandleAsync(query);
 
             if (result == null)
@@ -141,7 +141,7 @@ public class LicensesController : BaseApiController
         try
         {
             var command = new AppLicense.UpdateLicenseCommand(
-                LicenseId.From(Guid.Parse(id)),
+                LicenseId.From(id),
                 request.Name,
                 request.Description
             );
@@ -161,7 +161,7 @@ public class LicensesController : BaseApiController
         try
         {
             var command = new AppLicense.RenewLicenseCommand(
-                LicenseId.From(Guid.Parse(id)),
+                LicenseId.From(id),
                 request.NewExpirationDate
             );
 
@@ -180,7 +180,7 @@ public class LicensesController : BaseApiController
         try
         {
             var command = new AppLicense.RevokeLicenseCommand(
-                LicenseId.From(Guid.Parse(id)),
+                LicenseId.From(id),
                 request.Reason
             );
 

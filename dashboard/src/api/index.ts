@@ -42,5 +42,11 @@ export { ApiError, type FieldErrors, type NormalizedApiError } from './errors'
 export { anonymousTokenProvider, type AccessTokenProvider } from './auth'
 export { getApiBaseUrl } from './config'
 export { createHttpClient, type HttpClient, type RequestOptions, type QueryParams } from './http'
-export { createResources, type ApiResources, type PageParams, type RouteListParams } from './resources'
+export {
+  createResources,
+  type ApiResources,
+  type AuditListParams,
+  type PageParams,
+  type RouteListParams,
+} from './resources'
 export * from './types'

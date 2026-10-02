@@ -13,7 +13,7 @@ const SERVICE = {
   id: 'svc-users',
   name: 'users-api',
   description: 'The users backend',
-  downstreamTargets: [{ host: 'localhost', port: 5001, scheme: 'http', path: '/' }],
+  downstreamTargets: [{ host: 'localhost', port: 5001, weight: 1, isActive: true }],
   createdAt: '2026-01-02T03:04:05+00:00',
   updatedAt: '2026-01-03T04:05:06+00:00',
 }
@@ -24,8 +24,8 @@ const SECOND = {
   name: 'orders-api',
   description: null,
   downstreamTargets: [
-    { host: 'a.internal', port: 8080, scheme: 'http', path: '/' },
-    { host: 'b.internal', port: 8080, scheme: 'http', path: '/' },
+    { host: 'a.internal', port: 8080, weight: 1, isActive: true },
+    { host: 'b.internal', port: 8080, weight: 1, isActive: true },
   ],
 }
 
@@ -177,7 +177,7 @@ describe('ServicesPage', () => {
     expect(posts[0]).toEqual({
       name: 'images-api',
       description: null,
-      downstreamTargets: [{ host: 'img.internal', port: 9000, scheme: 'http', path: '/' }],
+      downstreamTargets: [{ host: 'img.internal', port: 9000, weight: 1 }],
     })
   })
 

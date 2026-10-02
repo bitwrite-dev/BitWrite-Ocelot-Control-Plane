@@ -31,6 +31,8 @@ import type {
   SnapshotPublishRequest,
   SnapshotRollbackRequest,
   PreviewSnapshotResponse,
+  CreateServiceRequest,
+  UpdateServiceRequest,
   SnapshotDeploymentResponse,
   SnapshotListResponse,
   SnapshotResponse,
@@ -83,8 +85,9 @@ export function createResources(http: HttpClient) {
     list: ({ signal, ...query }: PageParams = {}) =>
       http.get<ServiceListResponse>('/api/v1/services', { query, signal }),
     get: (id: string, o?: Options) => http.get<ServiceResponse>(`/api/v1/services/${id}`, o),
-    create: (body: unknown, o?: Options) => http.post<ServiceResponse>('/api/v1/services', body, o),
-    update: (id: string, body: unknown, o?: Options) =>
+    create: (body: CreateServiceRequest, o?: Options) =>
+      http.post<ServiceResponse>('/api/v1/services', body, o),
+    update: (id: string, body: UpdateServiceRequest, o?: Options) =>
       http.put<ServiceResponse>(`/api/v1/services/${id}`, body, o),
     remove: (id: string, o?: Options) => http.delete<void>(`/api/v1/services/${id}`, o),
     routes: (id: string, o?: Options) =>

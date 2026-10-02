@@ -223,6 +223,37 @@ public record DownstreamTarget : ValueObject
     public int Port { get; init; }
     public string Path { get; init; }
 
+    /// <summary>
+    /// Load-balancing weight, where the target belongs to a service.
+    /// </summary>
+    /// <remarks>
+    /// Only a service endpoint has one — a route's downstream target is addressed
+    /// directly, so for it this stays at the default and means nothing.
+    /// <para>
+    /// A record compares every property by default, so weight would otherwise make
+    /// two targets pointing at the same address compare unequal — and every
+    /// duplicate check in the domain asks whether that address is already listed.
+    /// Excluding it from equality is deliberate: the answer must not depend on how
+    /// heavily the destination is weighted.
+    /// </para>
+    /// </remarks>
+    public int Weight { get; init; } = 1;
+
+    /// <summary>
+    /// Whether two targets address the same destination.
+    /// </summary>
+    /// <remarks>
+    /// Scheme, host, port and path — the address — and nothing else. Used by the
+    /// duplicate checks, so a service cannot register the same host twice under
+    /// different weights.
+    /// </remarks>
+    public bool AddressesSameAs(DownstreamTarget other) =>
+        other is not null &&
+        Scheme == other.Scheme &&
+        Host == other.Host &&
+        Port == other.Port &&
+        Path == other.Path;
+
     private DownstreamTarget(string scheme, string host, int port, string path)
     {
         Scheme = scheme.ToLowerInvariant();
@@ -231,7 +262,12 @@ public record DownstreamTarget : ValueObject
         Path = path.StartsWith("/") ? path : "/" + path;
     }
 
-    public static DownstreamTarget Create(string scheme, string host, int port, string path = "/")
+    public static DownstreamTarget Create(
+        string scheme,
+        string host,
+        int port,
+        string path = "/",
+        int weight = 1)
     {
         if (string.IsNullOrWhiteSpace(scheme))
             throw new DomainException("Scheme cannot be empty", "INVALID_DOWNSTREAM_TARGET");
@@ -246,7 +282,10 @@ public record DownstreamTarget : ValueObject
         if (!validSchemes.Contains(scheme.ToLowerInvariant()))
             throw new DomainException($"Invalid scheme: {scheme}. Valid: {string.Join(", ", validSchemes)}", "INVALID_DOWNSTREAM_SCHEME");
 
-        return new DownstreamTarget(scheme, host, port, path);
+        if (weight <= 0)
+            throw new DomainException("Weight must be positive", "INVALID_WEIGHT");
+
+        return new DownstreamTarget(scheme, host, port, path) { Weight = weight };
     }
 
     public string ToUri() => $"{Scheme}://{Host}:{Port}{Path}";

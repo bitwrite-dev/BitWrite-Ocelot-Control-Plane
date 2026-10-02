@@ -37,14 +37,7 @@ public class GetGatewayRuntimeDetailQueryHandler
 
         // Get runtime info from Redis
         var db = _connectionMultiplexer.GetDatabase();
-        var runtimeInfo = await db.HashGetAllAsync($"ocelot:runtime:gateway:{query.GatewayId.Value}");
-
-        var runtimeInfoDict = runtimeInfo
-            .Where(x => !x.Name.IsNullOrEmpty)
-            .ToDictionary(
-                x => x.Name.ToString(),
-                x => x.Value.ToString()
-            );
+        var runtimeInfoDict = await GatewayRuntimeInfoReader.ReadAsync(db, query.GatewayId.Value);
 
         var routesKey = $"ocelot:runtime:gateway:{query.GatewayId.Value}:routes";
         var activeRoutes = await _connectionMultiplexer.GetDatabase().SetMembersAsync(routesKey);

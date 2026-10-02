@@ -4,6 +4,7 @@ using BitWrite.OcelotControl.Domain.ValueObjects.Identity;
 using BitWrite.OcelotControl.Domain.ValueObjects.Status;
 using BitWrite.OcelotControl.Infrastructure.Redis;
 using StackExchange.Redis;
+using System.Globalization;
 
 namespace BitWrite.OcelotControl.Infrastructure.Repositories;
 
@@ -24,11 +25,20 @@ public class RedisPublicationRepository : RedisRepositoryBase, IPublicationRepos
         if (entries.Length == 0)
             return null;
 
-        var publication = Publication.Start(
+        // Reconstitute, not Start: the target gateways were never stored, and Start
+        // refuses an empty list — which it is right to do when creating one and wrong
+        // to do when reading one. The caller caught that refusal in a bare catch, so
+        // every publication read from storage vanished and the overview page failed
+        // with "Publication must have at least one target gateway".
+        //
+        // The id and the started-at time come from storage too, because Start mints
+        // a new id and stamps the current time: reading a record would rewrite its
+        // identity and its position in the history.
+        var publication = Publication.Reconstitute(
+            PublicationId.From(Guid.Parse(GetEntry(entries, "Id"))),
             SnapshotVersion.From(int.Parse(GetEntry(entries, "SnapshotVersion"))),
             GetEntry(entries, "InitiatedBy"),
-            new List<GatewayId>(), // Gateway states are loaded separately
-            string.Empty
+            DateTimeOffset.Parse(GetEntry(entries, "StartedAt"), CultureInfo.InvariantCulture)
         );
 
         var status = GetEntry(entries, "Status");
@@ -36,10 +46,13 @@ public class RedisPublicationRepository : RedisRepositoryBase, IPublicationRepos
             publication.Complete();
         else if (status == PublicationStatus.Failed.Value)
         {
-            publication.RecordGatewayFailed(
-                GatewayId.From(GetEntry(entries, "FailureGatewayId")),
-                GetEntry(entries, "FailureReason")
-            );
+            // Not through RecordGatewayFailed: a failure is stored with no gateway
+            // named, and that method needs one to blame — restoring a record that
+            // way meant `Guid.Parse("")`, which threw and was swallowed, taking the
+            // publication with it. The gateway states were never stored either, so
+            // there is nothing to attribute the failure to. The reason is kept
+            // verbatim rather than dressed up with a plausible gateway.
+            publication.RecordFailureWithoutGateway(GetEntry(entries, "FailureReason"));
         }
         else if (status == PublicationStatus.RolledBack.Value)
         {
@@ -107,9 +120,13 @@ public class RedisPublicationRepository : RedisRepositoryBase, IPublicationRepos
                 if (publication != null)
                     publications.Add(publication);
             }
-            catch
+            catch (Exception ex)
             {
-                // Skip invalid IDs
+                // A publication that cannot be restored must not disappear silently:
+                // the list would report fewer than the index holds and nothing would
+                // say why. Surfaced as a fault, so the read fails loudly.
+                throw new InvalidOperationException(
+                    $"Publication {id} could not be restored", ex);
             }
         }
 

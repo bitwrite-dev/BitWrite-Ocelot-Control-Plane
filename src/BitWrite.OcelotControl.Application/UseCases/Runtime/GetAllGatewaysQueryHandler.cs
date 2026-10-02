@@ -29,15 +29,8 @@ public class GetAllGatewaysQueryHandler
         foreach (var instance in runtimeInstances)
         {
             var db = _connectionMultiplexer.GetDatabase();
-            var runtimeKey = $"ocelot:runtime:gateway:{instance.GatewayId.Value}";
-            var runtimeInfo = await db.HashGetAllAsync(runtimeKey);
-
-            var runtimeInfoDict = runtimeInfo
-                .Where(x => !x.Name.IsNullOrEmpty)
-                .ToDictionary(
-                    x => x.Name.ToString(),
-                    x => x.Value.ToString()
-                );
+            var runtimeInfoDict = await GatewayRuntimeInfoReader.ReadAsync(
+                db, instance.GatewayId.Value);
 
             var routesKey = $"ocelot:runtime:gateway:{instance.GatewayId.Value}:routes";
             var activeRoutes = await db.SetMembersAsync(routesKey);

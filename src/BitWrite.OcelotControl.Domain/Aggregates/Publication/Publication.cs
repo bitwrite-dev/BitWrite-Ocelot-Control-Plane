@@ -135,6 +135,71 @@ public class Publication
     }
 
     /// <summary>
+    /// Restores a publication from stored state.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="Start"/> refuses a publication with no target gateways, and that
+    /// refusal is right for creating one: publishing to nothing is a mistake worth
+    /// reporting. It is wrong for reading one back, because the target gateways were
+    /// never stored — the repository passes an empty list and takes the refusal as
+    /// an exception. The caller swallowed it, so every publication read from
+    /// storage vanished, the list reported none, and the overview page failed while
+    /// complaining about target gateways.
+    /// <para>
+    /// Restoring is therefore separate from starting, and takes the id and the
+    /// started-at time with it: <c>Start</c> mints a new id and stamps the current
+    /// time, so reading a record would rewrite its identity and its history.
+    /// </para>
+    /// </remarks>
+    public static Publication Reconstitute(
+        PublicationId id,
+        SnapshotVersion snapshotVersion,
+        string initiatedBy,
+        DateTimeOffset startedAt,
+        string correlationId = "")
+    {
+        if (id is null)
+            throw new DomainException("Publication id is required", "INVALID_PUBLICATION_ID");
+
+        if (string.IsNullOrWhiteSpace(initiatedBy))
+            throw new DomainException("Initiated by cannot be empty", "INVALID_INITIATED_BY");
+
+        return new Publication
+        {
+            Id = id,
+            SnapshotVersion = snapshotVersion,
+            Status = PublicationStatus.Pending,
+            InitiatedBy = initiatedBy.Trim(),
+            StartedAt = startedAt,
+        };
+    }
+
+    /// <summary>
+    /// Marks the publication as failed without blaming a gateway.
+    /// </summary>
+    /// <remarks>
+    /// A publication can fail before it reaches any gateway — the snapshot could not
+    /// be resolved, the configuration was rejected outright — and then there is
+    /// nothing to attribute the failure to. <see cref="RecordGatewayFailed"/> requires
+    /// a gateway and cannot express that, so restoring such a record through it
+    /// attempted <c>Guid.Parse("")</c> and threw, taking the whole publication with
+    /// it. That is why the log showed none while storage held four.
+    /// <para>
+    /// The reason is kept verbatim rather than being dressed up with a gateway, so a
+    /// reader is told what actually went wrong instead of being pointed at a
+    /// plausible-sounding host.
+    /// </para>
+    /// </remarks>
+    public void RecordFailureWithoutGateway(string reason, string correlationId = "")
+    {
+        Status = PublicationStatus.Failed;
+        FailureReason = reason;
+        CompletedAt = DateTimeOffset.UtcNow;
+
+        AddDomainEvent(new PublicationFailed(Id, reason));
+    }
+
+    /// <summary>
     /// Marks the publication as completed.
     /// </summary>
     public void Complete(string correlationId = "")

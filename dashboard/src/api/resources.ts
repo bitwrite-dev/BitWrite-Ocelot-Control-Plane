@@ -16,6 +16,7 @@ import type {
   PublicationListResponse,
   CurrentPublicationResponse,
   ReconcileResponse,
+  DeliveryMetricsResponse,
   RouteListResponse,
   RouteEffectiveResponse,
   RouteHistoryResponse,
@@ -65,6 +66,20 @@ export interface RouteListParams extends PageParams {
  * grows without bound, so a total computed from one page is wrong as soon as
  * there is more than one page.
  */
+/**
+ * The range to report delivery metrics over.
+ *
+ * Part of the request rather than something the page filters afterwards: the API
+ * counts what is in the range, so a count computed from what arrived would
+ * disagree with itself as soon as the read limit was reached.
+ */
+export interface DeliveryMetricsParams {
+  from?: string
+  to?: string
+  limit?: number
+  signal?: AbortSignal
+}
+
 export interface AuditListParams extends PageParams {
   actor?: string
   action?: string
@@ -213,6 +228,13 @@ export function createResources(http: HttpClient) {
       http.get<RuntimeStatusResponse>(`/api/v1/runtime/gateways/${id}`, o),
     reconcile: (body: unknown, o?: Options) =>
       http.post<ReconcileResponse>('/api/v1/runtime/reconcile', body, o),
+    /**
+     * How configuration delivery has been going. Optional `from`/`to` narrow the
+     * range server-side, so the count reflects everything in it rather than the
+     * page in hand.
+     */
+    deliveryMetrics: ({ signal, ...query }: DeliveryMetricsParams = {}) =>
+      http.get<DeliveryMetricsResponse>('/api/v1/runtime/delivery-metrics', { query, signal }),
   }
 
   const settings = {

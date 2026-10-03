@@ -439,6 +439,48 @@ export interface RouteValidationResponse {
   errors: RouteValidationError[]
 }
 
+/**
+ * What happened when configurations were delivered to gateways.
+ *
+ * Not request traffic. Nothing in the system counts requests a gateway served or
+ * times them, so there is no request rate, latency or error rate to read here —
+ * the fields that would hold them are absent rather than zero, because a zero
+ * would be read as a measurement. A gateway serving traffic wrongly is invisible
+ * in this response.
+ */
+export interface DeliveryMetricsResponse {
+  from: string
+  to: string
+  /** How many attempts were read, before the range narrowed them. */
+  consideredAttempts: number
+  totalAttempts: number
+  successful: number
+  failed: number
+  /** Null when nothing was attempted: there is no rate to state. */
+  successRate: number | null
+  snapshotVersions: number[]
+  gateways: GatewayDeliveryMetrics[]
+  errors: DeliveryErrorFrequency[]
+}
+
+/** How one gateway fared applying configurations. */
+export interface GatewayDeliveryMetrics {
+  gatewayId: string
+  attempts: number
+  successful: number
+  failed: number
+  successRate: number | null
+  lastAttemptAt: string
+  recentErrors: string[]
+}
+
+/** One distinct delivery failure, and how often it happened. */
+export interface DeliveryErrorFrequency {
+  message: string
+  occurrences: number
+  lastSeenAt: string
+}
+
 export interface RuntimeGatewaysResponse {
   gateways: RuntimeStatusResponse[]
 }

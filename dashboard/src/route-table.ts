@@ -18,7 +18,6 @@ import { NAV_PATHS } from '@/navigation'
  */
 export const PLACEHOLDER_PATHS = [
   '/plugins',
-  '/monitoring',
   '/publications',
   '/runtime',
   '/licenses',
@@ -47,6 +46,7 @@ export const IMPLEMENTED_PATHS = [
   '/snapshots',
   '/snapshots/new',
   '/audit',
+  '/monitoring',
 ] as const
 
 export const ALL_ROUTES: readonly string[] = [

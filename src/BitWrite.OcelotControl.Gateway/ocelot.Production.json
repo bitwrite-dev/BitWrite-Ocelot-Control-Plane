@@ -1,0 +1,7 @@
+{
+  "Routes": [],
+  "GlobalConfiguration": {
+    "BaseUrl": "http://localhost:5000",
+    "RequestIdKey": "X-Request-Id"
+  }
+}

@@ -3,6 +3,7 @@
     <Project Path="src/BitWrite.OcelotControl.Api/BitWrite.OcelotControl.Api.csproj" />
     <Project Path="src/BitWrite.OcelotControl.Application/BitWrite.OcelotControl.Application.csproj" />
     <Project Path="src/BitWrite.OcelotControl.Domain/BitWrite.OcelotControl.Domain.csproj" />
+    <Project Path="src/BitWrite.OcelotControl.Gateway/BitWrite.OcelotControl.Gateway.csproj" />
     <Project Path="src/BitWrite.OcelotControl.Infrastructure/BitWrite.OcelotControl.Infrastructure.csproj" />
     <Project Path="src/BitWrite.OcelotControl.Runtime/BitWrite.OcelotControl.Runtime.csproj" />
     <Project Path="src/BitWrite.OcelotControl.SDK/BitWrite.OcelotControl.SDK.csproj" />
@@ -13,6 +14,7 @@
     <Project Path="tests/BitWrite.OcelotControl.ArchitectureTests/BitWrite.OcelotControl.ArchitectureTests.csproj" />
     <Project Path="tests/BitWrite.OcelotControl.Domain.Tests/BitWrite.OcelotControl.Domain.Tests.csproj" />
     <Project Path="tests/BitWrite.OcelotControl.IntegrationTests/BitWrite.OcelotControl.IntegrationTests.csproj" />
+    <Project Path="tests/BitWrite.OcelotControl.Gateway.Tests/BitWrite.OcelotControl.Gateway.Tests.csproj" />
     <Project Path="tests/BitWrite.OcelotControl.Infrastructure.Tests/BitWrite.OcelotControl.Infrastructure.Tests.csproj" />
     <Project Path="tests/BitWrite.OcelotControl.SDK.Tests/BitWrite.OcelotControl.SDK.Tests.csproj" />
   </Folder>

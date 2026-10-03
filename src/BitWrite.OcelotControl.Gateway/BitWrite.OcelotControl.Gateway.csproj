@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>BitWrite.OcelotControl.Gateway</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      18.0.0 because it is the only version OcelotVersionCatalog will emit: the
+      control plane refuses to build a configuration for any other, so a gateway on
+      a different major would be handed a shape nobody generated for it.
+    -->
+    <PackageReference Include="Ocelot" Version="18.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      Ocelot 18 reads a configuration file during startup and has no interface for
+      being pointed elsewhere; the repository registered in Startup answers every
+      load after that. This file is what Ocelot reads first, so it has to exist and
+      has to be valid — it is not decorative.
+    -->
+    <None Update="ocelot.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\BitWrite.OcelotControl.Infrastructure\BitWrite.OcelotControl.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

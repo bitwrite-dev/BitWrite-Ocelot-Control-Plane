@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>BitWrite.OcelotControl.Gateway</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      18.0.0 because it is the only version OcelotVersionCatalog will emit: the
+      control plane refuses to build a configuration for any other, so a gateway on
+      a different major would be handed a shape nobody generated.
+    -->
+    <PackageReference Include="Ocelot" Version="18.0.0" />
+    <!-- Matches the control plane's, so both sides speak the same Redis protocol. -->
+    <PackageReference Include="StackExchange.Redis" Version="2.7.33" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      Ocelot reads ocelot.{Environment}.json and resolves the path from the output
+      directory, so both names ship. What fills them is the subscriber; what they hold
+      at startup is nothing, which is correct for a gateway that has not been told what
+      to serve.
+    -->
+    <None Update="ocelot.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="ocelot.Production.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

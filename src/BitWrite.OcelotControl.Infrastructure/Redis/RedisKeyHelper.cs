@@ -10,6 +10,14 @@ public static class RedisKeyHelper
     /// <summary>The one system settings row, holding the Ocelot version.</summary>
     public const string SystemSettings = "ocelot:settings";
     public const string RuntimeCurrent = "ocelot:runtime:current";
+    /// <summary>
+    /// One entry per configuration a gateway tried to apply, appended by the runtime.
+    /// </summary>
+    /// <remarks>
+    /// Unbounded, and nothing trimmed it until something read it. It is the only
+    /// record of what gateways actually experienced when applying a configuration.
+    /// </remarks>
+    public const string GatewayActivationResults = "ocelot:gateway:activation:results";
     public const string LockConfiguration = "ocelot:lock:configuration";
 
     public static string Gateway(GatewayId id) => $"ocelot:gateway:{id.Value}";

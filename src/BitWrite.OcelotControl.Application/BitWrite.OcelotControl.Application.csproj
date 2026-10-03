@@ -15,4 +15,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="BitWrite.OcelotControl.Application.Tests" />
+  </ItemGroup>
+
 </Project>

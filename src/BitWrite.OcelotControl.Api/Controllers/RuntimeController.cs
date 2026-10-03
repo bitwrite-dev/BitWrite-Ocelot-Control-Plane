@@ -15,17 +15,71 @@ public class RuntimeController : BaseApiController
     private readonly AppRuntime.GetAllGatewaysQueryHandler _getAllGatewaysQueryHandler;
     private readonly AppRuntime.GetGatewayRuntimeDetailQueryHandler _getGatewayRuntimeDetailQueryHandler;
     private readonly AppRuntime.ReconcileGatewayCommandHandler _reconcileGatewayCommandHandler;
+    private readonly AppRuntime.GetDeliveryMetricsQueryHandler _getDeliveryMetricsQueryHandler;
 
     public RuntimeController(
         AppRuntime.GetRuntimeStatusQueryHandler getRuntimeStatusQueryHandler,
         AppRuntime.GetAllGatewaysQueryHandler getAllGatewaysQueryHandler,
         AppRuntime.GetGatewayRuntimeDetailQueryHandler getGatewayRuntimeDetailQueryHandler,
-        AppRuntime.ReconcileGatewayCommandHandler reconcileGatewayCommandHandler)
+        AppRuntime.ReconcileGatewayCommandHandler reconcileGatewayCommandHandler,
+        AppRuntime.GetDeliveryMetricsQueryHandler getDeliveryMetricsQueryHandler)
     {
         _getRuntimeStatusQueryHandler = getRuntimeStatusQueryHandler;
         _getAllGatewaysQueryHandler = getAllGatewaysQueryHandler;
         _getGatewayRuntimeDetailQueryHandler = getGatewayRuntimeDetailQueryHandler;
         _reconcileGatewayCommandHandler = reconcileGatewayCommandHandler;
+        _getDeliveryMetricsQueryHandler = getDeliveryMetricsQueryHandler;
+    }
+
+    /// <summary>
+    /// How configuration delivery to gateways has been going.
+    /// </summary>
+    /// <remarks>
+    /// Configuration delivery, not request traffic. No request rate, latency or error
+    /// rate appears here because none is recorded anywhere in the system; reporting a
+    /// zero for them would read as a measurement. What it does report is every attempt
+    /// a gateway made to apply a snapshot, and what happened.
+    /// </remarks>
+    /// <param name="from">Inclusive start of the range. Defaults to 24 hours ago.</param>
+    /// <param name="to">Exclusive end of the range. Defaults to now.</param>
+    /// <param name="limit">Most recent attempts to consider, newest first.</param>
+    [HttpGet("delivery-metrics")]
+    public async Task<ActionResult<ApiDtos.DeliveryMetricsResponse>> GetDeliveryMetrics(
+        [FromQuery] DateTimeOffset? from = null,
+        [FromQuery] DateTimeOffset? to = null,
+        [FromQuery] int limit = 1000)
+    {
+        try
+        {
+            var query = new AppRuntime.GetDeliveryMetricsQuery(from, to, limit);
+            var result = await _getDeliveryMetricsQueryHandler.HandleAsync(query);
+
+            return HandleResult(new ApiDtos.DeliveryMetricsResponse(
+                result.From,
+                result.To,
+                result.ConsideredAttempts,
+                result.TotalAttempts,
+                result.Successful,
+                result.Failed,
+                result.SuccessRate,
+                result.SnapshotVersions.ToList(),
+                result.Gateways.Select(gateway => new ApiDtos.GatewayDeliveryMetrics(
+                    gateway.GatewayId,
+                    gateway.Attempts,
+                    gateway.Successful,
+                    gateway.Failed,
+                    gateway.SuccessRate,
+                    gateway.LastAttemptAt,
+                    gateway.RecentErrors.ToList())).ToList(),
+                result.Errors.Select(error => new ApiDtos.DeliveryErrorFrequency(
+                    error.Message,
+                    error.Occurrences,
+                    error.LastSeenAt)).ToList()));
+        }
+        catch (Exception ex)
+        {
+            return HandleError(ex);
+        }
     }
 
     [HttpGet("status")]

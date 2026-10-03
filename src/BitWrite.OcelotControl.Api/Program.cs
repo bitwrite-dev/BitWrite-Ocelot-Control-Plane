@@ -116,6 +116,7 @@ builder.Services.AddScoped<AppInterfaces.IConfigurationBuilder, ConfigurationBui
             // and the host fails to start with "Unable to resolve service for type".
             builder.Services.AddScoped<IRuntimeInstanceRepository, RedisRuntimeInstanceRepository>();
             builder.Services.AddScoped<IPluginRepository, RedisPluginRepository>();
+            builder.Services.AddScoped<AppInterfaces.IDeliveryAttemptRepository, RedisDeliveryAttemptRepository>();
 
             // IOcelotConfigApplier Implementation (Infrastructure.Adapters - real impl with Redis/File providers)
             builder.Services.AddSingleton<InfraAdapters.IConfigurationProvider, InfraAdapters.RedisConfigurationProvider>();
@@ -186,6 +187,7 @@ builder.Services.AddScoped<AppInterfaces.IConfigurationBuilder, ConfigurationBui
             // Runtime UseCase Handlers
             builder.Services.AddScoped<GetRuntimeStatusQueryHandler>();
             builder.Services.AddScoped<GetAllGatewaysQueryHandler>();
+            builder.Services.AddScoped<GetDeliveryMetricsQueryHandler>();
             builder.Services.AddScoped<GetGatewayRuntimeDetailQueryHandler>();
             builder.Services.AddScoped<ReconcileGatewayCommandHandler>();
             // License UseCase Handlers

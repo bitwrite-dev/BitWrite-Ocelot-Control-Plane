@@ -289,7 +289,7 @@ public class RuntimeAdapter : BackgroundService
         };
 
         var json = System.Text.Json.JsonSerializer.Serialize(result);
-        await db.ListRightPushAsync("ocelot:gateway:activation:results", json);
+        await db.ListRightPushAsync(RedisKeyHelper.GatewayActivationResults, json);
     }
 
     private async Task UpdateHeartbeatAsync(CancellationToken cancellationToken)

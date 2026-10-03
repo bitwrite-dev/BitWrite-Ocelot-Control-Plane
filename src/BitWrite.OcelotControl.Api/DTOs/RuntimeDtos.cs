@@ -19,6 +19,35 @@ public record RuntimeGatewaysResponse(
     List<RuntimeStatusResponse> Gateways
 );
 
+/// <summary>How one gateway fared applying configurations.</summary>
+public record GatewayDeliveryMetrics(
+    string GatewayId,
+    int Attempts,
+    int Successful,
+    int Failed,
+    double? SuccessRate,
+    DateTimeOffset LastAttemptAt,
+    List<string> RecentErrors);
+
+/// <summary>One distinct delivery failure, and how often it happened.</summary>
+public record DeliveryErrorFrequency(
+    string Message,
+    int Occurrences,
+    DateTimeOffset LastSeenAt);
+
+/// <summary>How configuration delivery to gateways has been going.</summary>
+public record DeliveryMetricsResponse(
+    DateTimeOffset From,
+    DateTimeOffset To,
+    int ConsideredAttempts,
+    int TotalAttempts,
+    int Successful,
+    int Failed,
+    double? SuccessRate,
+    List<int> SnapshotVersions,
+    List<GatewayDeliveryMetrics> Gateways,
+    List<DeliveryErrorFrequency> Errors);
+
 public record ReconcileRequest(
     [Required] string GatewayId,
     [Required] int TargetVersion,

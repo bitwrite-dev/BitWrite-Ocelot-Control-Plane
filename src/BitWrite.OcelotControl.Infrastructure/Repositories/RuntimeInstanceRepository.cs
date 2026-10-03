@@ -19,35 +19,46 @@ public class RedisRuntimeInstanceRepository : RedisRepositoryBase, IRuntimeInsta
 
     public async Task<RuntimeInstance?> GetAsync(GatewayId gatewayId, CancellationToken cancellationToken = default)
     {
-        var key = RedisKeyHelper.RuntimeInstance(gatewayId);
-
-        // The runtime writes a JSON string here, not a hash. Reading it as a hash
-        // found nothing — or threw WRONGTYPE — so no heartbeat was ever observed
-        // and anything derived from it was always empty.
-        var json = await StringGetAsync(key);
+        var json = await StringGetAsync(RedisKeyHelper.RuntimeInstance(gatewayId));
 
         if (string.IsNullOrWhiteSpace(json))
             return null;
 
-        // The runtime serialises its heartbeat with default (PascalCase) naming,
-        // while RedisSerializer reads camelCase. Matching case-insensitively is
-        // what lets the document bind; anything stricter reads an empty document
-        // and reports the gateway as having no runtime data at all.
-        var heartbeat = JsonSerializer.Deserialize<HeartbeatDocument>(
-            json,
-            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        // The instance record is a JSON string, not a hash. Reading it as a hash
+        // found nothing — or threw WRONGTYPE — so no gateway was ever observed.
+        var instance = Deserialize<InstanceDocument>(json);
 
-        if (heartbeat is null)
+        if (instance is null)
             return null;
 
+        // What the runtime last reported lives on its own key, because it is the
+        // runtime's to write and it carries no status: when it shared the instance
+        // key, each beat replaced a recorded status with nothing and a gateway that
+        // had just applied a configuration read back as disconnected. Records
+        // written before the split have no heartbeat key, so the instance's own
+        // timestamp stands in for them.
+        var heartbeatJson = await StringGetAsync(RedisKeyHelper.RuntimeGatewayHeartbeat(gatewayId));
+        var heartbeat = string.IsNullOrWhiteSpace(heartbeatJson)
+            ? null
+            : Deserialize<HeartbeatDocument>(heartbeatJson);
+
+        // The runtime serialises with default (PascalCase) naming, while
+        // RedisSerializer reads camelCase. Matching case-insensitively is what lets
+        // the documents bind; anything stricter reads nothing at all.
         return RuntimeInstance.Reconstitute(
             gatewayId,
             Array.Empty<string>(),
-            // The heartbeat does not report a status, so the recorded one stands.
-            RuntimeStatus.TryParse(heartbeat.Status, out var status) ? status : RuntimeStatus.Disconnected,
-            ParseTimestamp(heartbeat.Timestamp),
-            ParseVersion(heartbeat.Version));
+            RuntimeStatus.TryParse(instance.Status, out var status)
+                ? status
+                : RuntimeStatus.Disconnected,
+            ParseTimestamp(heartbeat?.Timestamp ?? instance.Timestamp),
+            ParseVersion(heartbeat?.Version ?? instance.Version));
     }
+
+    private static T? Deserialize<T>(string json) =>
+        JsonSerializer.Deserialize<T>(
+            json,
+            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
     private static DateTimeOffset ParseTimestamp(string? value) =>
         DateTimeOffset.TryParse(value, out var parsed) ? parsed : DateTimeOffset.UnixEpoch;
@@ -55,10 +66,17 @@ public class RedisRuntimeInstanceRepository : RedisRepositoryBase, IRuntimeInsta
     private static SnapshotVersion? ParseVersion(string? value) =>
         int.TryParse(value, out var number) ? SnapshotVersion.From(number) : null;
 
-    private sealed record HeartbeatDocument(
+    /// <summary>What the control plane recorded. Carries the status.</summary>
+    private sealed record InstanceDocument(
         string? GatewayId,
         string? Version,
         string? Status,
+        string? Timestamp);
+
+    /// <summary>What the runtime last reported. Carries no status — it cannot know one.</summary>
+    private sealed record HeartbeatDocument(
+        string? GatewayId,
+        string? Version,
         string? Timestamp);
 
     public async Task<RuntimeInstance?> GetByGatewayIdAsync(GatewayId gatewayId, CancellationToken cancellationToken = default)
@@ -97,12 +115,11 @@ public class RedisRuntimeInstanceRepository : RedisRepositoryBase, IRuntimeInsta
 
     public async Task AddAsync(RuntimeInstance instance, CancellationToken cancellationToken = default)
     {
-        // Written as a JSON string to match what the runtime actually stores.
-        // This method is not the source of heartbeats — the runtime writes that
-        // key itself — so anything written here would be overwritten by the next
-        // beat rather than merged with it.
+        // The instance record, on the key the control plane owns. The runtime writes
+        // its heartbeat to a different key, so nothing here is overwritten by the
+        // next beat.
         var key = RedisKeyHelper.RuntimeInstance(instance.GatewayId);
-        var document = new HeartbeatDocument(
+        var document = new InstanceDocument(
             instance.GatewayId.Value.ToString(),
             instance.CurrentVersion?.Value.ToString(),
             instance.Status.Value,

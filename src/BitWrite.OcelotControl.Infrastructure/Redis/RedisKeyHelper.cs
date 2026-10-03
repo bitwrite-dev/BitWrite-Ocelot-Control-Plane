@@ -19,6 +19,17 @@ public static class RedisKeyHelper
     public static string Publication(PublicationId id) => $"ocelot:publication:{id.Value}";
     public static string Plugin(PluginId id) => $"ocelot:plugin:{id.Value}";
     public static string RuntimeInstance(GatewayId id) => $"ocelot:runtime:gateway:{id.Value}";
+    /// <summary>
+    /// What the runtime last reported, on its own key.
+    /// </summary>
+    /// <remarks>
+    /// Separate from the instance record because the two are written by different
+    /// parties and answer different questions. The runtime cannot report a status —
+    /// only the control plane knows what it asked for — so when both wrote one key,
+    /// every heartbeat replaced the status with nothing and the gateway went back to
+    /// looking disconnected.
+    /// </remarks>
+    public static string RuntimeGatewayHeartbeat(GatewayId id) => $"{RuntimeInstance(id)}:heartbeat";
     public static string License(LicenseId id) => $"ocelot:license:{id.Value}";
     public static string AuditLog(string id) => $"ocelot:audit:{id}";
 

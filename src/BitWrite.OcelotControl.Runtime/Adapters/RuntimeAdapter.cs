@@ -4,6 +4,7 @@ using BitWrite.OcelotControl.Domain.Aggregates.Snapshot;
 using BitWrite.OcelotControl.Domain.ValueObjects.Configuration;
 using BitWrite.OcelotControl.Domain.ValueObjects.Identity;
 using BitWrite.OcelotControl.Domain.ValueObjects.Status;
+using BitWrite.OcelotControl.Infrastructure.Redis;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -302,7 +303,13 @@ public class RuntimeAdapter : BackgroundService
         };
 
         var json = System.Text.Json.JsonSerializer.Serialize(heartbeat);
-        await db.StringSetAsync($"ocelot:runtime:gateway:{_gatewayId.Value}", json);
+
+        // Its own key, not the instance record. A heartbeat says when the gateway
+        // last reported in and what it is running; it says nothing about what the
+        // control plane asked for, and it has no status to report. Writing it over
+        // the instance record erased the status that was there — every 30 seconds,
+        // a gateway that had just applied a configuration read back as disconnected.
+        await db.StringSetAsync(RedisKeyHelper.RuntimeGatewayHeartbeat(_gatewayId), json);
     }
 
     private List<string> ExtractFeaturesFromSnapshot(string content)

@@ -12,8 +12,8 @@ public class RedisPublicationRepository : RedisRepositoryBase, IPublicationRepos
 {
     private const string PublicationsIndexKey = "ocelot:index:publications";
 
-    public RedisPublicationRepository(IConnectionMultiplexer connectionMultiplexer) 
-        : base(connectionMultiplexer)
+    public RedisPublicationRepository(IConnectionMultiplexer connectionMultiplexer, IEnvironmentContext environmentContext) 
+        : base(connectionMultiplexer, environmentContext)
     {
     }
 

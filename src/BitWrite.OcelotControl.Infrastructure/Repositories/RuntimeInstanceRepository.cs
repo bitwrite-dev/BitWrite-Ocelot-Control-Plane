@@ -6,14 +6,16 @@ using BitWrite.OcelotControl.Domain.ValueObjects.Status;
 using BitWrite.OcelotControl.Infrastructure.Redis;
 using StackExchange.Redis;
 
+using BitWrite.OcelotControl.Application.Interfaces;
+
 namespace BitWrite.OcelotControl.Infrastructure.Repositories;
 
 public class RedisRuntimeInstanceRepository : RedisRepositoryBase, IRuntimeInstanceRepository
 {
     private const string RuntimeInstancesIndexKey = "ocelot:index:runtimeinstances";
 
-    public RedisRuntimeInstanceRepository(IConnectionMultiplexer connectionMultiplexer) 
-        : base(connectionMultiplexer)
+    public RedisRuntimeInstanceRepository(IConnectionMultiplexer connectionMultiplexer, IEnvironmentContext environmentContext) 
+        : base(connectionMultiplexer, environmentContext)
     {
     }
 

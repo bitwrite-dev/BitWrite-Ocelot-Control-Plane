@@ -9,8 +9,8 @@ namespace BitWrite.OcelotControl.Infrastructure.Repositories;
 
 public class RedisGatewayRepository : RedisRepositoryBase, IGatewayRepository
 {
-    public RedisGatewayRepository(IConnectionMultiplexer connectionMultiplexer) 
-        : base(connectionMultiplexer)
+    public RedisGatewayRepository(IConnectionMultiplexer connectionMultiplexer, IEnvironmentContext environmentContext) 
+        : base(connectionMultiplexer, environmentContext)
     {
     }
 

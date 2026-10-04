@@ -5,6 +5,8 @@ using BitWrite.OcelotControl.Domain.ValueObjects.Status;
 using BitWrite.OcelotControl.Infrastructure.Redis;
 using BitWrite.OcelotControl.Infrastructure.Repositories;
 
+using BitWrite.OcelotControl.Infrastructure.Tests.Repositories;
+
 namespace BitWrite.OcelotControl.Infrastructure.Tests.Repositories;
 
 public class RedisSnapshotRepositoryTests
@@ -24,7 +26,7 @@ public class RedisSnapshotRepositoryTests
         var mockMultiplexer = new Mock<IConnectionMultiplexer>();
         mockMultiplexer.Setup(m => m.GetDatabase(It.IsAny<int>(), It.IsAny<object>()))
             .Returns(_mockDatabase.Object);
-        _repository = new RedisSnapshotRepository(mockMultiplexer.Object);
+        _repository = new RedisSnapshotRepository(mockMultiplexer.Object, TestEnvironment.Context());
     }
 
     [Fact]

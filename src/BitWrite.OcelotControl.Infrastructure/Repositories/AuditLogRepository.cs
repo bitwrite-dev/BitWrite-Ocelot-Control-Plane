@@ -10,8 +10,8 @@ public class RedisAuditLogRepository : RedisRepositoryBase, IAuditLogRepository
 {
     private const string AuditLogsIndexKey = "ocelot:index:audit-logs";
 
-    public RedisAuditLogRepository(IConnectionMultiplexer connectionMultiplexer)
-        : base(connectionMultiplexer)
+    public RedisAuditLogRepository(IConnectionMultiplexer connectionMultiplexer, IEnvironmentContext environmentContext)
+        : base(connectionMultiplexer, environmentContext)
     {
     }
 

@@ -84,6 +84,11 @@ builder.Services.AddScoped<AppInterfaces.IConfigurationBuilder, ConfigurationBui
             builder.Services.AddScoped<AppInterfaces.ISnapshotIntegrityVerifier, SnapshotIntegrityVerifierAdapter>();
             builder.Services.AddScoped<AppInterfaces.ISnapshotVersionAllocator, SnapshotVersionAllocatorAdapter>();
 
+            // Which environment this request operates on. Registered before the
+            // repositories, which take it as a constructor dependency.
+            builder.Services.AddHttpContextAccessor();
+            builder.Services.AddScoped<AppInterfaces.IEnvironmentContext, HttpEnvironmentContext>();
+
             // Repository Implementations
             builder.Services.AddScoped<AppInterfaces.IGatewayRepository, RedisGatewayRepository>();
             builder.Services.AddScoped<AppInterfaces.IRouteRepository, RedisRouteRepository>();

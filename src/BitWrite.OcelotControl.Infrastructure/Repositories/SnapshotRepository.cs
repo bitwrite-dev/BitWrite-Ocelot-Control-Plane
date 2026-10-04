@@ -17,14 +17,14 @@ public class RedisSnapshotRepository : RedisRepositoryBase, ISnapshotRepository
         PropertyNameCaseInsensitive = true
     };
 
-    public RedisSnapshotRepository(IConnectionMultiplexer connectionMultiplexer) 
-        : base(connectionMultiplexer)
+    public RedisSnapshotRepository(IConnectionMultiplexer connectionMultiplexer, IEnvironmentContext environmentContext) 
+        : base(connectionMultiplexer, environmentContext)
     {
     }
 
     public async Task<Snapshot?> GetAsync(SnapshotVersion version, CancellationToken cancellationToken = default)
     {
-        var key = RedisKeyHelper.Snapshot(version);
+        var key = RedisKeyHelper.Snapshot(version, Environment);
         var json = await StringGetAsync(key);
 
         if (string.IsNullOrWhiteSpace(json))
@@ -85,7 +85,7 @@ public class RedisSnapshotRepository : RedisRepositoryBase, ISnapshotRepository
 
     public async Task AddAsync(Snapshot snapshot, CancellationToken cancellationToken = default)
     {
-        var key = RedisKeyHelper.Snapshot(snapshot.Version);
+        var key = RedisKeyHelper.Snapshot(snapshot.Version, Environment);
         var document = new SnapshotDocument
         {
             Version = snapshot.Version.Value,

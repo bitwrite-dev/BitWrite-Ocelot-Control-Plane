@@ -28,8 +28,8 @@ public class RedisGlobalConfigurationRepository : RedisRepositoryBase, IGlobalCo
     /// </summary>
     private static readonly Guid SingletonId = new("00000000-0000-0000-0000-000000000001");
 
-    public RedisGlobalConfigurationRepository(IConnectionMultiplexer connectionMultiplexer)
-        : base(connectionMultiplexer)
+    public RedisGlobalConfigurationRepository(IConnectionMultiplexer connectionMultiplexer, IEnvironmentContext environmentContext)
+        : base(connectionMultiplexer, environmentContext)
     {
     }
 

@@ -13,8 +13,8 @@ public class RedisLicenseRepository : RedisRepositoryBase, ILicenseRepository
     private const string LicensesIndexKey = "ocelot:index:licenses";
     private const string LicenseProductCodesIndexKey = "ocelot:index:license-product-codes";
 
-    public RedisLicenseRepository(IConnectionMultiplexer connectionMultiplexer) 
-        : base(connectionMultiplexer)
+    public RedisLicenseRepository(IConnectionMultiplexer connectionMultiplexer, IEnvironmentContext environmentContext) 
+        : base(connectionMultiplexer, environmentContext)
     {
     }
 

@@ -7,6 +7,8 @@ using Xunit;
 using OcelotVersion = BitWrite.OcelotControl.Domain.ValueObjects.Configuration.OcelotVersion;
 using SettingsAggregate = BitWrite.OcelotControl.Domain.Aggregates.SystemSettings.SystemSettings;
 
+using BitWrite.OcelotControl.Infrastructure.Tests.Repositories;
+
 namespace BitWrite.OcelotControl.Infrastructure.Tests.Repositories;
 
 /// <summary>
@@ -40,7 +42,7 @@ public class SystemSettingsPersistenceTests
     {
         var mux = new Mock<IConnectionMultiplexer>();
         mux.Setup(m => m.GetDatabase(It.IsAny<int>(), It.IsAny<object>())).Returns(_db.Object);
-        return new RedisSystemSettingsRepository(mux.Object);
+        return new RedisSystemSettingsRepository(mux.Object, TestEnvironment.Context());
     }
 
     private async Task<SettingsAggregate> RoundTrip(SettingsAggregate settings)

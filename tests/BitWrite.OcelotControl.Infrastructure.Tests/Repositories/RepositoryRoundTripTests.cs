@@ -9,6 +9,8 @@ using StackExchange.Redis;
 using Xunit;
 using HttpMethod = BitWrite.OcelotControl.Domain.ValueObjects.Configuration.HttpMethod;
 
+using BitWrite.OcelotControl.Infrastructure.Tests.Repositories;
+
 namespace BitWrite.OcelotControl.Infrastructure.Tests.Repositories;
 
 /// <summary>
@@ -49,14 +51,14 @@ public class RepositoryRoundTripTests
     {
         var mux = new Mock<IConnectionMultiplexer>();
         mux.Setup(m => m.GetDatabase(It.IsAny<int>(), It.IsAny<object>())).Returns(_db.Object);
-        return new RedisServiceRepository(mux.Object);
+        return new RedisServiceRepository(mux.Object, TestEnvironment.Context());
     }
 
     private RedisRouteRepository NewRoutes()
     {
         var mux = new Mock<IConnectionMultiplexer>();
         mux.Setup(m => m.GetDatabase(It.IsAny<int>(), It.IsAny<object>())).Returns(_db.Object);
-        return new RedisRouteRepository(mux.Object);
+        return new RedisRouteRepository(mux.Object, TestEnvironment.Context());
     }
 
     [Fact]

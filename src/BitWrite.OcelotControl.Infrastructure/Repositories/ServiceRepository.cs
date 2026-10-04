@@ -8,14 +8,14 @@ namespace BitWrite.OcelotControl.Infrastructure.Repositories;
 
 public class RedisServiceRepository : RedisRepositoryBase, IServiceRepository
 {
-    public RedisServiceRepository(IConnectionMultiplexer connectionMultiplexer) 
-        : base(connectionMultiplexer)
+    public RedisServiceRepository(IConnectionMultiplexer connectionMultiplexer, IEnvironmentContext environmentContext) 
+        : base(connectionMultiplexer, environmentContext)
     {
     }
 
     public async Task<Service?> GetAsync(ServiceId id, CancellationToken cancellationToken = default)
     {
-        var key = RedisKeyHelper.Service(id);
+        var key = RedisKeyHelper.Service(id, Environment);
         var entries = await GetHashAsync(key);
         
         if (entries.Length == 0)
@@ -63,7 +63,7 @@ public class RedisServiceRepository : RedisRepositoryBase, IServiceRepository
 
     public async Task AddAsync(Service service, CancellationToken cancellationToken = default)
     {
-        var key = RedisKeyHelper.Service(service.Id);
+        var key = RedisKeyHelper.Service(service.Id, Environment);
         var entries = new HashEntry[]
         {
             new("Id", service.Id.Value.ToString()),
@@ -86,7 +86,7 @@ public class RedisServiceRepository : RedisRepositoryBase, IServiceRepository
 
     public async Task DeleteAsync(ServiceId id, CancellationToken cancellationToken = default)
     {
-        var key = RedisKeyHelper.Service(id);
+        var key = RedisKeyHelper.Service(id, Environment);
         await DeleteAsync(key);
         await SetRemoveAsync("ocelot:index:services", id.Value.ToString());
     }

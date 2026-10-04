@@ -8,6 +8,8 @@ using Moq;
 using StackExchange.Redis;
 using Xunit;
 
+using BitWrite.OcelotControl.Infrastructure.Tests.Repositories;
+
 namespace BitWrite.OcelotControl.Infrastructure.Tests.Repositories;
 
 /// <summary>
@@ -48,7 +50,7 @@ public class GatewayPersistenceTests
     {
         var mux = new Mock<IConnectionMultiplexer>();
         mux.Setup(m => m.GetDatabase(It.IsAny<int>(), It.IsAny<object>())).Returns(_db.Object);
-        return new RedisGatewayRepository(mux.Object);
+        return new RedisGatewayRepository(mux.Object, TestEnvironment.Context());
     }
 
     [Fact]

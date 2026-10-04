@@ -22,8 +22,11 @@ public static class RedisKeyHelper
 
     public static string Gateway(GatewayId id) => $"ocelot:gateway:{id.Value}";
     public static string Service(ServiceId id) => $"ocelot:service:{id.Value}";
+    public static string Service(ServiceId id, string environment) => $"ocelot:service:{environment}:{id.Value}";
     public static string Route(RouteId id) => $"ocelot:route:{id.Value}";
+    public static string Route(RouteId id, string environment) => $"ocelot:route:{environment}:{id.Value}";
     public static string Snapshot(SnapshotVersion version) => $"ocelot:snapshot:{version.Value}";
+    public static string Snapshot(SnapshotVersion version, string environment) => $"ocelot:snapshot:{environment}:{version.Value}";
     public static string Publication(PublicationId id) => $"ocelot:publication:{id.Value}";
     public static string Plugin(PluginId id) => $"ocelot:plugin:{id.Value}";
     public static string RuntimeInstance(GatewayId id) => $"ocelot:runtime:gateway:{id.Value}";

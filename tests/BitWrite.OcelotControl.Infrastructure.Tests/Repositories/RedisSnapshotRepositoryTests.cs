@@ -5,8 +5,6 @@ using BitWrite.OcelotControl.Domain.ValueObjects.Status;
 using BitWrite.OcelotControl.Infrastructure.Redis;
 using BitWrite.OcelotControl.Infrastructure.Repositories;
 
-using BitWrite.OcelotControl.Infrastructure.Tests.Repositories;
-
 namespace BitWrite.OcelotControl.Infrastructure.Tests.Repositories;
 
 public class RedisSnapshotRepositoryTests
@@ -86,7 +84,7 @@ public class RedisSnapshotRepositoryTests
         await _repository.AddAsync(BuildSnapshot());
 
         _mockDatabase.Verify(d => d.SortedSetAddAsync(
-            RedisKeyHelper.IndexSnapshots, It.IsAny<RedisValue>(), It.IsAny<double>(),
+            RedisKeyHelper.IndexSnapshots(TestEnvironment.Of("development")), It.IsAny<RedisValue>(), It.IsAny<double>(),
             It.IsAny<SortedSetWhen>(), It.IsAny<CommandFlags>()),
             Times.Once);
     }

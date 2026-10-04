@@ -65,6 +65,59 @@ describe('createHttpClient', () => {
     expect(headers.Authorization).toBeUndefined()
   })
 
+  it('names the configured environment on every request', async () => {
+    // Routes, services and snapshots are stored per environment, and the API rejects a
+    // request that names none rather than answering with a default's data.
+    const fetchImpl = vi.fn().mockImplementation(async () => jsonResponse({}))
+    const http = createHttpClient(
+      { getAccessToken: () => null },
+      {
+        baseUrl: 'http://api.test',
+        environment: 'production',
+        fetchImpl: fetchImpl as unknown as typeof fetch,
+      },
+    )
+
+    await http.get('/api/v1/routes')
+    await http.delete('/api/v1/routes/7')
+
+    const first = fetchImpl.mock.calls[0][1].headers as Record<string, string>
+    const second = fetchImpl.mock.calls[1][1].headers as Record<string, string>
+    expect(first['X-Environment']).toBe('production')
+    expect(second['X-Environment']).toBe('production')
+  })
+
+  it('sends no environment header when none is configured', async () => {
+    // Absent rather than defaulted: a client that filled in a name of its own would
+    // show one environment's configuration while the operator believed it was another.
+    const fetchImpl = vi.fn().mockImplementation(async () => jsonResponse({}))
+
+    await client(fetchImpl).get('/api/v1/routes')
+
+    const headers = fetchImpl.mock.calls[0][1].headers as Record<string, string>
+    expect(headers['X-Environment']).toBeUndefined()
+  })
+
+  it('lets one request name a different environment than the client does', async () => {
+    const fetchImpl = vi.fn().mockImplementation(async () => jsonResponse({}))
+    const http = createHttpClient(
+      { getAccessToken: () => null },
+      {
+        baseUrl: 'http://api.test',
+        environment: 'development',
+        fetchImpl: fetchImpl as unknown as typeof fetch,
+      },
+    )
+
+    await http.get('/api/v1/routes')
+    await http.get('/api/v1/routes', { environment: 'production' })
+
+    const first = fetchImpl.mock.calls[0][1].headers as Record<string, string>
+    const second = fetchImpl.mock.calls[1][1].headers as Record<string, string>
+    expect(first['X-Environment']).toBe('development')
+    expect(second['X-Environment']).toBe('production')
+  })
+
   it('picks up a token that changes between requests', async () => {
     const fetchImpl = vi.fn().mockImplementation(async () => jsonResponse({}))
     let token: string | null = null

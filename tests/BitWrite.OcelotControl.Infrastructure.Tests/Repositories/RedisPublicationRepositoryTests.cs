@@ -6,9 +6,6 @@ using Moq;
 using StackExchange.Redis;
 using Xunit;
 
-
-using BitWrite.OcelotControl.Infrastructure.Tests.Repositories;
-
 namespace BitWrite.OcelotControl.Infrastructure.Tests.Repositories;
 
 /// <summary>

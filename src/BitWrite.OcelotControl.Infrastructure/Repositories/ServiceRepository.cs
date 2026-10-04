@@ -40,7 +40,7 @@ public class RedisServiceRepository : RedisRepositoryBase, IServiceRepository
 
     public async Task<List<Service>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        var serviceIds = await SetMembersAsync("ocelot:index:services");
+        var serviceIds = await SetMembersAsync(RedisKeyHelper.IndexServices(Environment));
         var services = new List<Service>();
 
         foreach (var id in serviceIds)
@@ -76,7 +76,7 @@ public class RedisServiceRepository : RedisRepositoryBase, IServiceRepository
         };
 
         await SetHashAsync(key, entries);
-        await SetAddAsync("ocelot:index:services", service.Id.Value.ToString());
+        await SetAddAsync(RedisKeyHelper.IndexServices(Environment), service.Id.Value.ToString());
     }
 
     public async Task UpdateAsync(Service service, CancellationToken cancellationToken = default)
@@ -88,7 +88,7 @@ public class RedisServiceRepository : RedisRepositoryBase, IServiceRepository
     {
         var key = RedisKeyHelper.Service(id, Environment);
         await DeleteAsync(key);
-        await SetRemoveAsync("ocelot:index:services", id.Value.ToString());
+        await SetRemoveAsync(RedisKeyHelper.IndexServices(Environment), id.Value.ToString());
     }
 
     /// <summary>

@@ -55,7 +55,7 @@ public class RedisSnapshotRepository : RedisRepositoryBase, ISnapshotRepository
 
     public async Task<Snapshot?> GetLatestAsync(CancellationToken cancellationToken = default)
     {
-        var versions = await SortedSetRangeByScoreAsync(RedisKeyHelper.IndexSnapshots, stop: double.PositiveInfinity, take: 1);
+        var versions = await SortedSetRangeByScoreAsync(RedisKeyHelper.IndexSnapshots(Environment), stop: double.PositiveInfinity, take: 1);
         
         if (versions.Length > 0 && int.TryParse(versions[0].ToString(), out var versionInt))
         {
@@ -67,7 +67,7 @@ public class RedisSnapshotRepository : RedisRepositoryBase, ISnapshotRepository
 
     public async Task<List<Snapshot>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        var versions = await SortedSetRangeByScoreAsync(RedisKeyHelper.IndexSnapshots, take: 100);
+        var versions = await SortedSetRangeByScoreAsync(RedisKeyHelper.IndexSnapshots(Environment), take: 100);
         var snapshots = new List<Snapshot>();
 
         foreach (var v in versions)
@@ -110,7 +110,7 @@ public class RedisSnapshotRepository : RedisRepositoryBase, ISnapshotRepository
         };
 
         await StringSetAsync(key, JsonSerializer.Serialize(document, JsonOptions));
-        await SortedSetAddAsync(RedisKeyHelper.IndexSnapshots, snapshot.Version.Value.ToString(), snapshot.Version.Value);
+        await SortedSetAddAsync(RedisKeyHelper.IndexSnapshots(Environment), snapshot.Version.Value.ToString(), snapshot.Version.Value);
     }
 
     public async Task UpdateAsync(Snapshot snapshot, CancellationToken cancellationToken = default)

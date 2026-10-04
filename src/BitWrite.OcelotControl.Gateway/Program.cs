@@ -8,9 +8,9 @@ using StackExchange.Redis;
 // Built through ConfigureWebHostDefaults rather than WebApplication.CreateBuilder,
 // because Ocelot 18's AddOcelot extends IConfigurationBuilder and needs an
 // IWebHostEnvironment, and neither is reachable from the minimal hosting model.
-// Ocelot names the file after the environment and defaults to Production, so the
-// gateway reads and writes that one. Stated once so the two cannot drift.
-const string EnvironmentConfigurationFile = "ocelot.Production.json";
+// The file Ocelot reads and the environment the published snapshot is stored under
+// are the same setting, so both come from one place and cannot drift.
+const string EnvironmentConfigurationFile = PublishedEnvironment.ConfigurationFile;
 string _contentRoot = AppContext.BaseDirectory;
 
 var host = Host.CreateDefaultBuilder(args)
@@ -71,15 +71,17 @@ var host = Host.CreateDefaultBuilder(args)
             // pipeline, so a publication would be written to disk and then ignored.
             services.AddHostedService<FileConfigurationPoller>();
 
-            // Writes the file Ocelot reads, then signals. Named after the environment,
-            // because that is the file Ocelot looks for.
+            // Writes the file Ocelot reads, then signals. Named after the same
+            // environment the snapshot is read from rather than after
+            // ASPNETCORE_ENVIRONMENT: those two names have to agree, and the host's is
+            // whatever the container happened to be started with.
             services.AddSingleton(serviceProvider =>
             {
                 var environment = serviceProvider.GetRequiredService<IHostEnvironment>();
 
                 return new OcelotConfigurationWriter(
                     environment.ContentRootPath,
-                    environment.EnvironmentName,
+                    PublishedEnvironment.FileBaseName,
                     serviceProvider.GetRequiredService<ConfigurationReloader>());
             });
 

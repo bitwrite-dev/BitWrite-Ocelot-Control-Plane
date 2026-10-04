@@ -4,8 +4,6 @@ using Moq;
 using StackExchange.Redis;
 using Xunit;
 
-
-
 namespace BitWrite.OcelotControl.Infrastructure.Tests.Repositories;
 
 public class RedisRepositoryBaseTests

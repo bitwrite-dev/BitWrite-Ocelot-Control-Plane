@@ -9,8 +9,6 @@ using StackExchange.Redis;
 using Xunit;
 using HttpMethod = BitWrite.OcelotControl.Domain.ValueObjects.Configuration.HttpMethod;
 
-using BitWrite.OcelotControl.Infrastructure.Tests.Repositories;
-
 namespace BitWrite.OcelotControl.Infrastructure.Tests.Repositories;
 
 /// <summary>

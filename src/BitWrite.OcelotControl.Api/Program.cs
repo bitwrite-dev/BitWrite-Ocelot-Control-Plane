@@ -84,10 +84,12 @@ builder.Services.AddScoped<AppInterfaces.IConfigurationBuilder, ConfigurationBui
             builder.Services.AddScoped<AppInterfaces.ISnapshotIntegrityVerifier, SnapshotIntegrityVerifierAdapter>();
             builder.Services.AddScoped<AppInterfaces.ISnapshotVersionAllocator, SnapshotVersionAllocatorAdapter>();
 
-            // Which environment this request operates on. Registered before the
-            // repositories, which take it as a constructor dependency.
+            // Which environment a scope operates on. Registered before the
+            // repositories, which take it as a constructor dependency, and resolved
+            // per scope: a request reads its selection, background work reads the
+            // configured one.
             builder.Services.AddHttpContextAccessor();
-            builder.Services.AddScoped<AppInterfaces.IEnvironmentContext, HttpEnvironmentContext>();
+            builder.Services.AddScoped<AppInterfaces.IEnvironmentContext>(EnvironmentContextRegistration.From);
 
             // Repository Implementations
             builder.Services.AddScoped<AppInterfaces.IGatewayRepository, RedisGatewayRepository>();
@@ -276,6 +278,16 @@ builder.Services.AddScoped<AppInterfaces.IConfigurationBuilder, ConfigurationBui
             });
 
             var app = builder.Build();
+
+            // Background work has no request to name an environment, so it needs the
+            // configured one. Said once at startup rather than as an exception per
+            // retry inside the poller that needs it.
+            if (string.IsNullOrWhiteSpace(app.Configuration[EnvironmentContextRegistration.ConfigurationKey]))
+            {
+                app.Logger.LogWarning(
+                    "No '{Key}' configured, so background work has no environment. Requests are unaffected — they name their own. Set it to the environment this installation serves.",
+                    EnvironmentContextRegistration.ConfigurationKey);
+            }
 
             // Configure the HTTP request pipeline.
             app.UseMiddleware<GlobalExceptionMiddleware>();

@@ -40,7 +40,7 @@ public class SystemSettingsPersistenceTests
     {
         var mux = new Mock<IConnectionMultiplexer>();
         mux.Setup(m => m.GetDatabase(It.IsAny<int>(), It.IsAny<object>())).Returns(_db.Object);
-        return new RedisSystemSettingsRepository(mux.Object);
+        return new RedisSystemSettingsRepository(mux.Object, TestEnvironment.Context());
     }
 
     private async Task<SettingsAggregate> RoundTrip(SettingsAggregate settings)

@@ -15,8 +15,8 @@ namespace BitWrite.OcelotControl.Infrastructure.Repositories;
 /// </summary>
 public class RedisSystemSettingsRepository : RedisRepositoryBase, ISystemSettingsRepository
 {
-    public RedisSystemSettingsRepository(IConnectionMultiplexer connectionMultiplexer)
-        : base(connectionMultiplexer)
+    public RedisSystemSettingsRepository(IConnectionMultiplexer connectionMultiplexer, IEnvironmentContext environmentContext)
+        : base(connectionMultiplexer, environmentContext)
     {
     }
 

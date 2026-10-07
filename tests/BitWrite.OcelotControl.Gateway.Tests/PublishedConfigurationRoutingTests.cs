@@ -37,7 +37,7 @@ namespace BitWrite.OcelotControl.Gateway.Tests;
 public class PublishedConfigurationRoutingTests : IAsyncLifetime
 {
     private const string PublishedChannel = "ocelot:snapshot:published";
-    private const string SnapshotKey = "ocelot:snapshot:9001";
+    private const string SnapshotKey = "ocelot:snapshot:production:9001";
     private static int _offset = -1;
 
     /// <summary>

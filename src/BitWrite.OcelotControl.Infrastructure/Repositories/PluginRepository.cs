@@ -11,8 +11,8 @@ public class RedisPluginRepository : RedisRepositoryBase, IPluginRepository
 {
     private const string PluginsIndexKey = "ocelot:index:plugins";
 
-    public RedisPluginRepository(IConnectionMultiplexer connectionMultiplexer) 
-        : base(connectionMultiplexer)
+    public RedisPluginRepository(IConnectionMultiplexer connectionMultiplexer, IEnvironmentContext environmentContext) 
+        : base(connectionMultiplexer, environmentContext)
     {
     }
 

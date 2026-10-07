@@ -6,7 +6,6 @@ using Moq;
 using StackExchange.Redis;
 using Xunit;
 
-
 namespace BitWrite.OcelotControl.Infrastructure.Tests.Repositories;
 
 /// <summary>
@@ -54,7 +53,7 @@ public class RedisPublicationRepositoryTests
             .ReturnsAsync((RedisKey key, CommandFlags _) =>
                 _stored.TryGetValue(key.ToString(), out var entries) ? entries : []);
 
-        _repository = new RedisPublicationRepository(multiplexer.Object);
+        _repository = new RedisPublicationRepository(multiplexer.Object, TestEnvironment.Context());
     }
 
     private RedisValue[] StoredIds() =>

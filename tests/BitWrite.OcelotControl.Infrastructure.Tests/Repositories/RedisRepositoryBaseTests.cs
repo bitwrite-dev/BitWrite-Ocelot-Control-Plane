@@ -80,7 +80,8 @@ public class RedisRepositoryBaseTests
 
     private class TestRedisRepository : RedisRepositoryBase
     {
-        public TestRedisRepository(IConnectionMultiplexer connectionMultiplexer) : base(connectionMultiplexer) { }
+        public TestRedisRepository(IConnectionMultiplexer connectionMultiplexer)
+            : base(connectionMultiplexer, TestEnvironment.Context()) { }
 
         public Task<HashEntry[]> TestGetHashAsync(string key) => GetHashAsync(key);
         public Task TestSetHashAsync(string key, HashEntry[] entries) => SetHashAsync(key, entries);

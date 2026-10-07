@@ -24,7 +24,7 @@ public class RedisSnapshotRepositoryTests
         var mockMultiplexer = new Mock<IConnectionMultiplexer>();
         mockMultiplexer.Setup(m => m.GetDatabase(It.IsAny<int>(), It.IsAny<object>()))
             .Returns(_mockDatabase.Object);
-        _repository = new RedisSnapshotRepository(mockMultiplexer.Object);
+        _repository = new RedisSnapshotRepository(mockMultiplexer.Object, TestEnvironment.Context());
     }
 
     [Fact]
@@ -84,7 +84,7 @@ public class RedisSnapshotRepositoryTests
         await _repository.AddAsync(BuildSnapshot());
 
         _mockDatabase.Verify(d => d.SortedSetAddAsync(
-            RedisKeyHelper.IndexSnapshots, It.IsAny<RedisValue>(), It.IsAny<double>(),
+            RedisKeyHelper.IndexSnapshots(TestEnvironment.Of("development")), It.IsAny<RedisValue>(), It.IsAny<double>(),
             It.IsAny<SortedSetWhen>(), It.IsAny<CommandFlags>()),
             Times.Once);
     }

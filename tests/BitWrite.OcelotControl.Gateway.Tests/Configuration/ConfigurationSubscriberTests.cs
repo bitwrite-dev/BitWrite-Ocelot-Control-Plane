@@ -43,6 +43,10 @@ public class ConfigurationSubscriberTests : IDisposable
 
     private ConfigurationSubscriber Subscriber { get; }
 
+    /// <summary>A notification naming the environment it was published for.</summary>
+    private static string NotificationFor(string environment, string version) =>
+        $$"""{"Version":"{{version}}","Environment":"{{environment}}","PublicationId":"0a2732a8-dceb-4da3-878a-f3e8290a06ca"}""";
+
     private string ConfigPath => Path.Combine(_directory, "ocelot.Production.json");
 
     /// <summary>
@@ -161,9 +165,59 @@ public class ConfigurationSubscriberTests : IDisposable
         File.ReadAllText(ConfigPath).Should().Contain("http://gw:5000");
     }
 
-    private void StoredSnapshot(string version, string content)
+    /// <summary>
+    /// A snapshot stored under the environment this gateway serves, at the key the
+    /// control plane writes it to.
+    /// </summary>
+    /// <remarks>
+    /// Spelled out rather than shared with the subscriber: the point of the test is
+    /// that the two agree on the key, so deriving it from the code under test would
+    /// make the assertion true by construction.
+    /// </remarks>
+    [Fact]
+    public async Task TakesASnapshotPublishedForTheEnvironmentItServes()
     {
-        _db.Setup(d => d.StringGetAsync($"ocelot:snapshot:{version}", It.IsAny<CommandFlags>()))
+        // The environment is in the key, so a gateway reading the wrong one finds
+        // nothing. Naming it in the notification is what tells the two apart.
+        var content = """{"global":{"baseUrl":"http://gw:5000","requestIdKey":"X-Request-Id"},"routes":[]}""";
+        StoredSnapshot("2", content);
+
+        await Subscriber.HandleAsync(NotificationFor("production", "2"), CancellationToken.None);
+
+        File.ReadAllText(ConfigPath).Should().Contain("http://gw:5000");
+    }
+
+    [Fact]
+    public async Task RefusesAPublicationForAnotherEnvironment()
+    {
+        // The cross-environment leak environment isolation exists to prevent. A gateway
+        // that followed the message would serve development's routes while answering as
+        // production — and nothing downstream could tell.
+        var content = """{"global":{"baseUrl":"http://other-env:5000"},"routes":[]}""";
+        StoredSnapshot("2", content, environment: "development");
+
+        await Subscriber.HandleAsync(NotificationFor("development", "2"), CancellationToken.None);
+
+        File.Exists(ConfigPath).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task TakesAPublicationThatNamesNoEnvironment()
+    {
+        // The control plane does not include one yet (#530). Refusing those would leave
+        // every gateway unable to take a publication at all, which is worse than
+        // accepting them until the notifications carry it.
+        var content = """{"global":{"baseUrl":"http://gw:5000","requestIdKey":"X-Request-Id"},"routes":[]}""";
+        StoredSnapshot("2", content);
+
+        await Subscriber.HandleAsync(Notification("2"), CancellationToken.None);
+
+        File.ReadAllText(ConfigPath).Should().Contain("http://gw:5000");
+    }
+
+    private void StoredSnapshot(string version, string content, string environment = "production")
+    {
+        _db.Setup(d => d.StringGetAsync($"ocelot:snapshot:{environment}:{version}", It.IsAny<CommandFlags>()))
             .ReturnsAsync(SnapshotDocument(version, content));
     }
 }

@@ -27,8 +27,12 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    public static IServiceCollection AddOcelotControlSdk(this IServiceCollection services, string baseAddress)
+    public static IServiceCollection AddOcelotControlSdk(this IServiceCollection services, string baseAddress, string environment)
     {
-        return services.AddOcelotControlSdk(options => options.BaseAddress = baseAddress);
+        return services.AddOcelotControlSdk(options =>
+        {
+            options.BaseAddress = baseAddress;
+            options.Environment = environment;
+        });
     }
 }

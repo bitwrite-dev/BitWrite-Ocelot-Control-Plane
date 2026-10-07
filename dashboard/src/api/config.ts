@@ -25,9 +25,27 @@ export function getApiBaseUrl(): string {
   return readString(import.meta.env.VITE_API_BASE_URL, '').replace(/\/+$/, '')
 }
 
+/**
+ * The environment every request operates on, sent as `X-Environment`.
+ *
+ * The control plane stores routes, services and snapshots per environment, so a
+ * request that names none is rejected rather than answered with some default's data.
+ * That is why there is no fallback here: an unset value means the request goes out
+ * without the header and the API says so, instead of the dashboard quietly showing
+ * one environment's routes under another's name.
+ *
+ * Set `VITE_API_ENVIRONMENT` in `.env.local`. The API applies published snapshots
+ * from the environment it is configured with, which has to be the same name.
+ */
+export function getApiEnvironment(): string {
+  return readString(import.meta.env.VITE_API_ENVIRONMENT, '')
+}
+
 export interface ApiClientOptions {
   /** Overrides the base URL. Mainly for tests. */
   baseUrl?: string
+  /** Overrides the environment sent as `X-Environment`. Mainly for tests. */
+  environment?: string
   /** Injected in tests. Defaults to the global `fetch`. */
   fetchImpl?: typeof fetch
 }

@@ -1,3 +1,5 @@
+using BitWrite.OcelotControl.Application.Interfaces;
+using BitWrite.OcelotControl.Domain.ValueObjects.Configuration;
 using StackExchange.Redis;
 
 namespace BitWrite.OcelotControl.Infrastructure.Repositories;
@@ -7,10 +9,26 @@ public abstract class RedisRepositoryBase
     protected readonly IDatabase Database;
     protected readonly IConnectionMultiplexer ConnectionMultiplexer;
 
-    protected RedisRepositoryBase(IConnectionMultiplexer connectionMultiplexer)
+    /// <summary>
+    /// The environment every key built by this repository belongs to.
+    /// </summary>
+    /// <remarks>
+    /// Resolved once, from the request, rather than passed to each method. A
+    /// repository method that built a key without knowing the environment would
+    /// be one signature away from addressing another environment's routes by
+    /// mistake, and that mistake reads as an empty result rather than an error.
+    /// </remarks>
+    protected EnvironmentName Environment => _environmentContext.Current;
+
+    private readonly IEnvironmentContext _environmentContext;
+
+    protected RedisRepositoryBase(
+        IConnectionMultiplexer connectionMultiplexer,
+        IEnvironmentContext environmentContext)
     {
         ConnectionMultiplexer = connectionMultiplexer;
         Database = connectionMultiplexer.GetDatabase();
+        _environmentContext = environmentContext;
     }
 
     protected async Task<bool> SetHashAsync(string key, HashEntry[] entries, TimeSpan? expiry = null)

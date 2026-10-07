@@ -33,11 +33,24 @@ public class FreshInstallWalkthroughTests : IClassFixture<WebApplicationFactory<
     public FreshInstallWalkthroughTests(WebApplicationFactory<Program> factory) =>
         _factory = factory;
 
-    private HttpClient CreateClient() =>
-        _factory.CreateClient(new WebApplicationFactoryClientOptions
+    /// <summary>
+    /// A client that names its environment on every request, as the dashboard does.
+    /// </summary>
+    /// <remarks>
+    /// Set once here rather than per call because it is the contract every client owes
+    /// the API: routes, services and snapshots are stored per environment, so a request
+    /// that names none is rejected instead of being answered with a default's data.
+    /// </remarks>
+    private HttpClient CreateClient(string environment = "development")
+    {
+        var client = _factory.CreateClient(new WebApplicationFactoryClientOptions
         {
             AllowAutoRedirect = false,
         });
+
+        client.DefaultRequestHeaders.Add("X-Environment", environment);
+        return client;
+    }
 
     /// <summary>
     /// Completes setup, so a test starts from a state it arranged itself.
@@ -141,6 +154,41 @@ public class FreshInstallWalkthroughTests : IClassFixture<WebApplicationFactory<
 
         available.Should().NotBeEmpty();
         available.Should().OnlyContain(version => version == "18.0.0");
+    }
+
+    [Fact]
+    public async Task ARequestThatNamesNoEnvironmentIsRejected()
+    {
+        // Every repository is scoped to the environment the request names, so a request
+        // that names none has no key to address. Answering it with some default's
+        // configuration would read as a short or empty list rather than as a mistake,
+        // and an operator would go looking for routes that were never deleted.
+        using var client = _factory.CreateClient();
+
+        await CompleteSetup(CreateClient());
+
+        var response = await client.PostAsync("/api/v1/snapshots/preview", content: null);
+        var body = await response.Content.ReadAsStringAsync();
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        body.Should().Contain("ENVIRONMENT_NOT_SELECTED");
+    }
+
+    [Fact]
+    public async Task EnvironmentsDoNotSeeEachOthersSnapshots()
+    {
+        // The property the whole change exists for, across the API rather than a
+        // repository: a snapshot sealed in development is not answerable from
+        // production, and neither request reports the other's absence as an error.
+        using var development = CreateClient("development");
+        using var production = CreateClient("PRODUCTION");
+        await CompleteSetup(development);
+
+        await development.PostAsJsonAsync("/api/v1/snapshots", new { createdBy = "test" });
+
+        var inProduction = await ReadJson(production, HttpMethod.Get, "/api/v1/snapshots?page=1&pageSize=50");
+
+        inProduction.GetProperty("totalCount").GetInt32().Should().Be(0);
     }
 
     private static async Task<JsonElement> ReadJson(

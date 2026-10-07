@@ -63,7 +63,7 @@ public class RuntimeInstancePersistenceTests
     {
         var mux = new Mock<IConnectionMultiplexer>();
         mux.Setup(m => m.GetDatabase(It.IsAny<int>(), It.IsAny<object>())).Returns(_db.Object);
-        return new RedisRuntimeInstanceRepository(mux.Object);
+        return new RedisRuntimeInstanceRepository(mux.Object, TestEnvironment.Context());
     }
 
     /// <summary>

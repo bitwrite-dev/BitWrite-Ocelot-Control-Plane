@@ -14,14 +14,14 @@ namespace BitWrite.OcelotControl.Infrastructure.Repositories;
 
 public class RedisRouteRepository : RedisRepositoryBase, IRouteRepository
 {
-    public RedisRouteRepository(IConnectionMultiplexer connectionMultiplexer) 
-        : base(connectionMultiplexer)
+    public RedisRouteRepository(IConnectionMultiplexer connectionMultiplexer, IEnvironmentContext environmentContext) 
+        : base(connectionMultiplexer, environmentContext)
     {
     }
 
     public async Task<Route?> GetAsync(RouteId id, CancellationToken cancellationToken = default)
     {
-        var key = RedisKeyHelper.Route(id);
+        var key = RedisKeyHelper.Route(id, Environment);
         var entries = await GetHashAsync(key);
         
         if (entries.Length == 0)
@@ -97,7 +97,7 @@ public class RedisRouteRepository : RedisRepositoryBase, IRouteRepository
 
     public async Task<List<Route>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        var routeIds = await SetMembersAsync(RedisKeyHelper.IndexRoutes);
+        var routeIds = await SetMembersAsync(RedisKeyHelper.IndexRoutes(Environment));
         var routes = new List<Route>();
 
         foreach (var id in routeIds)
@@ -120,7 +120,7 @@ public class RedisRouteRepository : RedisRepositoryBase, IRouteRepository
 
     public async Task AddAsync(Route route, CancellationToken cancellationToken = default)
     {
-        var key = RedisKeyHelper.Route(route.Id);
+        var key = RedisKeyHelper.Route(route.Id, Environment);
         var entries = new HashEntry[]
         {
             new("Id", route.Id.Value.ToString()),
@@ -169,14 +169,14 @@ public class RedisRouteRepository : RedisRepositoryBase, IRouteRepository
         };
 
         await SetHashAsync(key, entries);
-        await SetAddAsync(RedisKeyHelper.IndexRoutes, route.Id.Value.ToString());
-        
+        await SetAddAsync(RedisKeyHelper.IndexRoutes(Environment), route.Id.Value.ToString());
+
         // Update service-route index
-        await SetAddAsync(RedisKeyHelper.IndexServiceRoutes(route.ServiceId), route.Id.Value.ToString());
-        
+        await SetAddAsync(RedisKeyHelper.IndexServiceRoutes(route.ServiceId, Environment), route.Id.Value.ToString());
+
         // Update route signature index
         var signature = route.RouteKey.ToSignature();
-        await StringSetAsync(RedisKeyHelper.IndexRouteSignature(signature), route.Id.Value.ToString());
+        await StringSetAsync(RedisKeyHelper.IndexRouteSignature(signature, Environment), route.Id.Value.ToString());
     }
 
     public async Task UpdateAsync(Route route, CancellationToken cancellationToken = default)
@@ -189,12 +189,12 @@ public class RedisRouteRepository : RedisRepositoryBase, IRouteRepository
         var route = await GetAsync(id, cancellationToken);
         if (route != null)
         {
-            var key = RedisKeyHelper.Route(id);
+            var key = RedisKeyHelper.Route(id, Environment);
             await DeleteAsync(key);
-            await SetRemoveAsync(RedisKeyHelper.IndexRoutes, id.Value.ToString());
-            await SetRemoveAsync(RedisKeyHelper.IndexServiceRoutes(route.ServiceId), id.Value.ToString());
+            await SetRemoveAsync(RedisKeyHelper.IndexRoutes(Environment), id.Value.ToString());
+            await SetRemoveAsync(RedisKeyHelper.IndexServiceRoutes(route.ServiceId, Environment), id.Value.ToString());
             var signature = route.RouteKey.ToSignature();
-            await StringSetAsync(RedisKeyHelper.IndexRouteSignature(signature), "");
+            await StringSetAsync(RedisKeyHelper.IndexRouteSignature(signature, Environment), "");
         }
     }
 

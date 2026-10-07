@@ -76,6 +76,13 @@ public class OcelotControlClient : IDisposable
         var token = await _tokenProvider.GetAccessTokenAsync(cancellationToken);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
+        // Every request names the environment it operates on. The control plane stores
+        // routes, services and snapshots per environment and answers a request that
+        // names none with a rejection, so there is nothing to fall back to here: an
+        // unset environment is a configuration mistake and has to surface as one.
+        if (!string.IsNullOrWhiteSpace(_options.Environment))
+            request.Headers.TryAddWithoutValidation("X-Environment", _options.Environment);
+
         return request;
     }
 
@@ -122,6 +129,17 @@ public class OcelotControlClient : IDisposable
 public class OcelotControlClientOptions
 {
     public string BaseAddress { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The environment every request operates on, sent as <c>X-Environment</c>.
+    /// </summary>
+    /// <remarks>
+    /// The control plane keeps routes, services and snapshots per environment, so a
+    /// request that names none is rejected rather than answered with a default's data.
+    /// Set it to the environment this client manages; it has to be the environment the
+    /// API is configured with.
+    /// </remarks>
+    public string Environment { get; set; } = string.Empty;
 }
 
 public class OcelotControlApiException : Exception

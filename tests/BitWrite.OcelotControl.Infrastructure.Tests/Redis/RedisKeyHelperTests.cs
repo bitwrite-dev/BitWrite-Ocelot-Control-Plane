@@ -1,5 +1,6 @@
-using BitWrite.OcelotControl.Infrastructure.Redis;
+using BitWrite.OcelotControl.Domain.ValueObjects.Configuration;
 using BitWrite.OcelotControl.Domain.ValueObjects.Identity;
+using BitWrite.OcelotControl.Infrastructure.Redis;
 using FluentAssertions;
 using Xunit;
 
@@ -7,6 +8,9 @@ namespace BitWrite.OcelotControl.Infrastructure.Tests.Redis;
 
 public class RedisKeyHelperTests
 {
+    /// <summary>The environment every key below is built for.</summary>
+    private static readonly EnvironmentName Development = EnvironmentName.From("development");
+
     [Fact]
     public void Gateway_ShouldGenerateCorrectKey()
     {
@@ -19,24 +23,24 @@ public class RedisKeyHelperTests
     public void Service_ShouldGenerateCorrectKey()
     {
         var serviceId = ServiceId.New();
-        var key = RedisKeyHelper.Service(serviceId);
-        key.Should().Be($"ocelot:service:{serviceId.Value}");
+        var key = RedisKeyHelper.Service(serviceId, Development);
+        key.Should().Be($"ocelot:service:development:{serviceId.Value}");
     }
 
     [Fact]
     public void Route_ShouldGenerateCorrectKey()
     {
         var routeId = RouteId.New();
-        var key = RedisKeyHelper.Route(routeId);
-        key.Should().Be($"ocelot:route:{routeId.Value}");
+        var key = RedisKeyHelper.Route(routeId, Development);
+        key.Should().Be($"ocelot:route:development:{routeId.Value}");
     }
 
     [Fact]
     public void Snapshot_ShouldGenerateCorrectKey()
     {
         var version = SnapshotVersion.From(1);
-        var key = RedisKeyHelper.Snapshot(version);
-        key.Should().Be($"ocelot:snapshot:1");
+        var key = RedisKeyHelper.Snapshot(version, Development);
+        key.Should().Be($"ocelot:snapshot:development:1");
     }
 
     [Fact]
@@ -82,9 +86,12 @@ public class RedisKeyHelperTests
     [Fact]
     public void IndexKeys_ShouldHaveCorrectValues()
     {
-        RedisKeyHelper.IndexServices.Should().Be("ocelot:index:services");
-        RedisKeyHelper.IndexRoutes.Should().Be("ocelot:index:routes");
-        RedisKeyHelper.IndexSnapshots.Should().Be("ocelot:index:snapshots");
+        // The environment-scoped collections carry it too. An index shared between
+        // environments is how a delete in one of them orphans the other's row, and how
+        // a list answers with a short list that looks like the whole truth.
+        RedisKeyHelper.IndexServices(Development).Should().Be("ocelot:index:services:development");
+        RedisKeyHelper.IndexRoutes(Development).Should().Be("ocelot:index:routes:development");
+        RedisKeyHelper.IndexSnapshots(Development).Should().Be("ocelot:index:snapshots:development");
         RedisKeyHelper.IndexLicenses.Should().Be("ocelot:index:licenses");
         RedisKeyHelper.IndexAuditLogs.Should().Be("ocelot:index:audit-logs");
     }
@@ -93,16 +100,16 @@ public class RedisKeyHelperTests
     public void IndexServiceRoutes_ShouldGenerateCorrectKey()
     {
         var serviceId = ServiceId.New();
-        var key = RedisKeyHelper.IndexServiceRoutes(serviceId);
-        key.Should().Be($"ocelot:index:service:{serviceId.Value}:routes");
+        var key = RedisKeyHelper.IndexServiceRoutes(serviceId, Development);
+        key.Should().Be($"ocelot:index:service:development:{serviceId.Value}:routes");
     }
 
     [Fact]
     public void IndexRouteSignature_ShouldGenerateCorrectKey()
     {
         var signature = "GET:/api/test";
-        var key = RedisKeyHelper.IndexRouteSignature(signature);
-        key.Should().Be("ocelot:index:route-signature:GET:/api/test");
+        var key = RedisKeyHelper.IndexRouteSignature(signature, Development);
+        key.Should().Be("ocelot:index:route-signature:development:GET:/api/test");
     }
 
     [Fact]

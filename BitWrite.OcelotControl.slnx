@@ -5,6 +5,7 @@
     <Project Path="src/BitWrite.OcelotControl.Domain/BitWrite.OcelotControl.Domain.csproj" />
     <Project Path="src/BitWrite.OcelotControl.Gateway/BitWrite.OcelotControl.Gateway.csproj" />
     <Project Path="src/BitWrite.OcelotControl.Infrastructure/BitWrite.OcelotControl.Infrastructure.csproj" />
+    <Project Path="src/BitWrite.OcelotControl.Migration/BitWrite.OcelotControl.Migration.csproj" />
     <Project Path="src/BitWrite.OcelotControl.Runtime/BitWrite.OcelotControl.Runtime.csproj" />
     <Project Path="src/BitWrite.OcelotControl.SDK/BitWrite.OcelotControl.SDK.csproj" />
   </Folder>

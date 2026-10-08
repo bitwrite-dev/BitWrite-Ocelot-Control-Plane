@@ -1,8 +1,8 @@
 using BitWrite.OcelotControl.Application.Interfaces;
 using BitWrite.OcelotControl.Application.UseCases.GlobalConfiguration;
-using DomainGlobalConfig = BitWrite.OcelotControl.Domain.Aggregates.GlobalConfiguration.GlobalConfiguration;
 using BitWrite.OcelotControl.Domain.ValueObjects.Configuration;
 using BitWrite.OcelotControl.Domain.ValueObjects.FeatureConfig;
+using DomainGlobalConfig = BitWrite.OcelotControl.Domain.Aggregates.GlobalConfiguration.GlobalConfiguration;
 
 namespace BitWrite.OcelotControl.Application.UseCases.GlobalConfiguration;
 

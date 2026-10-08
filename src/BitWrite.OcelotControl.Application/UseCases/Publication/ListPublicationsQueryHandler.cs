@@ -1,8 +1,8 @@
 using BitWrite.OcelotControl.Application.Interfaces;
 using BitWrite.OcelotControl.Application.UseCases.Publication;
-using DomainPublication = BitWrite.OcelotControl.Domain.Aggregates.Publication.Publication;
-using DomainGatewayDeploymentState = BitWrite.OcelotControl.Domain.Aggregates.Publication.GatewayDeploymentState;
 using BitWrite.OcelotControl.Domain.ValueObjects.Identity;
+using DomainGatewayDeploymentState = BitWrite.OcelotControl.Domain.Aggregates.Publication.GatewayDeploymentState;
+using DomainPublication = BitWrite.OcelotControl.Domain.Aggregates.Publication.Publication;
 
 namespace BitWrite.OcelotControl.Application.UseCases.Publication;
 

@@ -1,7 +1,7 @@
-using Microsoft.Extensions.Logging;
 using BitWrite.OcelotControl.Domain.ValueObjects.Configuration;
 using BitWrite.OcelotControl.Domain.ValueObjects.Identity;
 using BitWrite.OcelotControl.Infrastructure.Redis;
+using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
 
 namespace BitWrite.OcelotControl.Migration;
@@ -48,7 +48,7 @@ internal sealed class RouteKeyMigrator
         // 1. Find all old route keys: ocelot:route:{guid}
         var oldRouteKeys = new List<string>();
         var server = _db.Multiplexer.GetServer(_db.Multiplexer.GetEndPoints()[0]);
-        
+
         await foreach (var key in server.KeysAsync(pattern: "ocelot:route:*", pageSize: 1000))
         {
             var keyStr = key.ToString();
@@ -130,7 +130,7 @@ internal sealed class RouteKeyMigrator
         {
             var idStr = idEntry.Value.ToString();
             await _db.SetAddAsync(RedisKeyHelper.IndexRoutes(EnvironmentName.From(_targetEnvironment)), idStr);
-            
+
             // Also add to service-route index if ServiceId exists
             var serviceIdEntry = hash.FirstOrDefault(e => e.Name == "ServiceId");
             if (!serviceIdEntry.Value.IsNullOrEmpty && Guid.TryParse(serviceIdEntry.Value.ToString(), out var svcGuid))

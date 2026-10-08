@@ -1,7 +1,7 @@
+using System.Text.Json;
 using BitWrite.OcelotControl.Infrastructure.Outbox;
 using BitWrite.OcelotControl.Infrastructure.Redis;
 using StackExchange.Redis;
-using System.Text.Json;
 
 namespace BitWrite.OcelotControl.Infrastructure.Outbox;
 

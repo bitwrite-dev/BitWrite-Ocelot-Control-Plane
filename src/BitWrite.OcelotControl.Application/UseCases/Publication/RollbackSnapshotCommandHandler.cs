@@ -1,12 +1,12 @@
 using BitWrite.OcelotControl.Application.Interfaces;
 using BitWrite.OcelotControl.Application.UseCases.Publication;
-using DomainPublication = BitWrite.OcelotControl.Domain.Aggregates.Publication.Publication;
-using BitWrite.OcelotControl.Domain.Aggregates.Snapshot;
 using BitWrite.OcelotControl.Domain.Aggregates.Gateway;
+using BitWrite.OcelotControl.Domain.Aggregates.Snapshot;
 using BitWrite.OcelotControl.Domain.Events;
 using BitWrite.OcelotControl.Domain.ValueObjects.Configuration;
 using BitWrite.OcelotControl.Domain.ValueObjects.Identity;
 using BitWrite.OcelotControl.Domain.ValueObjects.Status;
+using DomainPublication = BitWrite.OcelotControl.Domain.Aggregates.Publication.Publication;
 
 namespace BitWrite.OcelotControl.Application.UseCases.Publication;
 
@@ -61,7 +61,7 @@ public class RollbackSnapshotCommandHandler
         }
 
         // 3. Get target gateways
-        var targetGatewayIds = command.TargetGatewayIds?.Select(GatewayId.From).ToList() 
+        var targetGatewayIds = command.TargetGatewayIds?.Select(GatewayId.From).ToList()
             ?? (await _gatewayRepository.GetAllAsync(cancellationToken)).Select(g => g.Id).ToList();
 
         if (targetGatewayIds.Count == 0)
@@ -102,7 +102,7 @@ public class RollbackSnapshotCommandHandler
         {
             // 5. Get current active publication (if any)
             var currentPublication = await _publicationRepository.GetLatestAsync(cancellationToken);
-            
+
             // 6. Create Publication aggregate for rollback
             var publication = DomainPublication.Start(
                 targetVersion,

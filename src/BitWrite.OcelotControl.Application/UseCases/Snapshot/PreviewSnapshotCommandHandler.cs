@@ -4,9 +4,9 @@ using BitWrite.OcelotControl.Domain.Aggregates.GlobalConfiguration;
 using BitWrite.OcelotControl.Domain.Services;
 using BitWrite.OcelotControl.Domain.ValueObjects.Configuration;
 using BitWrite.OcelotControl.Domain.ValueObjects.Identity;
+using DomainGlobalConfig = BitWrite.OcelotControl.Domain.Services.GlobalConfiguration;
 using DomainRoute = BitWrite.OcelotControl.Domain.Aggregates.Route.Route;
 using DomainService = BitWrite.OcelotControl.Domain.Aggregates.Service.Service;
-using DomainGlobalConfig = BitWrite.OcelotControl.Domain.Services.GlobalConfiguration;
 using HttpMethod = BitWrite.OcelotControl.Domain.ValueObjects.Configuration.HttpMethod;
 
 namespace BitWrite.OcelotControl.Application.UseCases.Snapshot;

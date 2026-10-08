@@ -1,9 +1,9 @@
 using BitWrite.OcelotControl.Application.Interfaces;
 using BitWrite.OcelotControl.Application.Interfaces;
 using BitWrite.OcelotControl.Application.UseCases.License;
-using DomainLicense = BitWrite.OcelotControl.Domain.Aggregates.License.License;
 using BitWrite.OcelotControl.Domain.Events;
 using BitWrite.OcelotControl.Domain.ValueObjects.Identity;
+using DomainLicense = BitWrite.OcelotControl.Domain.Aggregates.License.License;
 
 namespace BitWrite.OcelotControl.Application.UseCases.License;
 

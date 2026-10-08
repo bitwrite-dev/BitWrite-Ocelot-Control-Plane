@@ -18,12 +18,12 @@ public class OcelotConfigApplier : IOcelotConfigApplier
         // 1. Parse the Ocelot JSON configuration
         // 2. Apply it to the running Ocelot instance (via Ocelot's dynamic configuration APIs)
         // 3. Handle graceful reload without dropping requests
-        
+
         _logger.LogInformation("Applying Ocelot configuration (length: {Length} chars)", configuration.Length);
-        
+
         // Simulate applying configuration
         await Task.CompletedTask;
-        
+
         _logger.LogInformation("Ocelot configuration applied successfully");
     }
 }

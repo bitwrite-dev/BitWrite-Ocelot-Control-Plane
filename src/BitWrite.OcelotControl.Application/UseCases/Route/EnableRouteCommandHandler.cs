@@ -1,9 +1,9 @@
 using BitWrite.OcelotControl.Application.Interfaces;
 using BitWrite.OcelotControl.Application.UseCases.Route;
-using DomainRoute = BitWrite.OcelotControl.Domain.Aggregates.Route.Route;
+using BitWrite.OcelotControl.Domain.Events;
 using BitWrite.OcelotControl.Domain.Events;
 using BitWrite.OcelotControl.Domain.ValueObjects.Identity;
-using BitWrite.OcelotControl.Domain.Events;
+using DomainRoute = BitWrite.OcelotControl.Domain.Aggregates.Route.Route;
 
 namespace BitWrite.OcelotControl.Application.UseCases.Route;
 

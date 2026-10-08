@@ -1,7 +1,7 @@
 using BitWrite.OcelotControl.Application.Interfaces;
 using BitWrite.OcelotControl.Application.UseCases.Plugin;
-using DomainPlugin = BitWrite.OcelotControl.Domain.Aggregates.Plugin.Plugin;
 using BitWrite.OcelotControl.Domain.ValueObjects.Identity;
+using DomainPlugin = BitWrite.OcelotControl.Domain.Aggregates.Plugin.Plugin;
 
 namespace BitWrite.OcelotControl.Application.UseCases.Plugin;
 

@@ -1,13 +1,13 @@
 using BitWrite.OcelotControl.Application.Interfaces;
 using BitWrite.OcelotControl.Application.UseCases.License;
-using DomainLicense = BitWrite.OcelotControl.Domain.Aggregates.License.License;
 using BitWrite.OcelotControl.Domain.Events;
+using BitWrite.OcelotControl.Domain.Exceptions;
 using BitWrite.OcelotControl.Domain.ValueObjects.Identity;
 using BitWrite.OcelotControl.Domain.ValueObjects.Status;
-using BitWrite.OcelotControl.Domain.Exceptions;
 using FluentAssertions;
 using Moq;
 using Xunit;
+using DomainLicense = BitWrite.OcelotControl.Domain.Aggregates.License.License;
 
 namespace BitWrite.OcelotControl.Application.Tests.UseCases.License;
 
@@ -214,7 +214,7 @@ public class UpdateLicenseCommandHandlerTests
         _handler = new UpdateLicenseCommandHandler(_mockRepository.Object, _mockEventDispatcher.Object);
     }
 
-[Fact]
+    [Fact]
     public async Task HandleAsync_ShouldUpdateLicense()
     {
         // Arrange

@@ -1,8 +1,8 @@
-using BitWrite.OcelotControl.Domain.ValueObjects.Identity;
-using BitWrite.OcelotControl.Domain.ValueObjects.Status;
-using BitWrite.OcelotControl.Domain.ValueObjects.Configuration;
 using BitWrite.OcelotControl.Domain.Events;
 using BitWrite.OcelotControl.Domain.Exceptions;
+using BitWrite.OcelotControl.Domain.ValueObjects.Configuration;
+using BitWrite.OcelotControl.Domain.ValueObjects.Identity;
+using BitWrite.OcelotControl.Domain.ValueObjects.Status;
 
 namespace BitWrite.OcelotControl.Domain.Aggregates.Gateway;
 

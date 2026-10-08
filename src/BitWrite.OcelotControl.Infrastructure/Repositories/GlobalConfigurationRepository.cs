@@ -1,9 +1,9 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using BitWrite.OcelotControl.Application.Interfaces;
 using BitWrite.OcelotControl.Domain.Aggregates.GlobalConfiguration;
 using BitWrite.OcelotControl.Infrastructure.Redis;
 using StackExchange.Redis;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace BitWrite.OcelotControl.Infrastructure.Repositories;
 

@@ -1,5 +1,5 @@
-using System.Text.Json;
 using System.Reflection;
+using System.Text.Json;
 using BitWrite.OcelotControl.Domain.Events;
 
 namespace BitWrite.OcelotControl.Infrastructure.Outbox;
@@ -23,7 +23,7 @@ public class JsonEventSerializer : IEventSerializer
     private static Dictionary<string, Type> InitializeEventTypeRegistry()
     {
         var registry = new Dictionary<string, Type>(StringComparer.OrdinalIgnoreCase);
-        
+
         // Get DomainEvent types from the Domain assembly
         var domainAssembly = typeof(DomainEvent).Assembly;
         var domainEventTypes = domainAssembly.GetTypes()

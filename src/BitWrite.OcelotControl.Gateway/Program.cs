@@ -114,12 +114,12 @@ var host = Host.CreateDefaultBuilder(args)
     })
 .Build();
 
-        // Run startup validation: ensure the published configuration matches this
-        // gateway's environment before the gateway starts routing traffic.
-        var validator = host.Services.GetRequiredService<GatewayStartupValidator>();
-        await validator.ValidateAsync();
+// Run startup validation: ensure the published configuration matches this
+// gateway's environment before the gateway starts routing traffic.
+var validator = host.Services.GetRequiredService<GatewayStartupValidator>();
+await validator.ValidateAsync();
 
-        await host.RunAsync();
+await host.RunAsync();
 
 /// <summary>Exposed so the tests can host the same pipeline.</summary>
 public partial class Program;

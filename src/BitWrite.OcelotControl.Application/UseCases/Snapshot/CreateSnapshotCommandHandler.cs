@@ -1,18 +1,18 @@
 using BitWrite.OcelotControl.Application.Interfaces;
 using BitWrite.OcelotControl.Application.UseCases.Route;
 using BitWrite.OcelotControl.Domain.Aggregates.GlobalConfiguration;
-using DomainRoute = BitWrite.OcelotControl.Domain.Aggregates.Route.Route;
 using BitWrite.OcelotControl.Domain.Aggregates.Service;
-using DomainSnapshot = BitWrite.OcelotControl.Domain.Aggregates.Snapshot.Snapshot;
-using DomainValidationResult = BitWrite.OcelotControl.Domain.Aggregates.Snapshot.ValidationResult;
 using BitWrite.OcelotControl.Domain.Events;
 using BitWrite.OcelotControl.Domain.Services;
 using BitWrite.OcelotControl.Domain.ValueObjects.Configuration;
 using BitWrite.OcelotControl.Domain.ValueObjects.Identity;
 using BitWrite.OcelotControl.Domain.ValueObjects.Status;
-using DomainGlobalConfig = BitWrite.OcelotControl.Domain.Services.GlobalConfiguration;
-using DomainRouteConfig = BitWrite.OcelotControl.Domain.Services.RouteConfiguration;
 using DomainDownstreamTarget = BitWrite.OcelotControl.Domain.ValueObjects.Configuration.DownstreamTarget;
+using DomainGlobalConfig = BitWrite.OcelotControl.Domain.Services.GlobalConfiguration;
+using DomainRoute = BitWrite.OcelotControl.Domain.Aggregates.Route.Route;
+using DomainRouteConfig = BitWrite.OcelotControl.Domain.Services.RouteConfiguration;
+using DomainSnapshot = BitWrite.OcelotControl.Domain.Aggregates.Snapshot.Snapshot;
+using DomainValidationResult = BitWrite.OcelotControl.Domain.Aggregates.Snapshot.ValidationResult;
 using HttpMethod = BitWrite.OcelotControl.Domain.ValueObjects.Configuration.HttpMethod;
 
 namespace BitWrite.OcelotControl.Application.UseCases.Snapshot;
@@ -187,7 +187,7 @@ public class CreateSnapshotCommandHandler
         // 5. Version Allocation
         var version = _versionAllocator.AllocateNext();
 
-// 6. Create Snapshot aggregate
+        // 6. Create Snapshot aggregate
         var snapshot = DomainSnapshot.Create(
             canonicalJson,
             hash,
@@ -227,7 +227,7 @@ public class CreateSnapshotCommandHandler
     private IEnumerable<string> GetFeaturesFromRoute(DomainRoute route)
     {
         var features = new List<string>();
-        
+
         if (route.AuthenticationOptions != null)
             features.Add("authentication");
         if (route.RateLimitOptions != null)

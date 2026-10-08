@@ -1,8 +1,8 @@
-using ApiDtos = BitWrite.OcelotControl.Api.DTOs;
-using AppGateway = BitWrite.OcelotControl.Application.UseCases.Gateway;
 using BitWrite.OcelotControl.Domain.ValueObjects.Identity;
 using BitWrite.OcelotControl.Domain.ValueObjects.Status;
 using Microsoft.AspNetCore.Mvc;
+using ApiDtos = BitWrite.OcelotControl.Api.DTOs;
+using AppGateway = BitWrite.OcelotControl.Application.UseCases.Gateway;
 
 namespace BitWrite.OcelotControl.Api.Controllers;
 

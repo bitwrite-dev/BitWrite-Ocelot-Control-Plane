@@ -1,15 +1,15 @@
 using BitWrite.OcelotControl.Application.Interfaces;
 using BitWrite.OcelotControl.Application.UseCases.Gateway;
-using DomainGateway = BitWrite.OcelotControl.Domain.Aggregates.Gateway.Gateway;
-using DomainRuntimeInstance = BitWrite.OcelotControl.Domain.Aggregates.RuntimeInstance.RuntimeInstance;
-using AppIRuntimeInstanceRepository = BitWrite.OcelotControl.Application.Interfaces.IRuntimeInstanceRepository;
 using BitWrite.OcelotControl.Domain.Events;
+using BitWrite.OcelotControl.Domain.Exceptions;
 using BitWrite.OcelotControl.Domain.ValueObjects.Identity;
 using BitWrite.OcelotControl.Domain.ValueObjects.Status;
-using BitWrite.OcelotControl.Domain.Exceptions;
 using FluentAssertions;
 using Moq;
 using Xunit;
+using AppIRuntimeInstanceRepository = BitWrite.OcelotControl.Application.Interfaces.IRuntimeInstanceRepository;
+using DomainGateway = BitWrite.OcelotControl.Domain.Aggregates.Gateway.Gateway;
+using DomainRuntimeInstance = BitWrite.OcelotControl.Domain.Aggregates.RuntimeInstance.RuntimeInstance;
 
 namespace BitWrite.OcelotControl.Application.Tests.UseCases.Gateway;
 

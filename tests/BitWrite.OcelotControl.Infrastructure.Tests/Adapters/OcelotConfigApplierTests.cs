@@ -1,7 +1,7 @@
+using System.Text.Json;
 using BitWrite.OcelotControl.Infrastructure.Adapters;
 using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
-using System.Text.Json;
 
 namespace BitWrite.OcelotControl.Infrastructure.Tests.Adapters;
 

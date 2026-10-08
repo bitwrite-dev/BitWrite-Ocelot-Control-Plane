@@ -4,9 +4,8 @@ using BitWrite.OcelotControl.Domain.ValueObjects.Identity;
 using BitWrite.OcelotControl.Domain.ValueObjects.Status;
 using FluentAssertions;
 using Xunit;
-
-using SnapshotAggregate = BitWrite.OcelotControl.Domain.Aggregates.Snapshot.Snapshot;
 using ConfigurationHashValue = BitWrite.OcelotControl.Domain.ValueObjects.Configuration.ConfigurationHash;
+using SnapshotAggregate = BitWrite.OcelotControl.Domain.Aggregates.Snapshot.Snapshot;
 
 namespace BitWrite.OcelotControl.Domain.Tests.Aggregates;
 

@@ -1,4 +1,3 @@
-using IRuntimeInstanceRepository = BitWrite.OcelotControl.Infrastructure.Repositories.IRuntimeInstanceRepository;
 using BitWrite.OcelotControl.Domain.ValueObjects.Configuration;
 using BitWrite.OcelotControl.Domain.ValueObjects.Identity;
 using BitWrite.OcelotControl.Infrastructure.Repositories;
@@ -6,6 +5,7 @@ using FluentAssertions;
 using Moq;
 using StackExchange.Redis;
 using Xunit;
+using IRuntimeInstanceRepository = BitWrite.OcelotControl.Infrastructure.Repositories.IRuntimeInstanceRepository;
 
 namespace BitWrite.OcelotControl.Infrastructure.Tests.Repositories;
 

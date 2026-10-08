@@ -34,14 +34,14 @@ public abstract class RedisRepositoryBase
     protected async Task<bool> SetHashAsync(string key, HashEntry[] entries, TimeSpan? expiry = null)
     {
         if (entries.Length == 0) return true;
-        
+
         await Database.HashSetAsync(key, entries);
-        
+
         if (expiry.HasValue)
         {
             await Database.KeyExpireAsync(key, expiry);
         }
-        
+
         return true;
     }
 
@@ -91,10 +91,10 @@ public abstract class RedisRepositoryBase
     }
 
     protected async Task<RedisValue[]> SortedSetRangeByScoreAsync(
-        string key, 
-        double start = double.NegativeInfinity, 
-        double stop = double.PositiveInfinity, 
-        long skip = 0, 
+        string key,
+        double start = double.NegativeInfinity,
+        double stop = double.PositiveInfinity,
+        long skip = 0,
         long take = 100)
     {
         return await Database.SortedSetRangeByScoreAsync(key, start, stop, Exclude.None, Order.Ascending, skip, take);

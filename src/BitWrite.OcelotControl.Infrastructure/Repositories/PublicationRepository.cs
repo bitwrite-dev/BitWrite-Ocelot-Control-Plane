@@ -1,10 +1,10 @@
+using System.Globalization;
 using BitWrite.OcelotControl.Application.Interfaces;
 using BitWrite.OcelotControl.Domain.Aggregates.Publication;
 using BitWrite.OcelotControl.Domain.ValueObjects.Identity;
 using BitWrite.OcelotControl.Domain.ValueObjects.Status;
 using BitWrite.OcelotControl.Infrastructure.Redis;
 using StackExchange.Redis;
-using System.Globalization;
 
 namespace BitWrite.OcelotControl.Infrastructure.Repositories;
 
@@ -12,7 +12,7 @@ public class RedisPublicationRepository : RedisRepositoryBase, IPublicationRepos
 {
     private const string PublicationsIndexKey = "ocelot:index:publications";
 
-    public RedisPublicationRepository(IConnectionMultiplexer connectionMultiplexer, IEnvironmentContext environmentContext) 
+    public RedisPublicationRepository(IConnectionMultiplexer connectionMultiplexer, IEnvironmentContext environmentContext)
         : base(connectionMultiplexer, environmentContext)
     {
     }
@@ -21,7 +21,7 @@ public class RedisPublicationRepository : RedisRepositoryBase, IPublicationRepos
     {
         var key = RedisKeyHelper.Publication(id);
         var entries = await GetHashAsync(key);
-        
+
         if (entries.Length == 0)
             return null;
 
@@ -68,12 +68,12 @@ public class RedisPublicationRepository : RedisRepositoryBase, IPublicationRepos
     public async Task<Publication?> GetLatestAsync(CancellationToken cancellationToken = default)
     {
         var latestId = await Database.SortedSetRangeByScoreAsync(
-            PublicationsIndexKey, 
-            double.NegativeInfinity, 
-            double.PositiveInfinity, 
-            Exclude.None, 
-            Order.Descending, 
-            0, 
+            PublicationsIndexKey,
+            double.NegativeInfinity,
+            double.PositiveInfinity,
+            Exclude.None,
+            Order.Descending,
+            0,
             1);
 
         if (latestId.Length == 0)
@@ -103,10 +103,10 @@ public class RedisPublicationRepository : RedisRepositoryBase, IPublicationRepos
     public async Task<List<Publication>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         var publicationIds = await Database.SortedSetRangeByScoreAsync(
-            PublicationsIndexKey, 
-            double.NegativeInfinity, 
-            double.PositiveInfinity, 
-            Exclude.None, 
+            PublicationsIndexKey,
+            double.NegativeInfinity,
+            double.PositiveInfinity,
+            Exclude.None,
             Order.Descending);
 
         var publications = new List<Publication>();

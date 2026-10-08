@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
+using BitWrite.OcelotControl.Application.UseCases.SystemSettings;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using BitWrite.OcelotControl.Application.UseCases.SystemSettings;
 
 namespace BitWrite.OcelotControl.Api.Controllers;
 

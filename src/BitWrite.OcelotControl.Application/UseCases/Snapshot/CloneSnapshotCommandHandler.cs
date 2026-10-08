@@ -1,12 +1,12 @@
+using System.Text.Json;
 using BitWrite.OcelotControl.Application.Interfaces;
 using BitWrite.OcelotControl.Application.UseCases.Snapshot;
-using DomainSnapshot = BitWrite.OcelotControl.Domain.Aggregates.Snapshot.Snapshot;
-using DomainGlobalConfig = BitWrite.OcelotControl.Domain.Services.GlobalConfiguration;
 using BitWrite.OcelotControl.Domain.Events;
 using BitWrite.OcelotControl.Domain.Services;
 using BitWrite.OcelotControl.Domain.ValueObjects.Configuration;
 using BitWrite.OcelotControl.Domain.ValueObjects.Identity;
-using System.Text.Json;
+using DomainGlobalConfig = BitWrite.OcelotControl.Domain.Services.GlobalConfiguration;
+using DomainSnapshot = BitWrite.OcelotControl.Domain.Aggregates.Snapshot.Snapshot;
 
 namespace BitWrite.OcelotControl.Application.UseCases.Snapshot;
 

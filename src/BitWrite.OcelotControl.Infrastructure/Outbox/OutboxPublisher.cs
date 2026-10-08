@@ -1,11 +1,10 @@
+using BitWrite.OcelotControl.Application.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using BitWrite.OcelotControl.Application.Interfaces;
-
+using AppIEventSerializer = BitWrite.OcelotControl.Application.Interfaces.IEventSerializer;
 using AppIOutboxRepository = BitWrite.OcelotControl.Application.Interfaces.IOutboxRepository;
 using AppOutboxMessage = BitWrite.OcelotControl.Application.Interfaces.OutboxMessage;
-using AppIEventSerializer = BitWrite.OcelotControl.Application.Interfaces.IEventSerializer;
 
 namespace BitWrite.OcelotControl.Infrastructure.Outbox;
 
@@ -63,14 +62,14 @@ public class OutboxPublisher : BackgroundService
             try
             {
                 var channel = GetChannelForEvent(message.EventType);
-                
-                _logger.LogInformation("Publishing message: {EventType} with ID: {MessageId} to channel: {Channel}", 
+
+                _logger.LogInformation("Publishing message: {EventType} with ID: {MessageId} to channel: {Channel}",
                     message.EventType, message.Id, channel);
 
                 await _redisPublisher.PublishAsync(channel, message.Payload, cancellationToken);
 
                 await outboxRepository.MarkProcessedAsync(message.Id, cancellationToken);
-                
+
                 _logger.LogInformation("Successfully published message: {MessageId}", message.Id);
             }
             catch (Exception ex)
@@ -91,8 +90,8 @@ public class OutboxPublisher : BackgroundService
     {
         var knownAggregates = new[]
         {
-            "Gateway", "Route", "Service", "Snapshot", 
-            "Publication", "GlobalConfiguration", "Plugin", 
+            "Gateway", "Route", "Service", "Snapshot",
+            "Publication", "GlobalConfiguration", "Plugin",
             "RuntimeInstance", "License", "Audit"
         };
 
@@ -121,23 +120,23 @@ public class OutboxPublisher : BackgroundService
 
         if (newRetryCount >= MaxRetries)
         {
-            _logger.LogError("Message {MessageId} exceeded max retries ({MaxRetries}). Moving to dead letter.", 
+            _logger.LogError("Message {MessageId} exceeded max retries ({MaxRetries}). Moving to dead letter.",
                 message.Id, MaxRetries);
-            
-            await outboxRepository.MarkFailedAsync(message.Id, 
+
+            await outboxRepository.MarkFailedAsync(message.Id,
                 $"Max retries exceeded: {exception.Message}", cancellationToken);
-            
+
             await outboxRepository.AddToDeadLetterAsync(message.Id, exception.Message, cancellationToken);
         }
         else
         {
             var delay = CalculateBackoffDelay(newRetryCount);
-            _logger.LogWarning("Publish failed for message {MessageId}. Retry {RetryCount}/{MaxRetries} in {Delay}ms", 
+            _logger.LogWarning("Publish failed for message {MessageId}. Retry {RetryCount}/{MaxRetries} in {Delay}ms",
                 message.Id, newRetryCount, MaxRetries, delay.TotalMilliseconds);
-            
-            await outboxRepository.MarkFailedAsync(message.Id, 
+
+            await outboxRepository.MarkFailedAsync(message.Id,
                 $"Retry {newRetryCount}/{MaxRetries}: {exception.Message}", cancellationToken);
-            
+
             await Task.Delay(delay, cancellationToken);
         }
     }

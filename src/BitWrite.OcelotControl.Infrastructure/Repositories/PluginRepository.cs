@@ -11,7 +11,7 @@ public class RedisPluginRepository : RedisRepositoryBase, IPluginRepository
 {
     private const string PluginsIndexKey = "ocelot:index:plugins";
 
-    public RedisPluginRepository(IConnectionMultiplexer connectionMultiplexer, IEnvironmentContext environmentContext) 
+    public RedisPluginRepository(IConnectionMultiplexer connectionMultiplexer, IEnvironmentContext environmentContext)
         : base(connectionMultiplexer, environmentContext)
     {
     }
@@ -20,13 +20,13 @@ public class RedisPluginRepository : RedisRepositoryBase, IPluginRepository
     {
         var key = RedisKeyHelper.Plugin(id);
         var entries = await GetHashAsync(key);
-        
+
         if (entries.Length == 0)
             return null;
 
         var scopeStr = GetEntry(entries, "Scope");
-        var scope = !string.IsNullOrEmpty(scopeStr) 
-            ? PluginScope.From(scopeStr) 
+        var scope = !string.IsNullOrEmpty(scopeStr)
+            ? PluginScope.From(scopeStr)
             : PluginScope.Global;
 
         var plugin = Plugin.Install(
@@ -47,10 +47,10 @@ public class RedisPluginRepository : RedisRepositoryBase, IPluginRepository
     public async Task<List<Plugin>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         var pluginIds = await Database.SortedSetRangeByScoreAsync(
-            PluginsIndexKey, 
-            double.NegativeInfinity, 
-            double.PositiveInfinity, 
-            Exclude.None, 
+            PluginsIndexKey,
+            double.NegativeInfinity,
+            double.PositiveInfinity,
+            Exclude.None,
             Order.Descending);
 
         var plugins = new List<Plugin>();

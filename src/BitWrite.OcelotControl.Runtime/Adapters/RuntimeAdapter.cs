@@ -1,11 +1,11 @@
 using BitWrite.OcelotControl.Application.Interfaces;
-using Microsoft.Extensions.Configuration;
 using BitWrite.OcelotControl.Domain.Aggregates.RuntimeInstance;
 using BitWrite.OcelotControl.Domain.Aggregates.Snapshot;
 using BitWrite.OcelotControl.Domain.ValueObjects.Configuration;
 using BitWrite.OcelotControl.Domain.ValueObjects.Identity;
 using BitWrite.OcelotControl.Domain.ValueObjects.Status;
 using BitWrite.OcelotControl.Infrastructure.Redis;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -44,7 +44,7 @@ public class RuntimeAdapter : BackgroundService
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         _gatewayId = GatewayId.New(); // In real implementation, this would come from config
-        
+
         _logger.LogInformation("RuntimeAdapter started for gateway {GatewayId}", _gatewayId);
 
         // Subscribe to version notifications
@@ -71,7 +71,7 @@ public class RuntimeAdapter : BackgroundService
     private async Task SubscribeToVersionNotificationsAsync(CancellationToken cancellationToken)
     {
         var subscriber = _connectionMultiplexer.GetSubscriber();
-        
+
         await subscriber.SubscribeAsync("ocelot:snapshot:published", async (channel, message) =>
         {
             _logger.LogInformation("Received version notification: {Message}", message);
@@ -124,11 +124,11 @@ public class RuntimeAdapter : BackgroundService
         // Poll current version from Redis
         var db = _connectionMultiplexer.GetDatabase();
         var currentVersionStr = await db.StringGetAsync(RedisKeyHelper.RuntimeCurrent(BitWrite.OcelotControl.Domain.ValueObjects.Configuration.EnvironmentName.From(_environment)));
-        
+
         if (!currentVersionStr.IsNullOrEmpty && int.TryParse(currentVersionStr, out var versionInt))
         {
             var version = SnapshotVersion.From(versionInt);
-            
+
             if (_currentVersion != version)
             {
                 _logger.LogInformation("Version change detected: {CurrentVersion} -> {NewVersion}", _currentVersion, version);
@@ -149,13 +149,13 @@ public class RuntimeAdapter : BackgroundService
         {
             try
             {
-                _logger.LogInformation("Applying snapshot version {Version} (attempt {Attempt}/{MaxRetries})", 
+                _logger.LogInformation("Applying snapshot version {Version} (attempt {Attempt}/{MaxRetries})",
                     version, retryCount + 1, maxRetries + 1);
 
                 // 1. Retrieve Snapshot
                 using var scope = _scopeFactory.CreateScope();
                 var snapshotRepository = scope.ServiceProvider.GetRequiredService<ISnapshotRepository>();
-                
+
                 var snapshot = await snapshotRepository.GetAsync(version, cancellationToken);
                 if (snapshot == null)
                 {
@@ -173,10 +173,10 @@ public class RuntimeAdapter : BackgroundService
                 // 3. Check Ocelot version compatibility
                 var ocelotVersion = OcelotVersion.Parse("20.0.0"); // In real implementation, get from config
                 var features = ExtractFeaturesFromSnapshot(snapshot.Content);
-                
+
                 // Resolve capability resolver from scope
                 var capabilityResolver = scope.ServiceProvider.GetRequiredService<IOcelotCapabilityResolver>();
-                
+
                 // For now, just check if any features are incompatible
                 foreach (var feature in features)
                 {
@@ -220,7 +220,7 @@ public class RuntimeAdapter : BackgroundService
             catch (Exception ex)
             {
                 retryCount++;
-                _logger.LogWarning(ex, "Failed to apply snapshot {Version} (attempt {Attempt}/{MaxRetries})", 
+                _logger.LogWarning(ex, "Failed to apply snapshot {Version} (attempt {Attempt}/{MaxRetries})",
                     version, retryCount, maxRetries + 1);
 
                 if (retryCount > maxRetries)
@@ -258,7 +258,7 @@ public class RuntimeAdapter : BackgroundService
         if (_lastKnownGoodVersion != null && _lastKnownGoodConfig != null)
         {
             _logger.LogWarning("Rolling back to known-good version {Version}", _lastKnownGoodVersion);
-            
+
             try
             {
                 await _configApplier.ApplyAsync(_lastKnownGoodConfig, cancellationToken);

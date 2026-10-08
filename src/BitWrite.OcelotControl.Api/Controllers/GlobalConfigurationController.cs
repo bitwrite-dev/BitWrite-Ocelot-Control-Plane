@@ -1,10 +1,10 @@
+using Microsoft.AspNetCore.Mvc;
 using ApiDtos = BitWrite.OcelotControl.Api.DTOs;
 using AppGlobalConfig = BitWrite.OcelotControl.Application.UseCases.GlobalConfiguration;
-using DomainRateLimitConfig = BitWrite.OcelotControl.Domain.Aggregates.GlobalConfiguration.RateLimitConfig;
-using DomainQoSConfig = BitWrite.OcelotControl.Domain.Aggregates.GlobalConfiguration.QoSConfig;
 using DomainHttpHandlerConfig = BitWrite.OcelotControl.Domain.Aggregates.GlobalConfiguration.HttpHandlerConfig;
+using DomainQoSConfig = BitWrite.OcelotControl.Domain.Aggregates.GlobalConfiguration.QoSConfig;
+using DomainRateLimitConfig = BitWrite.OcelotControl.Domain.Aggregates.GlobalConfiguration.RateLimitConfig;
 using DomainServiceDiscoveryConfig = BitWrite.OcelotControl.Domain.Aggregates.GlobalConfiguration.ServiceDiscoveryConfig;
-using Microsoft.AspNetCore.Mvc;
 
 namespace BitWrite.OcelotControl.Api.Controllers;
 

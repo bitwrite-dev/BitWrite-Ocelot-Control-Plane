@@ -1,12 +1,12 @@
 using BitWrite.OcelotControl.Application.Interfaces;
 using BitWrite.OcelotControl.Application.UseCases.Publication;
-using DomainPublication = BitWrite.OcelotControl.Domain.Aggregates.Publication.Publication;
-using BitWrite.OcelotControl.Domain.Aggregates.Snapshot;
 using BitWrite.OcelotControl.Domain.Aggregates.Gateway;
+using BitWrite.OcelotControl.Domain.Aggregates.Snapshot;
 using BitWrite.OcelotControl.Domain.Events;
 using BitWrite.OcelotControl.Domain.ValueObjects.Configuration;
 using BitWrite.OcelotControl.Domain.ValueObjects.Identity;
 using BitWrite.OcelotControl.Domain.ValueObjects.Status;
+using DomainPublication = BitWrite.OcelotControl.Domain.Aggregates.Publication.Publication;
 
 namespace BitWrite.OcelotControl.Application.UseCases.Publication;
 
@@ -67,7 +67,7 @@ public class PublishSnapshotCommandHandler
         }
 
         // 4. Get target gateways
-        var targetGatewayIds = command.TargetGatewayIds?.Select(GatewayId.From).ToList() 
+        var targetGatewayIds = command.TargetGatewayIds?.Select(GatewayId.From).ToList()
             ?? (await _gatewayRepository.GetAllAsync(cancellationToken)).Select(g => g.Id).ToList();
 
         if (targetGatewayIds.Count == 0)

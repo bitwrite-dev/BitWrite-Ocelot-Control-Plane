@@ -1,6 +1,6 @@
+using BitWrite.OcelotControl.Domain.ValueObjects.Configuration;
 using BitWrite.OcelotControl.Domain.ValueObjects.Identity;
 using BitWrite.OcelotControl.Domain.ValueObjects.Status;
-using BitWrite.OcelotControl.Domain.ValueObjects.Configuration;
 
 namespace BitWrite.OcelotControl.Application.UseCases.Snapshot;
 

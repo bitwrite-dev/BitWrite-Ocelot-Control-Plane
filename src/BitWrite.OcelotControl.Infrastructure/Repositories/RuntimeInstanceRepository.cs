@@ -1,12 +1,11 @@
-using BitWrite.OcelotControl.Domain.Aggregates.RuntimeInstance;
 using System.Text.Json;
+using BitWrite.OcelotControl.Application.Interfaces;
+using BitWrite.OcelotControl.Domain.Aggregates.RuntimeInstance;
 using BitWrite.OcelotControl.Domain.ValueObjects.Configuration;
 using BitWrite.OcelotControl.Domain.ValueObjects.Identity;
 using BitWrite.OcelotControl.Domain.ValueObjects.Status;
 using BitWrite.OcelotControl.Infrastructure.Redis;
 using StackExchange.Redis;
-
-using BitWrite.OcelotControl.Application.Interfaces;
 
 namespace BitWrite.OcelotControl.Infrastructure.Repositories;
 
@@ -14,7 +13,7 @@ public class RedisRuntimeInstanceRepository : RedisRepositoryBase, IRuntimeInsta
 {
     private const string RuntimeInstancesIndexKey = "ocelot:index:runtimeinstances";
 
-    public RedisRuntimeInstanceRepository(IConnectionMultiplexer connectionMultiplexer, IEnvironmentContext environmentContext) 
+    public RedisRuntimeInstanceRepository(IConnectionMultiplexer connectionMultiplexer, IEnvironmentContext environmentContext)
         : base(connectionMultiplexer, environmentContext)
     {
     }
@@ -89,10 +88,10 @@ public class RedisRuntimeInstanceRepository : RedisRepositoryBase, IRuntimeInsta
     public async Task<List<RuntimeInstance>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         var gatewayIds = await Database.SortedSetRangeByScoreAsync(
-            RuntimeInstancesIndexKey, 
-            double.NegativeInfinity, 
-            double.PositiveInfinity, 
-            Exclude.None, 
+            RuntimeInstancesIndexKey,
+            double.NegativeInfinity,
+            double.PositiveInfinity,
+            Exclude.None,
             Order.Descending);
 
         var instances = new List<RuntimeInstance>();

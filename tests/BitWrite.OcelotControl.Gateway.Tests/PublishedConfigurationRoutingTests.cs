@@ -156,7 +156,7 @@ public class PublishedConfigurationRoutingTests : IAsyncLifetime
         var gateway = Host.CreateDefaultBuilder()
             .ConfigureWebHostDefaults(web =>
             {
-                
+
                 web.UseUrls($"http://127.0.0.1:{GatewayPort}");
 
                 // Ocelot reads a file; this is that file, and the subscriber fills it.

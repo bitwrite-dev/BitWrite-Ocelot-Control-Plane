@@ -2,8 +2,8 @@ using BitWrite.OcelotControl.Application.Interfaces;
 using BitWrite.OcelotControl.Domain.Services;
 using BitWrite.OcelotControl.Domain.ValueObjects.Configuration;
 using BitWrite.OcelotControl.Domain.ValueObjects.Identity;
-using HttpMethod = BitWrite.OcelotControl.Domain.ValueObjects.Configuration.HttpMethod;
 using GlobalConfig = BitWrite.OcelotControl.Domain.Services.GlobalConfiguration;
+using HttpMethod = BitWrite.OcelotControl.Domain.ValueObjects.Configuration.HttpMethod;
 
 namespace BitWrite.OcelotControl.Infrastructure.Adapters;
 

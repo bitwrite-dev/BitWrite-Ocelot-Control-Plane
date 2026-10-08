@@ -1,8 +1,8 @@
 using BitWrite.OcelotControl.Application.Interfaces;
 using BitWrite.OcelotControl.Application.UseCases.Gateway;
-using DomainGateway = BitWrite.OcelotControl.Domain.Aggregates.Gateway.Gateway;
 using BitWrite.OcelotControl.Domain.Events;
 using BitWrite.OcelotControl.Domain.ValueObjects.Identity;
+using DomainGateway = BitWrite.OcelotControl.Domain.Aggregates.Gateway.Gateway;
 
 namespace BitWrite.OcelotControl.Application.UseCases.Gateway;
 

@@ -32,7 +32,7 @@ public class RedisDistributedLock : IDistributedLock
         while (DateTime.UtcNow < endTime)
         {
             var acquired = await db.StringSetAsync(lockKey, lockId, expiry, When.NotExists);
-            
+
             if (acquired)
             {
                 _logger.LogDebug("Acquired lock for resource: {Resource}", resource);
@@ -51,7 +51,7 @@ public class RedisDistributedLock : IDistributedLock
     {
         var db = _connectionMultiplexer.GetDatabase();
         var lockKey = $"lock:{resource}";
-        
+
         // Use Lua script to ensure atomic check-and-delete
         var script = @"
             if redis.call('get', KEYS[1]) == ARGV[1] then
@@ -59,9 +59,9 @@ public class RedisDistributedLock : IDistributedLock
             else
                 return 0
             end";
-        
+
         var result = await db.ScriptEvaluateAsync(script, new RedisKey[] { lockKey }, new RedisValue[] { lockId });
-        
+
         if ((int)result == 1)
         {
             _logger.LogDebug("Released lock for resource: {Resource}", resource);

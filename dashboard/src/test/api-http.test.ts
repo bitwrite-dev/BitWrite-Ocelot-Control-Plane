@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi, beforeEach } from 'vitest'
 
 import { ApiError } from '@/api/errors'
 import { createHttpClient } from '@/api/http'
@@ -17,6 +17,11 @@ function client(fetchImpl: ReturnType<typeof vi.fn>, baseUrl = 'http://api.test'
 }
 
 describe('createHttpClient', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    vi.clearAllMocks()
+  })
+
   it('joins the base URL and path without doubling slashes', async () => {
     const fetchImpl = vi.fn().mockImplementation(async () => jsonResponse({ ok: true }))
 
@@ -91,8 +96,16 @@ describe('createHttpClient', () => {
     // Absent rather than defaulted: a client that filled in a name of its own would
     // show one environment's configuration while the operator believed it was another.
     const fetchImpl = vi.fn().mockImplementation(async () => jsonResponse({}))
+    const http = createHttpClient(
+      { getAccessToken: () => null },
+      {
+        baseUrl: 'http://api.test',
+        environment: '',
+        fetchImpl: fetchImpl as unknown as typeof fetch,
+      },
+    )
 
-    await client(fetchImpl).get('/api/v1/routes')
+    await http.get('/api/v1/routes')
 
     const headers = fetchImpl.mock.calls[0][1].headers as Record<string, string>
     expect(headers['X-Environment']).toBeUndefined()

@@ -52,6 +52,7 @@ public record GatewayRegistered(GatewayId GatewayId, string Name, string? Descri
 public record GatewayUpdated(GatewayId GatewayId, string? Name, string? Description) : DomainEvent;
 public record GatewayStatusChanged(GatewayId GatewayId, string OldStatus, string NewStatus) : DomainEvent;
 public record GatewayDeleted(GatewayId GatewayId, string Name) : DomainEvent;
+public record GatewayEnvironmentChanged(GatewayId GatewayId, string OldEnvironment, string NewEnvironment) : DomainEvent;
 
 // Route events
 public record RouteCreated(RouteId RouteId, RouteKey RouteKey, ServiceId ServiceId) : DomainEvent;

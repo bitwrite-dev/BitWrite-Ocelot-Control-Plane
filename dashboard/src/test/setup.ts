@@ -60,6 +60,7 @@ if (typeof globalThis.ResizeObserver === 'undefined') {
 if (typeof globalThis.caches === 'undefined') {
   const noopCache = {
     async match() { return undefined; },
+    async matchAll() { return []; },
     async add() {},
     async addAll() {},
     async delete() { return false; },

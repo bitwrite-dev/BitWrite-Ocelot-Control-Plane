@@ -1,6 +1,6 @@
+using AppGatewayId = BitWrite.OcelotControl.Domain.ValueObjects.Identity.GatewayId;
 using AppIRuntimeInstanceRepository = BitWrite.OcelotControl.Application.Interfaces.IRuntimeInstanceRepository;
 using AppRuntimeInstance = BitWrite.OcelotControl.Domain.Aggregates.RuntimeInstance.RuntimeInstance;
-using AppGatewayId = BitWrite.OcelotControl.Domain.ValueObjects.Identity.GatewayId;
 using InfraIRuntimeInstanceRepository = BitWrite.OcelotControl.Infrastructure.Repositories.IRuntimeInstanceRepository;
 
 namespace BitWrite.OcelotControl.Infrastructure.Adapters;

@@ -1,9 +1,9 @@
+using System.Collections.Generic;
 using BitWrite.OcelotControl.Application.Interfaces;
 using BitWrite.OcelotControl.Application.UseCases.SystemSettings;
-using BitWrite.OcelotControl.Domain.Exceptions;
 using BitWrite.OcelotControl.Domain.Events;
+using BitWrite.OcelotControl.Domain.Exceptions;
 using BitWrite.OcelotControl.Domain.ValueObjects.Configuration;
-using System.Collections.Generic;
 using FluentAssertions;
 using Moq;
 using Xunit;

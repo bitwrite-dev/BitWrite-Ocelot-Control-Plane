@@ -1,32 +1,32 @@
 using BitWrite.OcelotControl.Api.Middleware;
 using BitWrite.OcelotControl.Api.Validators;
-using AppInterfaces = BitWrite.OcelotControl.Application.Interfaces;
-using BitWrite.OcelotControl.Domain.Events;
-using BitWrite.OcelotControl.Infrastructure.EventHandlers;
-using BitWrite.OcelotControl.Application.UseCases.Snapshot;
+using BitWrite.OcelotControl.Application.Events;
+using BitWrite.OcelotControl.Application.UseCases.Audit;
+using BitWrite.OcelotControl.Application.UseCases.Gateway;
+using BitWrite.OcelotControl.Application.UseCases.GlobalConfiguration;
+using BitWrite.OcelotControl.Application.UseCases.License;
+using BitWrite.OcelotControl.Application.UseCases.Plugin;
 using BitWrite.OcelotControl.Application.UseCases.Publication;
 using BitWrite.OcelotControl.Application.UseCases.Route;
-using BitWrite.OcelotControl.Application.UseCases.SystemSettings;
-using BitWrite.OcelotControl.Application.UseCases.Service;
-using BitWrite.OcelotControl.Application.UseCases.GlobalConfiguration;
-using BitWrite.OcelotControl.Application.UseCases.Gateway;
-using BitWrite.OcelotControl.Application.UseCases.Plugin;
 using BitWrite.OcelotControl.Application.UseCases.Runtime;
-using BitWrite.OcelotControl.Application.UseCases.License;
-using BitWrite.OcelotControl.Application.UseCases.Audit;
-using BitWrite.OcelotControl.Application.Events;
-using DomainServices = BitWrite.OcelotControl.Domain.Services;
+using BitWrite.OcelotControl.Application.UseCases.Service;
+using BitWrite.OcelotControl.Application.UseCases.Snapshot;
+using BitWrite.OcelotControl.Application.UseCases.SystemSettings;
+using BitWrite.OcelotControl.Domain.Events;
 using BitWrite.OcelotControl.Infrastructure.Adapters;
-using InfraAdapters = BitWrite.OcelotControl.Infrastructure.Adapters;
+using BitWrite.OcelotControl.Infrastructure.EventHandlers;
 using BitWrite.OcelotControl.Infrastructure.Outbox;
 using BitWrite.OcelotControl.Infrastructure.Redis;
 using BitWrite.OcelotControl.Infrastructure.Repositories;
-using RuntimeAdapters = BitWrite.OcelotControl.Runtime.Adapters;
-using FluentValidation.AspNetCore;
 using FluentValidation;
+using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Configuration;
 using StackExchange.Redis;
+using AppInterfaces = BitWrite.OcelotControl.Application.Interfaces;
+using DomainServices = BitWrite.OcelotControl.Domain.Services;
+using InfraAdapters = BitWrite.OcelotControl.Infrastructure.Adapters;
+using RuntimeAdapters = BitWrite.OcelotControl.Runtime.Adapters;
 
 namespace BitWrite.OcelotControl.Api
 {
@@ -76,7 +76,7 @@ namespace BitWrite.OcelotControl.Api
             builder.Services.AddScoped<DomainServices.SnapshotVersionAllocator>();
 
             // Infrastructure Adapters (implement Application.Interfaces for DI)
-builder.Services.AddScoped<AppInterfaces.IConfigurationBuilder, ConfigurationBuilderAdapter>();
+            builder.Services.AddScoped<AppInterfaces.IConfigurationBuilder, ConfigurationBuilderAdapter>();
             builder.Services.AddScoped<AppInterfaces.IConfigurationCanonicalizer, ConfigurationCanonicalizerAdapter>();
             builder.Services.AddScoped<AppInterfaces.IRouteConflictDetector, RouteConflictDetectorAdapter>();
             builder.Services.AddScoped<AppInterfaces.IConfigurationConsistencyValidator, ConfigurationConsistencyValidatorAdapter>();
@@ -228,13 +228,13 @@ builder.Services.AddScoped<AppInterfaces.IConfigurationBuilder, ConfigurationBui
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen(c =>
             {
-                c.SwaggerDoc("v1", new() 
-                { 
-                    Title = "BitWrite Ocelot Control Plane API", 
+                c.SwaggerDoc("v1", new()
+                {
+                    Title = "BitWrite Ocelot Control Plane API",
                     Version = "v1",
                     Description = "Management API for Ocelot Gateway Configuration"
                 });
-                
+
                 c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
                 {
                     Description = "JWT Authorization header using the Bearer scheme",
@@ -243,7 +243,7 @@ builder.Services.AddScoped<AppInterfaces.IConfigurationBuilder, ConfigurationBui
                     Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
                     Scheme = "Bearer"
                 });
-                
+
                 c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
                 {
                     {

@@ -1,10 +1,10 @@
-using ApiDtos = BitWrite.OcelotControl.Api.DTOs;
-using AppSnapshot = BitWrite.OcelotControl.Application.UseCases.Snapshot;
-using AppPublication = BitWrite.OcelotControl.Application.UseCases.Publication;
 using BitWrite.OcelotControl.Domain.ValueObjects.Configuration;
 using BitWrite.OcelotControl.Domain.ValueObjects.Identity;
 using BitWrite.OcelotControl.Domain.ValueObjects.Status;
 using Microsoft.AspNetCore.Mvc;
+using ApiDtos = BitWrite.OcelotControl.Api.DTOs;
+using AppPublication = BitWrite.OcelotControl.Application.UseCases.Publication;
+using AppSnapshot = BitWrite.OcelotControl.Application.UseCases.Snapshot;
 
 namespace BitWrite.OcelotControl.Api.Controllers;
 
@@ -260,7 +260,7 @@ public class SnapshotsController : BaseApiController
         }
     }
 
-[HttpPost("{version}/publish")]
+    [HttpPost("{version}/publish")]
     public async Task<ActionResult<ApiDtos.SnapshotDeploymentResponse>> PublishSnapshot(int version, ApiDtos.SnapshotPublishRequest request)
     {
         try
@@ -319,7 +319,7 @@ public class SnapshotsController : BaseApiController
         }
     }
 
-[HttpPost("{version}/rollback")]
+    [HttpPost("{version}/rollback")]
     public async Task<ActionResult<ApiDtos.SnapshotDeploymentResponse>> RollbackSnapshot(int version, ApiDtos.SnapshotRollbackRequest request)
     {
         try

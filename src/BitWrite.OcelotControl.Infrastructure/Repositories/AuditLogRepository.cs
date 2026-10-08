@@ -1,8 +1,8 @@
+using System.Text.Json;
 using BitWrite.OcelotControl.Application.Interfaces;
 using BitWrite.OcelotControl.Domain.Aggregates.AuditLog;
 using BitWrite.OcelotControl.Infrastructure.Redis;
 using StackExchange.Redis;
-using System.Text.Json;
 
 namespace BitWrite.OcelotControl.Infrastructure.Repositories;
 

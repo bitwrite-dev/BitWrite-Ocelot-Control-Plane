@@ -1,14 +1,14 @@
 using BitWrite.OcelotControl.Application.Interfaces;
 using BitWrite.OcelotControl.Application.UseCases.Gateway;
-using DomainGateway = BitWrite.OcelotControl.Domain.Aggregates.Gateway.Gateway;
 using BitWrite.OcelotControl.Domain.Aggregates.Publication;
-using BitWrite.OcelotControl.Domain.ValueObjects.Configuration;
 using BitWrite.OcelotControl.Domain.Events;
 using BitWrite.OcelotControl.Domain.Exceptions;
+using BitWrite.OcelotControl.Domain.ValueObjects.Configuration;
 using BitWrite.OcelotControl.Domain.ValueObjects.Identity;
 using FluentAssertions;
 using Moq;
 using Xunit;
+using DomainGateway = BitWrite.OcelotControl.Domain.Aggregates.Gateway.Gateway;
 
 namespace BitWrite.OcelotControl.Application.Tests.UseCases.Gateway;
 

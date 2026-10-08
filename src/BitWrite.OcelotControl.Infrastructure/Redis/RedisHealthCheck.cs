@@ -13,14 +13,14 @@ public class RedisHealthCheck : IHealthCheck
     }
 
     public async Task<HealthCheckResult> CheckHealthAsync(
-        HealthCheckContext context, 
+        HealthCheckContext context,
         CancellationToken cancellationToken = default)
     {
         try
         {
             var db = _connectionMultiplexer.GetDatabase();
             var ping = await db.PingAsync();
-            
+
             return HealthCheckResult.Healthy($"Redis ping: {ping.TotalMilliseconds}ms");
         }
         catch (Exception ex)

@@ -1,6 +1,6 @@
+using BitWrite.OcelotControl.Domain.Events;
 using AppIEventSerializer = BitWrite.OcelotControl.Application.Interfaces.IEventSerializer;
 using InfraIEventSerializer = BitWrite.OcelotControl.Infrastructure.Outbox.IEventSerializer;
-using BitWrite.OcelotControl.Domain.Events;
 
 namespace BitWrite.OcelotControl.Infrastructure.Adapters;
 

@@ -8,7 +8,7 @@ namespace BitWrite.OcelotControl.Api.Controllers;
 [Route("api/v1/[controller]")]
 public abstract class BaseApiController : ControllerBase
 {
-    protected string CorrelationId => HttpContext.Request.Headers["X-Correlation-Id"].FirstOrDefault() 
+    protected string CorrelationId => HttpContext.Request.Headers["X-Correlation-Id"].FirstOrDefault()
         ?? HttpContext.TraceIdentifier;
 
     protected ActionResult<T> HandleResult<T>(T result)

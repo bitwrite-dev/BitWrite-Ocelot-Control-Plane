@@ -1,6 +1,6 @@
-using FluentAssertions;
 using BitWrite.OcelotControl.Domain.Exceptions;
 using BitWrite.OcelotControl.Domain.ValueObjects.Configuration;
+using FluentAssertions;
 using Xunit;
 
 namespace BitWrite.OcelotControl.Domain.Tests.ValueObjects;

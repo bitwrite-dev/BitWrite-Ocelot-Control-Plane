@@ -8,7 +8,7 @@ namespace BitWrite.OcelotControl.Infrastructure.Repositories;
 
 public class RedisServiceRepository : RedisRepositoryBase, IServiceRepository
 {
-    public RedisServiceRepository(IConnectionMultiplexer connectionMultiplexer, IEnvironmentContext environmentContext) 
+    public RedisServiceRepository(IConnectionMultiplexer connectionMultiplexer, IEnvironmentContext environmentContext)
         : base(connectionMultiplexer, environmentContext)
     {
     }
@@ -17,7 +17,7 @@ public class RedisServiceRepository : RedisRepositoryBase, IServiceRepository
     {
         var key = RedisKeyHelper.Service(id, Environment);
         var entries = await GetHashAsync(key);
-        
+
         if (entries.Length == 0)
             return null;
 

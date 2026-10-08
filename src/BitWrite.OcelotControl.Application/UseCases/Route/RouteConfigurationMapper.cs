@@ -1,6 +1,6 @@
-using DomainRoute = BitWrite.OcelotControl.Domain.Aggregates.Route.Route;
 using BitWrite.OcelotControl.Domain.Services;
 using BitWrite.OcelotControl.Domain.ValueObjects.Configuration;
+using DomainRoute = BitWrite.OcelotControl.Domain.Aggregates.Route.Route;
 
 namespace BitWrite.OcelotControl.Application.UseCases.Route;
 

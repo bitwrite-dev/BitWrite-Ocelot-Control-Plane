@@ -1,9 +1,5 @@
 using BitWrite.OcelotControl.Application.Interfaces;
 using BitWrite.OcelotControl.Application.UseCases.Route;
-using DomainRoute = BitWrite.OcelotControl.Domain.Aggregates.Route.Route;
-using DomainService = BitWrite.OcelotControl.Domain.Aggregates.Service.Service;
-using DomainHttpMethod = BitWrite.OcelotControl.Domain.ValueObjects.Configuration.HttpMethod;
-using DomainUpstreamPath = BitWrite.OcelotControl.Domain.ValueObjects.Configuration.UpstreamPath;
 using BitWrite.OcelotControl.Domain.Events;
 using BitWrite.OcelotControl.Domain.ValueObjects.Configuration;
 using BitWrite.OcelotControl.Domain.ValueObjects.FeatureConfig;
@@ -11,6 +7,10 @@ using BitWrite.OcelotControl.Domain.ValueObjects.Identity;
 using FluentAssertions;
 using Moq;
 using Xunit;
+using DomainHttpMethod = BitWrite.OcelotControl.Domain.ValueObjects.Configuration.HttpMethod;
+using DomainRoute = BitWrite.OcelotControl.Domain.Aggregates.Route.Route;
+using DomainService = BitWrite.OcelotControl.Domain.Aggregates.Service.Service;
+using DomainUpstreamPath = BitWrite.OcelotControl.Domain.ValueObjects.Configuration.UpstreamPath;
 
 namespace BitWrite.OcelotControl.Application.Tests.UseCases.Route;
 

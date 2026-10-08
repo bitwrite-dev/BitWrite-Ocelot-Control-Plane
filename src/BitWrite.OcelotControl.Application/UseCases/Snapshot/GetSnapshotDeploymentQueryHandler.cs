@@ -1,7 +1,7 @@
 using BitWrite.OcelotControl.Application.Interfaces;
 using BitWrite.OcelotControl.Application.UseCases.Snapshot;
-using BitWrite.OcelotControl.Domain.Aggregates.Publication;
 using BitWrite.OcelotControl.Domain.Aggregates.Gateway;
+using BitWrite.OcelotControl.Domain.Aggregates.Publication;
 using BitWrite.OcelotControl.Domain.ValueObjects.Identity;
 using BitWrite.OcelotControl.Domain.ValueObjects.Status;
 

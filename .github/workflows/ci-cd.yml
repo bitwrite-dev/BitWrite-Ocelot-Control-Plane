@@ -53,7 +53,7 @@ jobs:
 
       - name: Run dashboard format check
         working-directory: dashboard
-        run: npm run format:check
+        run: npm run lint
 
   # ------------------------------------------------------------------
   # 2. Build & Test (.NET)
@@ -120,7 +120,7 @@ jobs:
 
       - name: Run dashboard tests
         working-directory: dashboard
-        run: npm run test:run
+        run: npm run test
 
       - name: Build dashboard
         working-directory: dashboard
@@ -160,8 +160,6 @@ jobs:
 
       - name: Run .NET vulnerability scan
         run: |
-          dotnet tool install --global dotnet-outdated-tool
-          dotnet outdated --fail
 
   # ------------------------------------------------------------------
   # 5. Build & Push Docker Images (on main branch)

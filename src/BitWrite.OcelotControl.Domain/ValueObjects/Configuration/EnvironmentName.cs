@@ -1,6 +1,6 @@
 using System.Collections.Generic;
-using BitWrite.OcelotControl.Domain.Exceptions;
 using System.Linq;
+using BitWrite.OcelotControl.Domain.Exceptions;
 
 namespace BitWrite.OcelotControl.Domain.ValueObjects.Configuration;
 

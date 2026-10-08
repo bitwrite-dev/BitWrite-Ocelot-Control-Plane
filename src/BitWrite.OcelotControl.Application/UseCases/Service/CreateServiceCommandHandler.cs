@@ -1,9 +1,9 @@
 using BitWrite.OcelotControl.Application.Interfaces;
 using BitWrite.OcelotControl.Application.UseCases.Service;
-using DomainService = BitWrite.OcelotControl.Domain.Aggregates.Service.Service;
 using BitWrite.OcelotControl.Domain.Events;
 using BitWrite.OcelotControl.Domain.ValueObjects.Configuration;
 using BitWrite.OcelotControl.Domain.ValueObjects.Identity;
+using DomainService = BitWrite.OcelotControl.Domain.Aggregates.Service.Service;
 
 namespace BitWrite.OcelotControl.Application.UseCases.Service;
 

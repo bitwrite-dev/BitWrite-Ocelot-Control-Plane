@@ -1,7 +1,7 @@
-using Microsoft.Extensions.Logging;
 using BitWrite.OcelotControl.Domain.ValueObjects.Configuration;
 using BitWrite.OcelotControl.Domain.ValueObjects.Identity;
 using BitWrite.OcelotControl.Infrastructure.Redis;
+using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
 
 namespace BitWrite.OcelotControl.Migration;
@@ -47,7 +47,7 @@ internal sealed class ServiceKeyMigrator
         // 1. Find all old service keys: ocelot:service:{guid}
         var oldServiceKeys = new List<string>();
         var server = _db.Multiplexer.GetServer(_db.Multiplexer.GetEndPoints()[0]);
-        
+
         await foreach (var key in server.KeysAsync(pattern: "ocelot:service:*", pageSize: 1000))
         {
             var keyStr = key.ToString();

@@ -1,3 +1,4 @@
+using System.Text.Json;
 using BitWrite.OcelotControl.Application.Interfaces;
 using BitWrite.OcelotControl.Domain.Aggregates.Snapshot;
 using BitWrite.OcelotControl.Domain.ValueObjects.Configuration;
@@ -5,7 +6,6 @@ using BitWrite.OcelotControl.Domain.ValueObjects.Identity;
 using BitWrite.OcelotControl.Domain.ValueObjects.Status;
 using BitWrite.OcelotControl.Infrastructure.Redis;
 using StackExchange.Redis;
-using System.Text.Json;
 
 namespace BitWrite.OcelotControl.Infrastructure.Repositories;
 
@@ -17,7 +17,7 @@ public class RedisSnapshotRepository : RedisRepositoryBase, ISnapshotRepository
         PropertyNameCaseInsensitive = true
     };
 
-    public RedisSnapshotRepository(IConnectionMultiplexer connectionMultiplexer, IEnvironmentContext environmentContext) 
+    public RedisSnapshotRepository(IConnectionMultiplexer connectionMultiplexer, IEnvironmentContext environmentContext)
         : base(connectionMultiplexer, environmentContext)
     {
     }
@@ -56,7 +56,7 @@ public class RedisSnapshotRepository : RedisRepositoryBase, ISnapshotRepository
     public async Task<Snapshot?> GetLatestAsync(CancellationToken cancellationToken = default)
     {
         var versions = await SortedSetRangeByScoreAsync(RedisKeyHelper.IndexSnapshots(Environment), stop: double.PositiveInfinity, take: 1);
-        
+
         if (versions.Length > 0 && int.TryParse(versions[0].ToString(), out var versionInt))
         {
             return await GetAsync(SnapshotVersion.From(versionInt), cancellationToken);

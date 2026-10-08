@@ -1,7 +1,7 @@
-using ApiDtos = BitWrite.OcelotControl.Api.DTOs;
-using AppLicense = BitWrite.OcelotControl.Application.UseCases.License;
 using BitWrite.OcelotControl.Domain.ValueObjects.Identity;
 using Microsoft.AspNetCore.Mvc;
+using ApiDtos = BitWrite.OcelotControl.Api.DTOs;
+using AppLicense = BitWrite.OcelotControl.Application.UseCases.License;
 
 namespace BitWrite.OcelotControl.Api.Controllers;
 

@@ -1,8 +1,8 @@
 using BitWrite.OcelotControl.Application.Interfaces;
 using BitWrite.OcelotControl.Domain.Aggregates.Route;
 using BitWrite.OcelotControl.Domain.Exceptions;
-using BitWrite.OcelotControl.Domain.ValueObjects.FeatureConfig;
 using BitWrite.OcelotControl.Domain.ValueObjects.Configuration;
+using BitWrite.OcelotControl.Domain.ValueObjects.FeatureConfig;
 using BitWrite.OcelotControl.Domain.ValueObjects.Identity;
 using BitWrite.OcelotControl.Infrastructure.Redis;
 using StackExchange.Redis;
@@ -14,7 +14,7 @@ namespace BitWrite.OcelotControl.Infrastructure.Repositories;
 
 public class RedisRouteRepository : RedisRepositoryBase, IRouteRepository
 {
-    public RedisRouteRepository(IConnectionMultiplexer connectionMultiplexer, IEnvironmentContext environmentContext) 
+    public RedisRouteRepository(IConnectionMultiplexer connectionMultiplexer, IEnvironmentContext environmentContext)
         : base(connectionMultiplexer, environmentContext)
     {
     }
@@ -23,12 +23,12 @@ public class RedisRouteRepository : RedisRepositoryBase, IRouteRepository
     {
         var key = RedisKeyHelper.Route(id, Environment);
         var entries = await GetHashAsync(key);
-        
+
         if (entries.Length == 0)
             return null;
 
         var routeKeyStr = GetEntry(entries, "Key");
-        var routeKey = !string.IsNullOrEmpty(routeKeyStr) 
+        var routeKey = !string.IsNullOrEmpty(routeKeyStr)
             ? RouteKey.Parse(routeKeyStr)
             : RouteKey.Create(
                 HttpMethod.Parse(GetEntry(entries, "Method")),

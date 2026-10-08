@@ -1,5 +1,5 @@
-using Microsoft.AspNetCore.Http;
 using System.Diagnostics;
+using Microsoft.AspNetCore.Http;
 
 namespace BitWrite.OcelotControl.Api.Middleware;
 
@@ -15,12 +15,12 @@ public class CorrelationIdMiddleware
 
     public async Task InvokeAsync(HttpContext context)
     {
-        var correlationId = context.Request.Headers[CorrelationIdHeader].FirstOrDefault() 
-            ?? Activity.Current?.Id 
+        var correlationId = context.Request.Headers[CorrelationIdHeader].FirstOrDefault()
+            ?? Activity.Current?.Id
             ?? Guid.NewGuid().ToString();
 
         context.Response.Headers[CorrelationIdHeader] = correlationId;
-        
+
         using (Activity.Current?.AddTag("correlation_id", correlationId))
         {
             await _next(context);

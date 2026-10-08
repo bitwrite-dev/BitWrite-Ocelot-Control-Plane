@@ -36,7 +36,7 @@ public class OutboxRepositoryAdapter : AppIOutboxRepository
     public Task<IReadOnlyList<AppOutboxMessage>> GetPendingAsync(int batchSize, CancellationToken cancellationToken = default)
     {
         return _infraRepository.GetPendingMessagesAsync(batchSize, cancellationToken)
-            .ContinueWith(t => 
+            .ContinueWith(t =>
             {
                 var result = t.Result.Select(m => new AppOutboxMessage(
                     m.Id,

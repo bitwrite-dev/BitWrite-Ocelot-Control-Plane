@@ -1,5 +1,5 @@
-using BitWrite.OcelotControl.Domain.ValueObjects.Identity;
 using BitWrite.OcelotControl.Domain.ValueObjects.Configuration;
+using BitWrite.OcelotControl.Domain.ValueObjects.Identity;
 
 namespace BitWrite.OcelotControl.Domain.Events;
 

@@ -29,13 +29,13 @@ public class RoutesClientTests
         _httpClient = new HttpClient(new Mock<HttpMessageHandler>().Object);
         _mockLogger = new Mock<ILogger<OcelotControlClient>>();
         _options = new OcelotControlClientOptions { BaseAddress = "https://api.example.com" };
-        
+
         _client = new OcelotControlClient(
             new HttpClient(new Mock<HttpMessageHandler>().Object),
             new JwtTokenProvider(new HttpClient(new Mock<HttpMessageHandler>().Object), Mock.Of<ILogger<JwtTokenProvider>>(), new JwtTokenOptions { BaseAddress = "https://api.example.com" }),
             Mock.Of<ILogger<OcelotControlClient>>(),
             _options);
-        
+
         _routesClient = new RoutesClient(_client);
     }
 

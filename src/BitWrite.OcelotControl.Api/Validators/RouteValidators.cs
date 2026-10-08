@@ -1,5 +1,5 @@
-using FluentValidation;
 using BitWrite.OcelotControl.Api.DTOs;
+using FluentValidation;
 
 namespace BitWrite.OcelotControl.Api.Validators;
 

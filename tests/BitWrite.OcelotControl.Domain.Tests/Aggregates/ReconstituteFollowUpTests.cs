@@ -1,13 +1,12 @@
-using FluentAssertions;
 using BitWrite.OcelotControl.Domain.Aggregates.AuditLog;
 using BitWrite.OcelotControl.Domain.Aggregates.GlobalConfiguration;
-
-// Disambiguates from FluentAssertions.License.
-using License = BitWrite.OcelotControl.Domain.Aggregates.License.License;
 using BitWrite.OcelotControl.Domain.Aggregates.License;
 using BitWrite.OcelotControl.Domain.Exceptions;
 using BitWrite.OcelotControl.Domain.ValueObjects.Identity;
 using BitWrite.OcelotControl.Domain.ValueObjects.Status;
+using FluentAssertions;
+// Disambiguates from FluentAssertions.License.
+using License = BitWrite.OcelotControl.Domain.Aggregates.License.License;
 
 namespace BitWrite.OcelotControl.Domain.Tests.Aggregates;
 

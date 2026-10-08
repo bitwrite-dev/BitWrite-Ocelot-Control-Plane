@@ -1,8 +1,8 @@
 using BitWrite.OcelotControl.Application.Interfaces;
 using BitWrite.OcelotControl.Domain.Aggregates.Gateway;
+using BitWrite.OcelotControl.Domain.ValueObjects.Configuration;
 using BitWrite.OcelotControl.Domain.ValueObjects.Identity;
 using BitWrite.OcelotControl.Domain.ValueObjects.Status;
-using BitWrite.OcelotControl.Domain.ValueObjects.Configuration;
 using BitWrite.OcelotControl.Infrastructure.Redis;
 using StackExchange.Redis;
 
@@ -10,7 +10,7 @@ namespace BitWrite.OcelotControl.Infrastructure.Repositories;
 
 public class RedisGatewayRepository : RedisRepositoryBase, IGatewayRepository
 {
-    public RedisGatewayRepository(IConnectionMultiplexer connectionMultiplexer, IEnvironmentContext environmentContext) 
+    public RedisGatewayRepository(IConnectionMultiplexer connectionMultiplexer, IEnvironmentContext environmentContext)
         : base(connectionMultiplexer, environmentContext)
     {
     }
@@ -24,7 +24,7 @@ public class RedisGatewayRepository : RedisRepositoryBase, IGatewayRepository
             ? parsed
             : DateTimeOffset.UnixEpoch;
 
-public async Task<Gateway?> GetAsync(GatewayId id, CancellationToken cancellationToken = default)
+    public async Task<Gateway?> GetAsync(GatewayId id, CancellationToken cancellationToken = default)
     {
         var key = RedisKeyHelper.Gateway(id);
         var entries = await GetHashAsync(key);

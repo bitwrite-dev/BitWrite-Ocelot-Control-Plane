@@ -1,6 +1,6 @@
-using BitWrite.OcelotControl.Infrastructure.Outbox;
 using BitWrite.OcelotControl.Domain.Events;
 using BitWrite.OcelotControl.Domain.ValueObjects.Identity;
+using BitWrite.OcelotControl.Infrastructure.Outbox;
 using FluentAssertions;
 using Xunit;
 

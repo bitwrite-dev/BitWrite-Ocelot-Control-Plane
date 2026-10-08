@@ -1,6 +1,6 @@
-using BitWrite.OcelotControl.Domain.ValueObjects.Identity;
 using BitWrite.OcelotControl.Domain.Events;
 using BitWrite.OcelotControl.Domain.Exceptions;
+using BitWrite.OcelotControl.Domain.ValueObjects.Identity;
 
 namespace BitWrite.OcelotControl.Domain.Aggregates.Service;
 

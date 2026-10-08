@@ -1,7 +1,7 @@
+using System.Text.Json;
 using BitWrite.OcelotControl.Application.Interfaces;
 using BitWrite.OcelotControl.Application.UseCases.Snapshot;
 using BitWrite.OcelotControl.Domain.ValueObjects.Configuration;
-using System.Text.Json;
 
 namespace BitWrite.OcelotControl.Application.UseCases.Snapshot;
 
@@ -15,10 +15,10 @@ public class ValidateSnapshotCommandHandler
         {
             // 1. Validate it's valid JSON
             var jsonDoc = JsonDocument.Parse(command.Content);
-            
+
             // 2. Check required top-level fields
             var root = jsonDoc.RootElement;
-            
+
             if (!root.TryGetProperty("Routes", out var routesElement))
             {
                 errors.Add("Missing required 'Routes' array");
@@ -40,20 +40,20 @@ public class ValidateSnapshotCommandHandler
                     for (int i = 0; i < routeCount; i++)
                     {
                         var route = routesElement[i];
-                        
-                        if (!route.TryGetProperty("UpstreamPathTemplate", out var upstreamPath) || 
+
+                        if (!route.TryGetProperty("UpstreamPathTemplate", out var upstreamPath) ||
                             string.IsNullOrWhiteSpace(upstreamPath.GetString()))
                         {
                             errors.Add($"Route {i} missing required 'UpstreamPathTemplate'");
                         }
-                        
+
                         if (!route.TryGetProperty("DownstreamHostAndPorts", out var downstreamHosts) ||
                             downstreamHosts.ValueKind != JsonValueKind.Array ||
                             downstreamHosts.GetArrayLength() == 0)
                         {
                             errors.Add($"Route {i} must have at least one downstream host");
                         }
-                        
+
                         // Check for duplicate route keys (UpstreamPathTemplate + Method + Host)
                         if (route.TryGetProperty("UpstreamPathTemplate", out var up) &&
                             route.TryGetProperty("DownstreamPathTemplate", out var dp) &&
@@ -64,9 +64,9 @@ public class ValidateSnapshotCommandHandler
                             // Could track duplicates here if needed
                         }
                     }
-}
                 }
-            
+            }
+
             if (!root.TryGetProperty("GlobalConfiguration", out var globalConfig))
             {
                 errors.Add("Missing required 'GlobalConfiguration' object");

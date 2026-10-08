@@ -1,7 +1,7 @@
+using System.Text.Json;
 using BitWrite.OcelotControl.Application.Interfaces;
 using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
-using System.Text.Json;
 
 namespace BitWrite.OcelotControl.Infrastructure.Adapters;
 
@@ -138,7 +138,7 @@ public class RedisConfigurationProvider : IConfigurationProvider
         _logger = logger;
     }
 
-public async Task ApplyConfigurationAsync(JsonElement configuration, CancellationToken cancellationToken = default)
+    public async Task ApplyConfigurationAsync(JsonElement configuration, CancellationToken cancellationToken = default)
     {
         var db = _connectionMultiplexer.GetDatabase();
         var subscriber = _connectionMultiplexer.GetSubscriber();
@@ -190,7 +190,7 @@ public class FileConfigurationProvider : IConfigurationProvider
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
                 WriteIndented = true
             }), cancellationToken);
-            
+
             _logger.LogInformation("Ocelot configuration written to file");
         }
         finally

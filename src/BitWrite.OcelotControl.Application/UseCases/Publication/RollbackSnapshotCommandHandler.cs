@@ -122,16 +122,16 @@ public class RollbackSnapshotCommandHandler
             // 7. Persist Publication
             await _publicationRepository.AddAsync(publication, cancellationToken);
 
-            // 8. Atomic: Set ocelot:runtime:current = targetVersion
+            // 8. Atomic: Set ocelot:runtime:current:{env} = targetVersion
             await _redisPublisher.PublishAsync(
-                "ocelot:runtime:current",
-                new { Version = targetVersion.Value.ToString() },
+                $"ocelot:runtime:current:{command.Environment.Value}",
+                new { Version = targetVersion.Value.ToString(), Environment = command.Environment.Value },
                 cancellationToken);
 
             // 9. Redis Pub/Sub: Notify gateways of rollback
             await _redisPublisher.PublishAsync(
                 "ocelot:snapshot:rolled-back",
-                new { Version = targetVersion.Value.ToString(), PublicationId = publication.Id.Value.ToString(), Reason = command.Reason },
+                new { Version = targetVersion.Value.ToString(), PublicationId = publication.Id.Value.ToString(), Reason = command.Reason, Environment = command.Environment.Value },
                 cancellationToken);
 
             // 10. Raise domain events

@@ -4,7 +4,6 @@ using DomainPublication = BitWrite.OcelotControl.Domain.Aggregates.Publication.P
 using BitWrite.OcelotControl.Domain.Aggregates.Snapshot;
 using BitWrite.OcelotControl.Domain.Aggregates.Gateway;
 using BitWrite.OcelotControl.Domain.Events;
-using BitWrite.OcelotControl.Domain.Services;
 using BitWrite.OcelotControl.Domain.ValueObjects.Configuration;
 using BitWrite.OcelotControl.Domain.ValueObjects.Identity;
 using BitWrite.OcelotControl.Domain.ValueObjects.Status;
@@ -119,9 +118,9 @@ public class PublishSnapshotCommandHandler
             // 7. Persist Publication
             await _publicationRepository.AddAsync(publication, cancellationToken);
 
-            // 8. Atomic: Set ocelot:runtime:current = version (via Redis)
+            // 8. Atomic: Set ocelot:runtime:current:{env} = version (via Redis)
             await _redisPublisher.PublishAsync(
-                "ocelot:runtime:current",
+                $"ocelot:runtime:current:{command.Environment.Value}",
                 new { Version = snapshotVersion.Value.ToString(), Environment = command.Environment.Value },
                 cancellationToken);
 

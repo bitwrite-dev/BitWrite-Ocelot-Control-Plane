@@ -109,8 +109,14 @@ public class Gateway
     /// </remarks>
     public void SetEnvironment(EnvironmentName environment)
     {
+        var oldEnvironment = Environment;
         Environment = environment;
         UpdatedAt = DateTimeOffset.UtcNow;
+
+        if (oldEnvironment != environment)
+        {
+            AddDomainEvent(new GatewayEnvironmentChanged(Id, oldEnvironment.Value, environment.Value));
+        }
     }
 
     /// <summary>

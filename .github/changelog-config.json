@@ -1,0 +1,12 @@
+{
+  "categories": [
+    { "title": "🚀 Features", "labels": ["enhancement", "feature"] },
+    { "title": "🐛 Bug Fixes", "labels": ["bug"] },
+    { "title": "📚 Documentation", "labels": ["documentation"] },
+    { "title": "🔧 Maintenance", "labels": ["maintenance", "chore"] },
+    { "title": "🧪 Tests", "labels": ["test"] },
+    { "title": "🔒 Security", "labels": ["security"] }
+  ],
+  "excludeLabels": ["wontfix", "invalid", "duplicate"],
+  "authorExclude": ["dependabot[bot]", "github-actions[bot]"],
+  "template": "{{#each commits}}\n- {{this.message}} ([#{{this.issue.number}}]({{this.issue.url}}))\n{{/each}}"

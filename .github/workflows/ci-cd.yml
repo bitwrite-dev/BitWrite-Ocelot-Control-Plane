@@ -1,0 +1,294 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [develop, main]
+  pull_request:
+    branches: [develop, main]
+
+env:
+  DOTNET_VERSION: '8.0.x'
+  NODE_VERSION: '20.x'
+
+jobs:
+  # ------------------------------------------------------------------
+  # 1. Code Quality & Linting
+  # ------------------------------------------------------------------
+  lint-and-format:
+    name: Lint & Format
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: dashboard/package-lock.json
+
+      - name: Restore .NET dependencies
+        run: dotnet restore BitWrite.OcelotControl.slnx
+
+      - name: Check .NET format
+        run: dotnet format --verify-no-changes --verbosity detailed
+
+      - name: Run .NET analyzers
+        run: dotnet build --no-restore --configuration Release -p:RunAnalyzers=true -p:EnforceCodeStyleInBuild=true
+
+      - name: Install dashboard dependencies
+        working-directory: dashboard
+        run: npm ci
+
+      - name: Run dashboard lint
+        working-directory: dashboard
+        run: npm run lint
+
+      - name: Run dashboard format check
+        working-directory: dashboard
+        run: npm run format:check
+
+  # ------------------------------------------------------------------
+  # 2. Build & Test (.NET)
+  # ------------------------------------------------------------------
+  dotnet-test:
+    name: .NET Build & Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore BitWrite.OcelotControl.slnx
+
+      - name: Build solution
+        run: dotnet build --no-restore --configuration Release --verbosity minimal
+
+      - name: Run tests
+        run: dotnet test --no-build --configuration Release --logger "trx;LogFileName=test-results.trx" --results-directory TestResults --verbosity normal
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: TestResults/
+          retention-days: 7
+
+      - name: Upload coverage (if any)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: '**/coverage/**'
+          retention-days: 7
+
+  # ------------------------------------------------------------------
+  # 3. Dashboard Build & Test
+  # ------------------------------------------------------------------
+  dashboard-build-test:
+    name: Dashboard Build & Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: dashboard/package-lock.json
+
+      - name: Install dependencies
+        working-directory: dashboard
+        run: npm ci
+
+      - name: Run dashboard tests
+        working-directory: dashboard
+        run: npm run test:run
+
+      - name: Build dashboard
+        working-directory: dashboard
+        run: npm run build
+
+      - name: Upload dashboard build
+        uses: actions/upload-artifact@v4
+        with:
+          name: dashboard-dist
+          path: dashboard/dist/
+          retention-days: 7
+
+  # ------------------------------------------------------------------
+  # 4. Security Scanning
+  # ------------------------------------------------------------------
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      - name: Run .NET vulnerability scan
+        run: |
+          dotnet tool install --global dotnet-outdated-tool
+          dotnet outdated --fail
+
+  # ------------------------------------------------------------------
+  # 5. Build & Push Docker Images (on main branch)
+  # ------------------------------------------------------------------
+  docker-build:
+    name: Build & Push Docker Images
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [lint-and-format, dotnet-test, dashboard-build-test, security-scan]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for API
+        id: meta-api
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/bitwrite-dev/bitwrite-ocelot-api
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix=
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build & push API image
+        uses: docker/build-push-action@v5
+        with:
+          context: src/BitWrite.OcelotControl.Api
+          push: true
+          tags: ${{ steps.meta-api.outputs.tags }}
+          labels: ${{ steps.meta-api.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Extract metadata for Gateway
+        id: meta-gateway
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/bitwrite-dev/bitwrite-ocelot-gateway
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix=
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build & push Gateway image
+        uses: docker/build-push-action@v5
+        with:
+          context: src/BitWrite.OcelotControl.Gateway
+          push: true
+          tags: ${{ steps.meta-gateway.outputs.tags }}
+          labels: ${{ steps.meta-gateway.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ------------------------------------------------------------------
+  # 6. Publish NuGet Packages (on release tags)
+  # ------------------------------------------------------------------
+  nuget-publish:
+    name: Publish NuGet Packages
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [lint-and-format, dotnet-test, security-scan]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore & Build
+        run: dotnet restore BitWrite.OcelotControl.slnx && dotnet build --no-restore --configuration Release
+
+      - name: Pack NuGet packages
+        run: |
+          dotnet pack src/BitWrite.OcelotControl.SDK/BitWrite.OcelotControl.SDK.csproj --configuration Release --output ./artifacts
+          dotnet pack src/BitWrite.OcelotControl.Migration/BitWrite.OcelotControl.Migration.csproj --configuration Release --output ./artifacts
+
+      - name: Push to NuGet
+        run: |
+          for pkg in ./artifacts/*.nupkg; do
+            dotnet nuget push "$pkg" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+          done
+
+  # ------------------------------------------------------------------
+  # 7. Release Notes (on release tags)
+  # ------------------------------------------------------------------
+  release:
+    name: Create GitHub Release
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [lint-and-format, dotnet-test, security-scan, nuget-publish]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate release notes
+        id: changelog
+        uses: mikepenz/release-changelog-builder-action@v4
+        with:
+          configuration: .github/changelog-config.json
+          toTag: ${{ github.ref_name }}
+          ignorePrerelease: true
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          body: ${{ steps.changelog.outputs.changelog }}
+          draft: false
+          prerelease: false
+          generate_release_notes: false
+          files: |
+            ./artifacts/*.nupkg

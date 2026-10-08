@@ -11,6 +11,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { ThemeToggle } from '@/components/theme-toggle'
+import { EnvironmentSelector } from '@/components/environment-selector'
 import { NAV_SECTIONS, type Role } from '@/navigation'
 
 /**
@@ -111,6 +112,7 @@ export function Sidebar({ roles }: { roles?: Role[] }) {
       <Separator />
       <NavLinks roles={roles} />
       <LifecycleGuardrail />
+      <EnvironmentSelector />
       <ThemeToggle />
     </aside>
   )
@@ -134,6 +136,7 @@ export function MobileSidebar({ roles }: { roles?: Role[] }) {
         <Separator />
         <NavLinks roles={roles} />
         <LifecycleGuardrail />
+        <EnvironmentSelector />
       </SheetContent>
     </Sheet>
   )

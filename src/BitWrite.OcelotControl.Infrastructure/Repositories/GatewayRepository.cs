@@ -2,6 +2,7 @@ using BitWrite.OcelotControl.Application.Interfaces;
 using BitWrite.OcelotControl.Domain.Aggregates.Gateway;
 using BitWrite.OcelotControl.Domain.ValueObjects.Identity;
 using BitWrite.OcelotControl.Domain.ValueObjects.Status;
+using BitWrite.OcelotControl.Domain.ValueObjects.Configuration;
 using BitWrite.OcelotControl.Infrastructure.Redis;
 using StackExchange.Redis;
 
@@ -23,11 +24,11 @@ public class RedisGatewayRepository : RedisRepositoryBase, IGatewayRepository
             ? parsed
             : DateTimeOffset.UnixEpoch;
 
-    public async Task<Gateway?> GetAsync(GatewayId id, CancellationToken cancellationToken = default)
+public async Task<Gateway?> GetAsync(GatewayId id, CancellationToken cancellationToken = default)
     {
         var key = RedisKeyHelper.Gateway(id);
         var entries = await GetHashAsync(key);
-        
+
         if (entries.Length == 0)
             return null;
 
@@ -36,6 +37,14 @@ public class RedisGatewayRepository : RedisRepositoryBase, IGatewayRepository
         // from. A subsequent write then created a second row and the next read
         // of the original key reported the gateway as missing.
         var statusEntry = GetEntry(entries, "Status");
+
+        // A row written before the environment existed has no field for it, so it
+        // reads as development. That is the honest answer: the gateway was created
+        // before environments were a thing, and development is what it served.
+        var environmentEntry = GetEntry(entries, "Environment");
+        var environment = !string.IsNullOrEmpty(environmentEntry)
+            ? EnvironmentName.From(environmentEntry)
+            : EnvironmentName.From("development");
 
         return Gateway.Reconstitute(
             id,
@@ -47,6 +56,7 @@ public class RedisGatewayRepository : RedisRepositoryBase, IGatewayRepository
             // this build no longer knows, reads as Disconnected rather than
             // failing the whole gateway.
             RuntimeStatus.TryParse(statusEntry, out var status) ? status : RuntimeStatus.Disconnected,
+            environment,
             ParseTimestamp(GetEntry(entries, "CreatedAt")),
             ParseTimestamp(GetEntry(entries, "UpdatedAt")));
     }
@@ -83,6 +93,7 @@ public class RedisGatewayRepository : RedisRepositoryBase, IGatewayRepository
             new("Name", gateway.Name),
             new("Description", gateway.Description ?? ""),
             new("Status", gateway.Status.Value),
+            new("Environment", gateway.Environment.Value),
             new("CreatedAt", gateway.CreatedAt.ToString("O")),
             new("UpdatedAt", gateway.UpdatedAt.ToString("O"))
         };

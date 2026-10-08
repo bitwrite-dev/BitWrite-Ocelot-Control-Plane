@@ -260,17 +260,45 @@ public class SnapshotsController : BaseApiController
         }
     }
 
-    [HttpPost("{version}/publish")]
+[HttpPost("{version}/publish")]
     public async Task<ActionResult<ApiDtos.SnapshotDeploymentResponse>> PublishSnapshot(int version, ApiDtos.SnapshotPublishRequest request)
     {
         try
         {
+            // The publication names the environment it is for, and the request names
+            // the environment it came from. They have to be the same thing: a request
+            // that publishes production's snapshot while speaking to a development
+            // request would hand development's gateways production's routes, and
+            // neither side would report it.
+            var requestEnvironment = Request.Headers["X-Environment"].FirstOrDefault();
+            if (string.IsNullOrWhiteSpace(requestEnvironment))
+            {
+                return Conflict(new
+                {
+                    error = "A publication has to name its environment, and the request has to name its own.",
+                    errorCode = "ENVIRONMENT_NOT_SELECTED",
+                    type = "Conflict",
+                    correlationId = CorrelationId,
+                });
+            }
+
+            if (!string.Equals(requestEnvironment.Trim(), request.Environment.Trim(), StringComparison.OrdinalIgnoreCase))
+            {
+                return Conflict(new
+                {
+                    error = $"Publication is for environment '{request.Environment}' but the request is for '{requestEnvironment}'. They have to be the same environment.",
+                    errorCode = "ENVIRONMENT_MISMATCH",
+                    type = "Conflict",
+                    correlationId = CorrelationId,
+                });
+            }
+
             var command = new AppPublication.PublishSnapshotCommand(
                 version.ToString(),
                 request.InitiatedBy,
+                BitWrite.OcelotControl.Domain.ValueObjects.Configuration.EnvironmentName.From(request.Environment),
                 CorrelationId: "",
-                request.TargetGatewayIds
-            );
+                request.TargetGatewayIds.Select(id => id.ToString()).ToList());
 
             var publicationId = await _publishSnapshotCommandHandler.HandleAsync(command);
 
@@ -291,17 +319,40 @@ public class SnapshotsController : BaseApiController
         }
     }
 
-    [HttpPost("{version}/rollback")]
+[HttpPost("{version}/rollback")]
     public async Task<ActionResult<ApiDtos.SnapshotDeploymentResponse>> RollbackSnapshot(int version, ApiDtos.SnapshotRollbackRequest request)
     {
         try
         {
+            var requestEnvironment = Request.Headers["X-Environment"].FirstOrDefault();
+            if (string.IsNullOrWhiteSpace(requestEnvironment))
+            {
+                return Conflict(new
+                {
+                    error = "A rollback has to name its environment, and the request has to name its own.",
+                    errorCode = "ENVIRONMENT_NOT_SELECTED",
+                    type = "Conflict",
+                    correlationId = CorrelationId,
+                });
+            }
+
+            if (!string.Equals(requestEnvironment.Trim(), request.Environment.Trim(), StringComparison.OrdinalIgnoreCase))
+            {
+                return Conflict(new
+                {
+                    error = $"Rollback is for environment '{request.Environment}' but the request is for '{requestEnvironment}'. They have to be the same environment.",
+                    errorCode = "ENVIRONMENT_MISMATCH",
+                    type = "Conflict",
+                    correlationId = CorrelationId,
+                });
+            }
+
             var command = new AppPublication.RollbackSnapshotCommand(
                 request.TargetVersion.ToString(),
                 request.InitiatedBy,
+                BitWrite.OcelotControl.Domain.ValueObjects.Configuration.EnvironmentName.From(request.Environment),
                 CorrelationId: "",
-                request.Reason
-            );
+                request.Reason);
 
             var publicationId = await _rollbackSnapshotCommandHandler.HandleAsync(command);
 

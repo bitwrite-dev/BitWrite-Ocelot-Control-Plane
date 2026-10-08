@@ -1,5 +1,6 @@
 using BitWrite.OcelotControl.Gateway.Configuration;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Configuration;
 using Ocelot.Configuration.Repository;
 using Ocelot.DependencyInjection;
 using Ocelot.Middleware;
@@ -62,6 +63,9 @@ var host = Host.CreateDefaultBuilder(args)
                 return ConnectionMultiplexer.Connect(connectionString);
             });
 
+            // Register the startup validator
+            services.AddSingleton<GatewayStartupValidator>();
+
             // Signals the file changed, so Ocelot reloads it rather than serving
             // whatever it read at startup.
             services.AddSingleton<ConfigurationReloader>();
@@ -108,9 +112,14 @@ var host = Host.CreateDefaultBuilder(args)
             app.UseOcelot();
         });
     })
-    .Build();
+.Build();
 
-await host.RunAsync();
+        // Run startup validation: ensure the published configuration matches this
+        // gateway's environment before the gateway starts routing traffic.
+        var validator = host.Services.GetRequiredService<GatewayStartupValidator>();
+        await validator.ValidateAsync();
+
+        await host.RunAsync();
 
 /// <summary>Exposed so the tests can host the same pipeline.</summary>
 public partial class Program;

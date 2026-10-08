@@ -1,5 +1,6 @@
 using BitWrite.OcelotControl.Domain.ValueObjects.Identity;
 using BitWrite.OcelotControl.Domain.ValueObjects.Status;
+using BitWrite.OcelotControl.Domain.ValueObjects.Configuration;
 using BitWrite.OcelotControl.Domain.Events;
 using BitWrite.OcelotControl.Domain.Exceptions;
 
@@ -18,6 +19,7 @@ public class Gateway
     public string? Description { get; private set; }
     public RuntimeStatus Status { get; private set; } = RuntimeStatus.Disconnected;
     public Dictionary<string, string> Metadata { get; private set; } = new();
+    public EnvironmentName Environment { get; private set; } = null!;
     public DateTimeOffset CreatedAt { get; private set; }
     public DateTimeOffset UpdatedAt { get; private set; }
 
@@ -28,7 +30,18 @@ public class Gateway
     /// <summary>
     /// Factory method to register a new gateway.
     /// </summary>
-    public static Gateway Register(string name, string? description = null, string correlationId = "")
+    /// <remarks>
+    /// The environment is not optional and is not defaulted. It is the environment this
+    /// gateway serves, and it is what decides which published snapshot the gateway is
+    /// allowed to take: a publication for a different environment is refused rather
+    /// than followed, so a gateway cannot be handed another environment's routes
+    /// (#529, #530).
+    /// </remarks>
+    public static Gateway Register(
+        string name,
+        string? description = null,
+        EnvironmentName? environment = null,
+        string correlationId = "")
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new DomainException("Gateway name cannot be empty", "INVALID_GATEWAY_NAME");
@@ -38,6 +51,7 @@ public class Gateway
             Id = GatewayId.New(),
             Name = name.Trim(),
             Description = description?.Trim(),
+            Environment = environment ?? EnvironmentName.From("development"),
             Status = RuntimeStatus.Disconnected,
             CreatedAt = DateTimeOffset.UtcNow,
             UpdatedAt = DateTimeOffset.UtcNow
@@ -65,6 +79,7 @@ public class Gateway
         string name,
         string? description,
         RuntimeStatus status,
+        EnvironmentName environment,
         DateTimeOffset createdAt,
         DateTimeOffset updatedAt)
     {
@@ -77,9 +92,25 @@ public class Gateway
             Name = name.Trim(),
             Description = description,
             Status = status,
+            Environment = environment,
             CreatedAt = createdAt,
             UpdatedAt = updatedAt
         };
+    }
+
+    /// <summary>
+    /// Changes the environment this gateway serves.
+    /// </summary>
+    /// <remarks>
+    /// A gateway that changes environment stops serving the configuration it had and
+    /// waits for a publication it is allowed to take. The change is permanent until
+    /// something changes it back, and it is recorded because an operator who did not
+    /// mean it needs to be able to see that they did.
+    /// </remarks>
+    public void SetEnvironment(EnvironmentName environment)
+    {
+        Environment = environment;
+        UpdatedAt = DateTimeOffset.UtcNow;
     }
 
     /// <summary>
@@ -95,7 +126,7 @@ public class Gateway
     }
 
     /// <summary>
-    /// Removes metadata entry.
+    /// Removes a metadata entry.
     /// </summary>
     public void RemoveMetadata(string key)
     {

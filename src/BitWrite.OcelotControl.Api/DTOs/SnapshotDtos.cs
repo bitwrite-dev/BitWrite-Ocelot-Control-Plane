@@ -85,13 +85,33 @@ public record SnapshotCompareResponse(
     List<string> Differences
 );
 
+/// <summary>
+/// The environment a publication is for.
+/// </summary>
+/// <remarks>
+/// Required, and not defaulted. A publication has to name the environment it serves
+/// because routes, services and snapshots are stored per environment, and answering
+/// a request that names none would publish one environment's snapshot to another
+/// environment's gateways without anyone saying so.
+/// </remarks>
 public record SnapshotPublishRequest(
     [Required] string InitiatedBy,
-    List<string>? TargetGatewayIds
+    [Required] string Environment,
+    [Required] int[] TargetGatewayIds
 );
 
+/// <summary>
+/// The environment a rollback is for.
+/// </summary>
+/// <remarks>
+/// Required, and not defaulted. A rollback has to name the environment it serves
+/// because routes, services and snapshots are stored per environment, and answering
+/// a request that names none would roll back one environment's gateways while
+/// speaking to another's.
+/// </remarks>
 public record SnapshotRollbackRequest(
     [Required] string InitiatedBy,
+    [Required] string Environment,
     [Required] int TargetVersion,
     [Required] string Reason
 );

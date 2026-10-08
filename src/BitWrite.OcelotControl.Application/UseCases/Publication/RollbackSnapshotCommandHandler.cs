@@ -69,6 +69,23 @@ public class RollbackSnapshotCommandHandler
             throw new InvalidOperationException("No target gateways available for rollback");
         }
 
+        // 3.5. Every target gateway has to be in the environment the rollback is for.
+        // A rollback is for one environment and is delivered to the gateways that serve
+        // it; handing it to a gateway in another environment would put one
+        // environment's routes behind another environment's name.
+        var gateways = await _gatewayRepository.GetAllAsync(cancellationToken);
+        var mismatched = gateways
+            .Where(gateway => targetGatewayIds.Contains(gateway.Id))
+            .Where(gateway => gateway.Environment != command.Environment)
+            .ToList();
+
+        if (mismatched.Count > 0)
+        {
+            throw new InvalidOperationException(
+                $"Rollback is for environment '{command.Environment}' but these gateways serve another: " +
+                string.Join(", ", mismatched.Select(g => g.Id.Value.ToString())));
+        }
+
         // 4. Acquire rollback lock
         var lockResult = await _distributedLock.AcquireAsync(
             $"rollback:{targetVersion}",

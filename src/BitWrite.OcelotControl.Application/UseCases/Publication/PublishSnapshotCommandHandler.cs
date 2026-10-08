@@ -76,6 +76,25 @@ public class PublishSnapshotCommandHandler
             throw new InvalidOperationException("No target gateways available for publication");
         }
 
+        // 4.5. Every target gateway has to be in the environment the publication is for.
+        //
+        // A publication is for one environment and is delivered to the gateways that
+        // serve it. Handing a production publication to a development gateway would
+        // put production's routes behind a development name, and neither side would
+        // report it — the gateway would simply start serving the wrong environment.
+        var gateways = await _gatewayRepository.GetAllAsync(cancellationToken);
+        var mismatched = gateways
+            .Where(gateway => targetGatewayIds.Contains(gateway.Id))
+            .Where(gateway => gateway.Environment != command.Environment)
+            .ToList();
+
+        if (mismatched.Count > 0)
+        {
+            throw new InvalidOperationException(
+                $"Publication is for environment '{command.Environment}' but these gateways serve another: " +
+                string.Join(", ", mismatched.Select(g => g.Id.Value.ToString())));
+        }
+
         // 5. Acquire publish lock
         var lockResult = await _distributedLock.AcquireAsync(
             $"publish:{snapshotVersion}",
@@ -103,13 +122,18 @@ public class PublishSnapshotCommandHandler
             // 8. Atomic: Set ocelot:runtime:current = version (via Redis)
             await _redisPublisher.PublishAsync(
                 "ocelot:runtime:current",
-                new { Version = snapshotVersion.Value.ToString() },
+                new { Version = snapshotVersion.Value.ToString(), Environment = command.Environment.Value },
                 cancellationToken);
 
             // 9. Redis Pub/Sub: Notify gateways of new version
             await _redisPublisher.PublishAsync(
                 "ocelot:snapshot:published",
-                new { Version = snapshotVersion.Value.ToString(), PublicationId = publication.Id.Value.ToString() },
+                new
+                {
+                    Version = snapshotVersion.Value.ToString(),
+                    Environment = command.Environment.Value,
+                    PublicationId = publication.Id.Value.ToString()
+                },
                 cancellationToken);
 
             // 10. Raise domain events

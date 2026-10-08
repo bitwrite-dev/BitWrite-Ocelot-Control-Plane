@@ -35,6 +35,9 @@ internal static class PublishedEnvironment
     /// <summary>Where the published snapshot for this environment is stored.</summary>
     public static string SnapshotKey(string version) => $"ocelot:snapshot:{KeySegment}:{version}";
 
+    /// <summary>Where the current published version for this environment is stored.</summary>
+    public static string RuntimeCurrentKey() => $"ocelot:runtime:current:{KeySegment}";
+
     /// <summary>
     /// Whether a notification names this gateway's environment.
     /// </summary>

@@ -118,30 +118,71 @@ public sealed class ConfigurationSubscriber : BackgroundService
     /// has no notification to act on, and starting with the configuration that was
     /// published is what §19 requires; starting with whatever is being edited would be
     /// serving something no operator approved.
+    /// <para>
+    /// The current version is stored per environment. If the stored environment does
+    /// not match this gateway's environment, the gateway refuses to start (403):
+    /// serving a configuration for the wrong environment is the cross-environment leak
+    /// this isolation exists to prevent.
+    /// </para>
     /// </remarks>
     private async Task LoadCurrentAsync(CancellationToken cancellationToken)
     {
         try
         {
-            var current = await _database.StringGetAsync("ocelot:runtime:current");
+            var current = await _database.StringGetAsync(PublishedEnvironment.RuntimeCurrentKey());
 
             if (current.IsNullOrEmpty)
             {
                 _logger.LogInformation(
-                    "No published version recorded; starting with the configuration on disk");
+                    "No published version recorded for environment {Environment}; starting with the configuration on disk",
+                    PublishedEnvironment.KeySegment);
                 return;
             }
 
             var version = ReadVersion(current.ToString());
+            var env = ReadEnvironment(current.ToString());
 
             if (version is null)
                 return;
+
+            if (!PublishedEnvironment.Matches(env))
+            {
+                _logger.LogError(
+                    "Current published version is for environment {Env} but this gateway serves {Served}; refusing to start (403)",
+                    env, PublishedEnvironment.KeySegment);
+                throw new InvalidOperationException($"Environment mismatch: current version is for '{env}', this gateway serves '{PublishedEnvironment.KeySegment}'");
+            }
 
             await LoadAsync(version, cancellationToken);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Could not read the current published version at startup");
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Reads the environment out of <c>ocelot:runtime:current:{env}</c>.
+    /// </summary>
+    private static string? ReadEnvironment(string message)
+    {
+        if (string.IsNullOrWhiteSpace(message))
+            return null;
+
+        try
+        {
+            using var parsed = JsonDocument.Parse(message);
+            var root = parsed.RootElement;
+
+            if (root.ValueKind != JsonValueKind.Object)
+                return null;
+
+            return ReadProperty(root, "Environment", "environment");
+        }
+        catch (JsonException)
+        {
+            return null;
         }
     }
 

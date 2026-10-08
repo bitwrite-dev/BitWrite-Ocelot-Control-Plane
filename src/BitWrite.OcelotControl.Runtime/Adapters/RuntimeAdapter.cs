@@ -1,4 +1,5 @@
 using BitWrite.OcelotControl.Application.Interfaces;
+using Microsoft.Extensions.Configuration;
 using BitWrite.OcelotControl.Domain.Aggregates.RuntimeInstance;
 using BitWrite.OcelotControl.Domain.Aggregates.Snapshot;
 using BitWrite.OcelotControl.Domain.ValueObjects.Configuration;
@@ -20,6 +21,7 @@ public class RuntimeAdapter : BackgroundService
     private readonly ILogger<RuntimeAdapter> _logger;
     private readonly TimeSpan _pollInterval = TimeSpan.FromSeconds(30);
     private readonly TimeSpan _retryInterval = TimeSpan.FromSeconds(5);
+    private readonly string _environment;
     private GatewayId _gatewayId;
     private SnapshotVersion? _currentVersion;
     private SnapshotVersion? _lastKnownGoodVersion;
@@ -29,12 +31,14 @@ public class RuntimeAdapter : BackgroundService
         IConnectionMultiplexer connectionMultiplexer,
         IServiceScopeFactory scopeFactory,
         IOcelotConfigApplier configApplier,
-        ILogger<RuntimeAdapter> logger)
+        ILogger<RuntimeAdapter> logger,
+        IConfiguration configuration)
     {
         _connectionMultiplexer = connectionMultiplexer;
         _scopeFactory = scopeFactory;
         _configApplier = configApplier;
         _logger = logger;
+        _environment = configuration["Environment"] ?? "development";
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -119,7 +123,7 @@ public class RuntimeAdapter : BackgroundService
     {
         // Poll current version from Redis
         var db = _connectionMultiplexer.GetDatabase();
-        var currentVersionStr = await db.StringGetAsync("ocelot:runtime:current");
+        var currentVersionStr = await db.StringGetAsync(RedisKeyHelper.RuntimeCurrent(BitWrite.OcelotControl.Domain.ValueObjects.Configuration.EnvironmentName.From(_environment)));
         
         if (!currentVersionStr.IsNullOrEmpty && int.TryParse(currentVersionStr, out var versionInt))
         {

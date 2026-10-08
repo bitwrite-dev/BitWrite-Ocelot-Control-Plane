@@ -48,3 +48,30 @@ if (typeof globalThis.ResizeObserver === 'undefined') {
     disconnect() {}
   }
 }
+
+/**
+ * jsdom does not implement CacheStorage, which undici (used by fetch) tries to
+ * access during module initialization. This causes tests that use fetch to fail
+ * with "webidl.util.markAsUncloneable is not a function".
+ *
+ * We provide a minimal CacheStorage implementation that satisfies the interface
+ * without actually caching anything.
+ */
+if (typeof globalThis.caches === 'undefined') {
+  const noopCache = {
+    async match() { return undefined; },
+    async add() {},
+    async addAll() {},
+    async delete() { return false; },
+    async keys() { return []; },
+    async put() {}
+  };
+
+  globalThis.caches = {
+    async open() { return noopCache; },
+    async has() { return false; },
+    async delete() { return false; },
+    async keys() { return []; },
+    async match() { return undefined; }
+  };
+}

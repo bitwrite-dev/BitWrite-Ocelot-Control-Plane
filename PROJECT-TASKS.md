@@ -35,6 +35,38 @@ This document provides a prioritized list of tasks and subtasks based on DDD arc
 | #243 | [Infrastructure] Redis Repository Implementations | #293 | ✅ Done |
 | #281 | [Subtask] RuntimeAdapter - Gateway Config Synchronization | #294 | ✅ Done |
 | #283 | [Subtask] Management API Controllers | #295 | ✅ Done |
+| #523 | RedisKeyHelper: Add /env overloads for Route/Service/Snapshot keys | #533 | ✅ Done |
+| #524 | Route Keys: Add /env prefix + migration (data loss allowed) | #537 | ✅ Done |
+| #525 | Service Keys: Add /env prefix + migration (data loss allowed) | #537 | ✅ Done |
+| #526 | Snapshot Keys: Add /env to key format | #534 | ✅ Done |
+| #527 | Runtime Current Key: Add /env to ocelot:runtime:current | #535 | ✅ Done |
+| #528 | ConfigurationSubscriber: Extract /env from notification body | #534 | ✅ Done |
+| #529 | Gateway Program.cs: Add /env-aware startup check | #536 | ✅ Done |
+| #530 | Management API: Add /env query param + publish validation | #534 | ✅ Done |
+| #531 | Tests: Update Gateway tests for /env awareness | #535 | ✅ Done |
+
+---
+
+## Phase 0: Environment Isolation (Completed - PRs Merged to develop)
+
+> **All 9 roadmap issues (#523-#531) completed and merged to develop.**
+> Implements full environment isolation: keys are now `ocelot:route:{env}:{id}`,
+> `ocelot:service:{env}:{id}`, `ocelot:snapshot:{env}:{version}`,
+> `ocelot:runtime:current:{env}`. Requests send `X-Environment` header.
+> Gateway validates environment at startup (403 on mismatch).
+> Migration tooling for Route/Service keys with data loss accepted.
+
+| Issue | Title | PR | Status |
+|-------|-------|----|----|
+| #523 | RedisKeyHelper: Add /env overloads | #533 | ✅ Done |
+| #524 | Route Keys: /env prefix + migration | #537 | ✅ Done |
+| #525 | Service Keys: /env prefix + migration | #537 | ✅ Done |
+| #526 | Snapshot Keys: /env format | #534 | ✅ Done |
+| #527 | Runtime Current Key: env-scoped | #535 | ✅ Done |
+| #528 | ConfigurationSubscriber: env from notification | #534 | ✅ Done |
+| #529 | Gateway startup env validation (403) | #536 | ✅ Done |
+| #530 | Publish/rollback ?env + validation | #534 | ✅ Done |
+| #531 | Gateway tests for env awareness | #535 | ✅ Done |
 
 ---
 
@@ -340,4 +372,4 @@ Value Objects → Domain Services → Aggregates → Domain Events → Use Cases
 
 ---
 
-*Last Updated: 2026-09-24*
+*Last Updated: 2026-10-08*

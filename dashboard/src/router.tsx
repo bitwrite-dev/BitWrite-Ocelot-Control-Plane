@@ -11,6 +11,7 @@ import { GatewaysPage } from '@/features/gateways/gateways-page'
 import { GlobalConfigurationPage } from '@/features/global-configuration/global-configuration-page'
 import { SnapshotsPage } from '@/features/snapshots/snapshots-page'
 import { CreateSnapshotPage } from '@/features/snapshots/create-snapshot-page'
+import { PublicationsPage } from '@/features/publications/PublicationsPage'
 import { AuditLogPage } from '@/features/audit/audit-log-page'
 import { MonitoringPage } from '@/features/monitoring/monitoring-page'
 import { RoutesPage } from '@/features/routes/routes-page'
@@ -45,6 +46,7 @@ const routes = [
       { path: 'global-configuration', element: <GlobalConfigurationPage /> },
       { path: 'snapshots', element: <SnapshotsPage /> },
       { path: 'snapshots/new', element: <CreateSnapshotPage /> },
+      { path: 'publications', element: <PublicationsPage /> },
       { path: 'audit', element: <AuditLogPage /> },
       { path: 'monitoring', element: <MonitoringPage /> },
       { path: 'routes/new', element: <CreateRouteWizardPage /> },

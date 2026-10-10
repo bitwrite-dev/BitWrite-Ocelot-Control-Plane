@@ -14,6 +14,7 @@ import { CreateSnapshotPage } from '@/features/snapshots/create-snapshot-page'
 import { PublicationsPage } from '@/features/publications/PublicationsPage'
 import { AuditLogPage } from '@/features/audit/audit-log-page'
 import { MonitoringPage } from '@/features/monitoring/monitoring-page'
+import { RuntimePage } from '@/features/runtime/RuntimePage'
 import { RoutesPage } from '@/features/routes/routes-page'
 import {
   CreateRouteWizardPage,
@@ -49,6 +50,7 @@ const routes = [
       { path: 'publications', element: <PublicationsPage /> },
       { path: 'audit', element: <AuditLogPage /> },
       { path: 'monitoring', element: <MonitoringPage /> },
+      { path: 'runtime', element: <RuntimePage /> },
       { path: 'routes/new', element: <CreateRouteWizardPage /> },
       // Before routes/:id, so the static segment is not read as an id.
       { path: 'routes/:id/edit', element: <EditRouteWizardPage /> },

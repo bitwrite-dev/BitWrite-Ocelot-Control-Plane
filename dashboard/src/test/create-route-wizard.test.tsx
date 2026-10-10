@@ -317,6 +317,7 @@ describe('CreateRouteWizardPage', () => {
       acceptAnyServerCertificate: false,
       downstreamPathTemplate: null,
       timeoutSeconds: null,
+      routeId: null,
     })
     expect(await screen.findByText('route detail')).toBeInTheDocument()
   })

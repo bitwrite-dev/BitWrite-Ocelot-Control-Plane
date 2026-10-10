@@ -125,7 +125,7 @@ public class RoutesController : BaseApiController
     public async Task<ActionResult<ApiDtos.RouteValidationResponse>> ValidateRouteDraft(
         [FromBody] ApiDtos.CreateRouteRequest request)
     {
-        var mapping = RouteRequestMapper.ToValidationInput(request);
+        var mapping = RouteRequestMapper.ToValidationInput(request, request.RouteId != null ? RouteId.From(request.RouteId) : null);
         if (!mapping.Success)
         {
             return Ok(new ApiDtos.RouteValidationResponse(

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ArrowRight, Check, FlaskConical, Layers, X } from 'lucide-react'
+import { ArrowRight, Check, Download, FlaskConical, Layers, X } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
 import { StatusBadge } from '@/components/status-badge'
@@ -100,6 +100,7 @@ export function CreateSnapshotPage() {
                   badge="Recommended"
                   description="Resolve the latest saved Routes, Services, Global Configuration, and enabled plugin configuration."
                   counts={source.counts}
+                  draftStatus={source.draftStatus}
                 />
 
                 <label
@@ -310,12 +311,14 @@ function SourceOption({
   description,
   badge,
   counts,
+  draftStatus,
 }: {
   selected: boolean
   title: string
   description: string
   badge?: string
   counts: { routes: number | null; services: number | null }
+  draftStatus?: { routes: number | null; services: number | null; globalConfig: number | null }
 }) {
   return (
     <label className="block cursor-pointer rounded-md border border-primary bg-primary/5 p-3">
@@ -332,11 +335,9 @@ function SourceOption({
           </span>
           <span className="block text-xs text-muted-foreground">{description}</span>
           <span className="mt-2 flex flex-wrap gap-2">
-            <CountChip label="routes" value={counts.routes} />
-            <CountChip label="services" value={counts.services} />
-            <span className="rounded border px-1.5 py-0.5 text-xs text-muted-foreground">
-              Global configuration resolved
-            </span>
+            <CountChip label="routes" value={counts.routes} draft={draftStatus?.routes} />
+            <CountChip label="services" value={counts.services} draft={draftStatus?.services} />
+            <CountChip label="global config" value={draftStatus?.globalConfig ?? 0} draft={draftStatus?.globalConfig} />
           </span>
         </span>
       </span>
@@ -345,10 +346,10 @@ function SourceOption({
 }
 
 /** A count, with an honest blank when the API could not supply it. */
-function CountChip({ label, value }: { label: string; value: number | null }) {
+function CountChip({ label, value, draft }: { label: string; value: number | null; draft?: number | null }) {
   return (
     <span className="rounded border px-1.5 py-0.5 text-xs text-muted-foreground">
-      {value === null ? `— ${label}` : `${value} ${label}`}
+      {value === null ? `— ${label}` : draft && draft > 0 ? `${value} ${label} ({draft} draft)` : `${value} ${label}`}
     </span>
   )
 }
@@ -407,6 +408,26 @@ function ValidationStep({
         <CardTitle className="flex items-center gap-2">
           <FlaskConical aria-hidden="true" className="size-4" />
           Resolved configuration
+          <Button
+            variant="outline"
+            size="sm"
+            className="ml-auto"
+            onClick={() => {
+              if (preview.content) {
+                const blob = new Blob([preview.content], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `snapshot-preview-${Date.now()}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+              }
+            }}
+            disabled={!preview.content}
+          >
+            <Download aria-hidden="true" className="size-4 mr-1" />
+            View JSON
+          </Button>
         </CardTitle>
         <CardDescription>
           {preview.routeCount} routes · {preview.serviceCount} services · Ocelot {preview.ocelotVersion}

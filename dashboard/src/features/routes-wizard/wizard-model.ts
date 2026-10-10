@@ -132,6 +132,8 @@ export interface RouteDraft {
    * defaults rather than throwing.
    */
   transport?: TransportDraft
+  /** The ID of the route being edited. When provided, the validation will exclude this route from conflict detection. */
+  routeId?: string
 }
 
 export type StepId =
@@ -809,6 +811,7 @@ export function toCreateRequest(draft: RouteDraft): CreateRouteRequestBody {
     ...(draft.loadBalancer.enabled
       ? { loadBalancerOptions: { algorithm: draft.loadBalancer.algorithm } }
       : {}),
+    routeId: draft.routeId?.trim() || null,
   }
 }
 
@@ -965,12 +968,18 @@ export function draftFromRoute(route: RouteResponse): RouteDraft {
     draft.cache = { enabled: true, ttlSeconds: route.cacheOptions.ttlSeconds }
   }
 
+  if (route.cacheOptions) {
+    draft.cache = { enabled: true, ttlSeconds: route.cacheOptions.ttlSeconds }
+  }
+
   if (route.loadBalancerOptions) {
     draft.loadBalancer = {
       enabled: true,
       algorithm: route.loadBalancerOptions.algorithm,
     }
   }
+
+  draft.routeId = route.id
 
   return draft
 }

@@ -127,6 +127,7 @@ describe('toCreateRequest', () => {
       'key',
       'method',
       'priority',
+      'routeId',
       'routeIsCaseSensitive',
       'serviceId',
       'timeoutSeconds',

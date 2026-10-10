@@ -214,6 +214,7 @@ describe('EditRouteWizardPage', () => {
       acceptAnyServerCertificate: false,
       downstreamPathTemplate: null,
       timeoutSeconds: null,
+      routeId: 'route-1',
     })
   })
 

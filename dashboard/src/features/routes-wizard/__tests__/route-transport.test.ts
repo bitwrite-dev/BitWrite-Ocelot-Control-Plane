@@ -314,6 +314,7 @@ describe('round-tripping transport settings', () => {
 
   it('survives a save-and-reload without losing anything', () => {
     const original = draft()
+    original.routeId = 'r1'
     original.transport = {
       downstreamMethod: 'PUT',
       downstreamTemplate: '',

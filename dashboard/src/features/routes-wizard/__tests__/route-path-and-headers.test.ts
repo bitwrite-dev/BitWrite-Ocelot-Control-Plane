@@ -214,6 +214,7 @@ describe('header transformations', () => {
 
   it('rebuilds the same request after a save and reload', () => {
     const original = draft()
+    original.routeId = 'r1'
     original.headers = {
       add: 'X-Downstream-Service: orders',
       transform: 'X-Original-Host: {UpstreamHost}',

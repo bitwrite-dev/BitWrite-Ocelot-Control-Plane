@@ -233,6 +233,7 @@ describe('authorization', () => {
 
   it('survives a save and reload', () => {
     const original = draft()
+    original.routeId = 'r1'
     original.authorization = {
       policies: ['orders:read'],
       requirements: { region: 'eu-west-1' },

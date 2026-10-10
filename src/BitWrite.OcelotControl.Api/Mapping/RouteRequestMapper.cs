@@ -171,8 +171,11 @@ public static class RouteRequestMapper
     /// Maps a request body onto the shared validator's input, so an unsaved
     /// draft runs the same checks a stored route does.
     /// </summary>
+    /// <param name="request">The route request body.</param>
+    /// <param name="existingRouteId">Optional ID of the route being edited. When provided, this ID is excluded from conflict detection.</param>
     public static RouteMappingResult<RouteValidationInput> ToValidationInput(
-        ApiDtos.CreateRouteRequest request)
+        ApiDtos.CreateRouteRequest request,
+        RouteId? existingRouteId = null)
     {
         var mapping = MapCommon(
             request.Method,
@@ -228,9 +231,8 @@ public static class RouteRequestMapper
         return RouteMappingResult<RouteValidationInput>.Ok(new RouteValidationInput(
             configuration,
             mapping.Value!.Key,
-            // Nothing to exclude: a draft is not in the repository yet.
-            ExistingRouteId: null,
-            Features: features));
+            existingRouteId,
+            features));
     }
 
     /// <summary>

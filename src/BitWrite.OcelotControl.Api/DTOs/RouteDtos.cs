@@ -68,7 +68,12 @@ public record CreateRouteRequest(
     bool AcceptAnyServerCertificate = false,
     List<string>? DelegatingHandlers = null,
     HttpClientOptionsRequest? HttpClientOptions = null,
-    [property: Range(1, 86400)] int? TimeoutSeconds = null
+    [property: Range(1, 86400)] int? TimeoutSeconds = null,
+    /// <summary>
+    /// The ID of an existing route being edited. When provided, the validation
+    /// will exclude this route from conflict detection.
+    /// </summary>
+    string? RouteId = null
 );
 
 /// <summary>How the gateway's HTTP client calls the downstream service.</summary>

@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 
 import { useApi } from '@/app-providers'
-import type { PreviewSnapshotResponse, SnapshotListResponse } from '@/api'
+import type { PreviewSnapshotResponse, SnapshotListResponse, GlobalConfigurationResponse, RouteListResponse, ServiceListResponse } from '@/api'
 
 import { useSnapshotMutations } from './queries'
 
@@ -13,13 +13,12 @@ import { useSnapshotMutations } from './queries'
  * supports one screen.
  */
 
-/** What the current management state holds, by count. */
+/** What the current management state holds, by count and draft status. */
 export function useCreateSourceCounts() {
   const api = useApi()
 
   const routes = useQuery({
     queryKey: ['routes', 'list', 1, 1],
-    // Only the total is read, so one row is enough.
     queryFn: ({ signal }) => api.resources.routes.list({ page: 1, pageSize: 1, signal }),
     staleTime: 30_000,
   })
@@ -30,14 +29,22 @@ export function useCreateSourceCounts() {
     staleTime: 30_000,
   })
 
+  const globalConfig = useQuery({
+    queryKey: ['global-configuration', 'current'],
+    queryFn: ({ signal }) => api.resources.globalConfiguration.get({ signal }),
+    staleTime: 30_000,
+  })
+
   return {
-    isPending: routes.isPending || services.isPending,
-    // null means the count could not be read, which the page shows as a dash.
-    // It must not show 0: "no routes" would suggest an empty artifact is about
-    // to be sealed.
+    isPending: routes.isPending || services.isPending || globalConfig.isPending,
     counts: {
       routes: routes.data ? routes.data.totalCount : null,
       services: services.data ? services.data.totalCount : null,
+    },
+    draftStatus: {
+      routes: routes.data ? routes.data.routes.filter((r) => r.isDraft).length : null,
+      services: services.data ? services.data.services.filter((s) => s.isDraft).length : null,
+      globalConfig: globalConfig.data && globalConfig.data.isDraft ? 1 : 0,
     },
   }
 }

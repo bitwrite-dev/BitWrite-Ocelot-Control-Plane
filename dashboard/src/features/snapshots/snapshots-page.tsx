@@ -565,6 +565,7 @@ function SnapshotSheet({
 }) {
   const { data: deployment } = useSnapshotDeployment(snapshot.version, true)
   const results = validationResultsOf(snapshot)
+  const publish = useSnapshotMutations().publish
 
   return (
     <Sheet open onOpenChange={(open) => !open && onClose()}>
@@ -584,8 +585,31 @@ function SnapshotSheet({
           </div>
 
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Integrity hash</CardTitle>
+              {deployment ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="ml-auto"
+                  onClick={() => publish.mutate({ version: snapshot.version, body: { initiatedBy: CURRENT_OPERATOR } })}
+                  disabled={snapshot.status === 'Archived'}
+                >
+                  <Send aria-hidden="true" className="size-4 mr-1" />
+                  Publish
+                </Button>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="ml-auto"
+                  onClick={() => publish.mutate({ version: snapshot.version, body: { initiatedBy: CURRENT_OPERATOR } })}
+                  disabled={snapshot.status === 'Archived'}
+                >
+                  <Send aria-hidden="true" className="size-4 mr-1" />
+                  Publish
+                </Button>
+              )}
             </CardHeader>
             <CardContent>
               <HashCell hash={snapshot.hash} />

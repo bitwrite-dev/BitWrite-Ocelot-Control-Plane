@@ -91,7 +91,7 @@ export function RuntimePage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {gateways.map((gw: RuntimeStatusResponse) => {
+              {gateways.map((gw: RuntimeStatusResponse): React.ReactElement => {
                 const gatewayId = gw.gatewayId
                 return (
                   <RuntimeRow
@@ -188,11 +188,10 @@ function GatewayDetailSheet({
   gatewayId: string
   onClose: () => void
 }) {
+  const reconcile = useReconcile()
   const { data: gateway, isPending } = useRuntimeGateway(gatewayId, true)
 
   if (isPending || !gateway) return <GatewayDetailSkeleton />
-
-  const reconcile = useReconcile()
 
   return (
     <Sheet open onOpenChange={(open) => !open && onClose()}>
